@@ -49,6 +49,7 @@ let package = Package(
         .testTarget(name: "ClaudeIntegrationTests", dependencies: ["ClaudeIntegration", "Boundaries", "TestSupport"]),
         .testTarget(name: "SessionMonitoringTests", dependencies: ["SessionMonitoring", "Domain", "Boundaries", "TestSupport"]),
         .testTarget(name: "PreferencesTests", dependencies: ["Preferences", "DesignSystem", "Boundaries", "TestSupport"]),
+        .testTarget(name: "SessionPanelTests", dependencies: ["SessionPanel", "Domain", "DesignSystem"]),
         .testTarget(name: "TerminalIntegrationTests", dependencies: ["TerminalIntegration", "Domain", "Boundaries", "TestSupport"])
     ],
     swiftLanguageModes: [.v6]
