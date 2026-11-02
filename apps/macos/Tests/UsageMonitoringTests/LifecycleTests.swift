@@ -187,4 +187,35 @@ struct LifecycleTests {
         #expect(throws: (any Error).self) { try child.write(Data([1])) }
     }
 
+    @Test func waitingUpdateCallbackDoesNotBlockRPCOrNotifications() async throws {
+        let launcher = ScriptedProcessLauncher { bytes in
+            guard let message = JSONValue.parseObject(from: bytes), let id = message["id"]?.intValue else { return [] }
+            let result = message["method"]?.stringValue == "initialize" ? "{}" : #"{"rateLimits":{"primary":{"usedPercent":10,"windowDurationMins":300}}}"#
+            return [Data("{\"id\":\(id),\"result\":\(result)}\n".utf8)]
+        }
+        let gate = DelayGate()
+        let callbacks = Mutex(0)
+        let reader = CodexRateLimitReader(fileSystem: files(), launcher: launcher, onUpdate: {
+            let first = callbacks.withLock { count in count += 1; return count == 1 }
+            if first { try? await gate.sleep(999) }
+        })
+        let fetch = Task { await reader.refresh(minInterval: 0) }
+        do {
+            try await waitFor { await gate.contains(999) }
+            let notification = #"{"method":"account/rateLimits/updated","params":{"rateLimits":{"primary":{"usedPercent":60,"windowDurationMins":300}}}}"#
+            launcher.emit(Data((notification + "\n").utf8))
+            try await waitFor { await reader.latest?.fiveHour?.usedRatio == 0.6 }
+            await reader.refresh(minInterval: 0)
+            #expect(await reader.latest?.fiveHour?.usedRatio == 0.1)
+        } catch {
+            await gate.release(999)
+            await reader.stop()
+            await fetch.value
+            throw error
+        }
+        await gate.release(999)
+        await fetch.value
+        await reader.stop()
+    }
+
 }

@@ -20,6 +20,7 @@ public actor CodexRateLimitReader {
     private var deadlines: [Int: Task<Void, Never>] = [:]
     private var nextID = 1
     private var generation = 0
+    private var idleRevision = 0
     private var initialized = false
     private var buffer = Data()
 
@@ -44,6 +45,7 @@ public actor CodexRateLimitReader {
 
     public func stop() {
         generation += 1
+        idleRevision += 1
         idleTask?.cancel()
         idleTask = nil
         outputTask?.cancel()
@@ -65,6 +67,7 @@ public actor CodexRateLimitReader {
         guard !Task.isCancelled, enabled, !requesting, now >= blockedUntil, now.timeIntervalSince(lastRequest) >= minInterval else { return }
         requesting = true
         lastRequest = now
+        idleRevision += 1
         idleTask?.cancel()
         guard process != nil || launch() else {
             requesting = false
@@ -84,16 +87,24 @@ public actor CodexRateLimitReader {
         latest = usage
         requesting = false
         let sleep = sleep
+        let revision = idleRevision
         idleTask = Task { [weak self] in
             do { try await sleep(60) } catch { return }
             guard !Task.isCancelled else { return }
-            await self?.idleShutdown(generation: current)
+            await self?.idleShutdown(generation: current, revision: revision)
         }
-        await onUpdate()
+        notifyUpdate()
     }
 
-    private func idleShutdown(generation expected: Int) {
-        if generation == expected, !requesting { stop() }
+    private func idleShutdown(generation expected: Int, revision: Int) {
+        if generation == expected, revision == idleRevision, !requesting { stop() }
+    }
+
+    // 원본의 main queue 전달처럼 출력 소비와 콜백 실행을 분리한다.
+    // 콜백에서 다시 조회하더라도 현재 출력 스트림을 막지 않는다.
+    private func notifyUpdate() {
+        let onUpdate = onUpdate
+        Task { await onUpdate() }
     }
 
     private func fail() {
@@ -185,7 +196,7 @@ public actor CodexRateLimitReader {
                       let limits = message["params"]?["rateLimits"],
                       let usage = UsageParser.codex(limits, live: true, updatedAt: time.now) {
                 latest = usage
-                await onUpdate()
+                notifyUpdate()
                 guard generation == expected else { return }
             }
         }
