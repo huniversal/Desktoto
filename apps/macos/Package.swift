@@ -43,7 +43,8 @@ let package = Package(
         ),
 
         .testTarget(name: "CZstdTests", dependencies: ["CZstd"]),
-        .testTarget(name: "DesignSystemTests", dependencies: ["DesignSystem"])
+        .testTarget(name: "DesignSystemTests", dependencies: ["DesignSystem"]),
+        .testTarget(name: "TerminalIntegrationTests", dependencies: ["TerminalIntegration", "Boundaries", "TestSupport"])
     ],
     swiftLanguageModes: [.v6]
 )
