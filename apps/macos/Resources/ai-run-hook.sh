@@ -4,8 +4,8 @@
 # Desktoto 앱이 어느 세션이 승인 대기인지 알 수 있게 한다. 승인하거나 거부하면 기록 파일에 새 내용이 쌓이므로
 # 앱이 알아서 해제하고, 이 스크립트는 지우지 않는다.
 input=$(cat)
-transcript=$(echo "$input" | jq -r '.transcript_path // empty')
-session_id=$(echo "$input" | jq -r '.session_id // empty')
+transcript=$(printf '%s' "$input" | jq -r '.transcript_path // empty')
+session_id=$(printf '%s' "$input" | jq -r '.session_id // empty')
 
 # 앱이 읽는 기록 파일 이름과 같은 id를 쓴다.
 if [ -n "$transcript" ]; then

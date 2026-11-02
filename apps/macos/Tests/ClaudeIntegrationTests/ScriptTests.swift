@@ -40,11 +40,26 @@ struct ScriptTests {
         #expect(try FileManager.default.contentsOfDirectory(atPath: waiting.path).count == 2)
     }
 
-    @Test func generatedCommandSavesExactInputAndForwardsItToOriginalCommand() async throws {
+    @Test(arguments: [true, false])
+    func hookPreservesEscapedJSONValues(_ hasTranscript: Bool) throws {
+        let root = try temporaryIntegrationDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        var fields = ["session_id": "fallback-session", "cwd": "/synthetic/work\\x\nfolder"]
+        if hasTranscript { fields["transcript_path"] = "/synthetic/transcript-session.jsonl" }
+        let input = String(decoding: try JSONSerialization.data(withJSONObject: fields), as: UTF8.self)
+        let result = try run([integrationResources().appendingPathComponent("ai-run-hook.sh").path], input: input, home: root)
+        #expect(result.status == 0)
+        let waiting = root.appendingPathComponent(".ai-run/waiting")
+        let expectedID = hasTranscript ? "transcript-session" : "fallback-session"
+        #expect(FileManager.default.fileExists(atPath: waiting.appendingPathComponent(expectedID).path))
+    }
+
+    @Test(arguments: ["", "\n", "\n\n", "\r\n"])
+    func generatedCommandSavesExactInputAndForwardsItToOriginalCommand(_ suffix: String) async throws {
         let root = try temporaryIntegrationDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
         // 경로와 명령에 작은따옴표가 있어도 실제 셸에서 인자와 입력이 유지되어야 한다.
-        let input = #"{"session_id":"synthetic-id","rate_limits":{"five_hour":{"used_percentage":17}}}"#
+        let input = #"{"session_id":"synthetic-id","rate_limits":{"five_hour":{"used_percentage":17}}}"# + suffix
         let original = "printf '%s\\n' \"user's status\"; cat"
         let files = LiveSettingsFileSystem(homeDirectory: root)
         let settingsURL = root.appendingPathComponent(".claude/settings.json")
