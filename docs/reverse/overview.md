@@ -33,7 +33,7 @@ Codex app-server 응답         사용량 한도(5시간, 주간)      세션 �
 | 위치 | `~/.claude/projects/**/*.jsonl` | `~/.codex/sessions/**/*.jsonl` |
 | 세션 id | 파일 이름(확장자 제외) | 파일 이름(확장자 제외) |
 | 대상 | 수정 시각과 기록 안의 마지막 활동 시각이 모두 600초 이내인 파일 | 같음 |
-| 진행 판정 | 마지막 `user` 또는 `assistant` 기록의 `stop_reason`이 `end_turn`, `stop_sequence`이면 완료, 아니면 진행 중 | `payload.type`이 `task_complete`이면 완료, `turn_aborted`이면 중단, `task_started` 뒤 기록이 있으면 진행 중 |
+| 진행 판정 | 마지막 `user` 또는 `assistant` 기록이 `assistant`이고 `stop_reason`이 `end_turn`, `stop_sequence`이면 완료, 아니면 진행 중 | 가장 최근 생명주기 기록(`task_started`, `task_complete`, `turn_aborted`)이 `task_complete`이면 완료, `turn_aborted`이면 중단, `task_started`이면 진행 중. 활동 시각은 완료와 중단이면 그 기록의 시각, 진행 중이면 가장 최근 기록(종류 무관)의 시각 |
 | 세션 정보 | `cwd`, `custom-title`, `last-prompt`, `message.model`, `message.usage`, `entrypoint` | 첫 줄 `session_meta`의 `originator`, `cwd`, `id`, 그리고 `token_count`의 `last_token_usage`, `model_context_window` |
 | 출처 | `SessionWatcher.swift` | `SessionWatcher.swift` |
 
@@ -94,7 +94,7 @@ Codex는 기록의 `model_context_window`를 그대로 쓴다.
 Claude 데스크탑 캐시 읽기(`ClaudeDesktopUsage.swift`)의 특징:
 - Chromium Simple Cache 형식이다. 항목 파일은 머리 24바이트(매직 `0xfcfb6d1ba7725c30`, 버전, 키 길이, 키 해시)와 키, 그 뒤 응답 본문으로 이뤄진다.
 - 본문이 zstd 압축이라 매직 `28 B5 2F FD`를 확인하고 `CZstd`(벤더링한 facebook/zstd v1.5.7)로 푼다. 풀린 크기는 최대 1MB.
-- 항목 찾기: 크기 500B 이상 64KB 이하인 파일 중 수정 시각이 가장 최근인 600개의 키를 확인한다. 못 찾으면 120초 간격으로만 다시 찾고, 찾기는 백그라운드 큐에서 한다.
+- 항목 찾기: 파일 이름이 `_0`으로 끝나고 크기 500B 이상 64KB 이하인 파일 중 수정 시각이 가장 최근인 600개의 키를 확인한다. 못 찾으면 120초 간격으로만 다시 찾고, 찾기는 백그라운드 큐에서 한다.
 - 로그인 정보와 네트워크는 쓰지 않는다. 형식이 바뀌어 못 읽으면 `nil`을 돌려주고 호출하는 쪽이 다른 값을 쓴다.
 
 Codex app-server 조회(`CodexRateLimitReader.swift`)의 특징:
@@ -275,7 +275,7 @@ Codex는 `last_token_usage.input_tokens`다. 목록은 활동 시각 최신순�
 | `LogTail.swift` | 25 | 기록 파일 꼬리 읽기 |
 | `main.swift` | 7 | 앱 시작 |
 | `scripts/ai-run-hook.sh`, `scripts/ai-run-statusline.sh` | | 승인 대기와 세션 상태를 `~/.ai-run`에 기록 |
-| `scripts/build-app.sh`, `scripts/Info.plist` | | `.app` 번들 생성, 서명(ad hoc), 설치, 실행 |
+| `scripts/build-app.sh`, `scripts/Info.plist`, `scripts/make-icon.swift` | | `.app` 번들 생성, 앱 아이콘 생성, 서명(ad hoc), 설치, 실행 |
 | `landing/` | | 랜딩 페이지(`index.html`, `serve.py`, OG 이미지) |
 
 ## 8. 구조 설계에 영향을 주는 관찰

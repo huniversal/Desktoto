@@ -24,8 +24,11 @@
   알림, 로그인 항목, 자동화(AppleScript) 권한은 새 앱에서 다시 허용해야 한다.
 - 원본과 새 앱이 `~/.ai-run`과 `~/.claude/settings.json`을 공유한다. 제품 동작을 같게 유지하고 동등성 검증에서
   두 앱이 같은 입력 파일을 읽게 하기 위한 결정이다. 이름 변경은 동등성 검증 후 별도 이슈에서 다룬다.
-- 새 앱은 시작할 때 훅과 statusLine이 이미 연결된 것으로 보고 `settings.json`을 바꾸지 않는다.
+- 원본이 이미 훅과 statusLine을 연결해 둔 설정에서는 새 앱이 시작할 때 "이미 연결됨"으로 보고 `settings.json`을 바꾸지 않는다.
   병행 중에는 새 앱의 "Claude 연동" 해제 메뉴를 누르지 않는다(두 앱이 공유하는 훅이 빠진다).
+- 번들 식별자가 다르면 `UserDefaults`도 별개라서 새 앱은 설정(색상, 테마, 유리 단계, 패널 표시, 알림, 연동 여부)이 기본값으로 시작한다.
+  원본 코드는 `connectsClaudeCode`(기본값 true)가 켜져 있고 훅이나 statusLine이 빠져 있으면 시작할 때 연결하고, 이때 `~/.claude/settings.json`(백업 생성)과 `~/.ai-run/bin`에 쓴다.
+  그래서 사용자가 원본에서 연동을 해제한 상태라면 새 앱이 다시 연결한다. 병행 기간의 첫 실행 동작(예: 자동 연결을 하지 않음)은 #7과 #11에서 정한다.
 
 ### 개발 중 지켜야 할 불변 조건
 
@@ -78,7 +81,7 @@ apps/macos/
 | `Preferences` | 설정 모델과 저장, 알림, 로그인 항목 | `DesignSystem`, `Boundaries` | #8 | `AppSettings`, `NotificationSender` |
 | `MenuBarIcon` | 캐릭터 격자, 프레임 계산, 이미지 그리기 | `Domain`, `DesignSystem` | #9 | `SpriteRenderer` |
 | `SessionPanel` | 패널 View, 패널 모델, 투명 패널 창과 위치 계산 | `Domain`, `DesignSystem` | #10 | `SessionPanelView`, `AppDelegate`의 `GlassPanel` |
-| `Desktoto` | 진입점, 오케스트레이션(감시 타이머, 상태에서 UI로 전달, 알림 트리거, 세션 열기, 시작 시 연동), 우클릭 메뉴 | 위 모두 | #11 | `AppDelegate`, `main` |
+| `Desktoto` | 진입점, 오케스트레이션(감시 타이머, 상태에서 UI로 전달, 알림 트리거, 세션 열기, 시작 시 연동), 우클릭 메뉴 | 위 모듈 중 `CZstd`, `TestSupport`를 제외한 모두 | #11 | `AppDelegate`, `main` |
 | `CZstd` | 벤더링한 zstd 해독부 (C) | 없음 | #6 | `Sources/CZstd` |
 | `TestSupport` | 테스트용 가짜 구현 | `Boundaries` | 전체 | 없음 |
 
@@ -137,11 +140,13 @@ CZstd  ◄── UsageMonitoring
 
 | 프로토콜 | 역할 | 쓰는 모듈 |
 | --- | --- | --- |
-| `FileSystem` | 읽기, 끝부분 읽기, 목록(경로, 수정 시각, 종류), 존재 확인, 원자적 쓰기, 복사, 삭제, 홈 폴더. `FileManager`를 그대로 흉내 내지 않고 필요한 동작만 굵게 정의한다 | `SessionMonitoring`, `UsageMonitoring`, `ClaudeIntegration` |
+| `FileSystem` | 읽기, 끝부분 읽기, 목록(경로, 수정 시각, 종류), 존재 확인, 원자적 쓰기, 복사, 삭제, 홈 폴더. `FileManager`를 그대로 흉내 내지 않고 필요한 동작만 굵게 정의한다 | `SessionMonitoring`, `UsageMonitoring`, `ClaudeIntegration`, `TerminalIntegration`(Claude 터미널 세션 생존 확인에 쓰는 `~/.claude/sessions/*.json`) |
 | `TimeSource` | 현재 시각(`now`). Swift 표준의 `Clock`과 이름이 겹치지 않게 한다. `Timer` 같은 스케줄링은 `Desktoto` 앱이 맡는다 | 거의 전부 |
-| `ProcessRunner` | 짧은 명령 실행과 출력 수집, 오래 떠 있는 프로세스 실행(입력 쓰기, 출력 스트림, 종료), 프로세스 생존 확인 | `TerminalIntegration`, `UsageMonitoring`, `SessionMonitoring` |
+| `ProcessRunner` | 짧은 명령 실행과 출력 수집, 오래 떠 있는 프로세스 실행(입력 쓰기, 출력 스트림, 종료), 프로세스 생존 확인 | `TerminalIntegration`(`ps`, `lsof`, Orca CLI, 생존 확인), `UsageMonitoring`(`codex app-server`) |
 | `AppleScriptRunner` | 스크립트 문자열 실행 | `TerminalIntegration`, `Preferences` |
 | `URLOpener` | URL 열기, 실행 중인 앱 확인 | `TerminalIntegration`, `Desktoto` |
+
+사용처 열은 원본 분석에 따른 현재 예상이며 #4와 #5 구현에서 확정한다. 한 곳만 쓰는 것으로 드러난 경계(예: `URLOpener`)는 그 기능 모듈 안으로 옮긴다.
 
 ### 단일 기능 서비스
 
@@ -170,7 +175,7 @@ CZstd  ◄── UsageMonitoring
 | 외부 앱 제어 | iTerm2, Terminal, Orca 탭 이동, 알림, 로그인 항목은 실제 Mac에서 수동 검증하고 결과를 PR에 기록한다 |
 | 프레임워크 | Swift Testing(`import Testing`) |
 | 모듈 경계 | 모듈마다 `모듈이름Tests` 테스트 타깃을 두되, 그 모듈에 실제 코드가 생기는 이슈에서 코드와 함께 만든다. 항상 통과하는 의미 없는 테스트는 만들지 않는다 |
-| 골격 단계 | `CZstdTests`가 합성 zstd 프레임(14바이트)을 해독해 원문과 비교한다. 이것으로 `swift test`가 실제로 실행되고 벤더링이 올바른지 확인한다 |
+| 골격 단계 | `CZstdTests`가 합성 zstd 프레임 둘(원본 블록 14바이트, `zstd -19`로 만든 압축 블록)을 해독해 원문과 비교하고, 잘리거나 손상된 프레임을 거부하는지 확인한다. 이것으로 `swift test`가 실제로 실행되고 해독 경로(프레임 헤더, 허프만과 FSE, 체크섬)가 `ZSTD_DISABLE_ASM`으로 빌드한 상태에서 동작함을 확인한다 |
 | 환경 | 로컬 Mac(macOS 27.0.1, Xcode 27.1)은 최소 버전(26)보다 높다. 최소 버전 호환은 CI(macos-26, Xcode 26.6)가 확인한다 |
 
 ## 7. 동시성

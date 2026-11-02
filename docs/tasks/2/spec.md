@@ -4,12 +4,12 @@
 
 - 이슈: #2 / https://github.com/huniversal/Desktoto/issues/2
 - 브랜치: `feat/architecture-setup/#2`
-- specRevision: 8
+- specRevision: 9
 - 대상 ai-run 원본: 전체
   - `~/Desktop/ai-run/Package.swift`
   - `~/Desktop/ai-run/Sources/AiRun/*.swift` (13개 파일)
   - `~/Desktop/ai-run/Sources/CZstd`
-  - `~/Desktop/ai-run/scripts/*` (`Info.plist`, `ai-run-hook.sh`, `ai-run-statusline.sh`, `build-app.sh`)
+  - `~/Desktop/ai-run/scripts/*` (`Info.plist`, `ai-run-hook.sh`, `ai-run-statusline.sh`, `build-app.sh`, `make-icon.swift`)
 - 동작 문서화 위치: `docs/reverse/overview.md`
 
 ## 목적
@@ -38,6 +38,7 @@
 - 기능 구현 (세션 감시, 사용량, 연동, UI 등은 #3 이후 이슈)
 - 디자인 토큰과 컴포넌트 구현 (#3)
 - CI와 앱 패키징, 서명 (#1)
+- `apps/web`(랜딩) 생성 (#12). 모노레포 레이아웃 중 `apps/macos`는 #1이 만든 구조를 따르고 이 이슈에서 정식 골격으로 교체한다
 - 기능별 상세 동작 문서화의 보완 (`overview.md` 9장에 적은 항목은 해당 기능 이슈에서)
 - 린터, 포맷터, Git 훅 도입 (합의 전까지 추가하지 않음)
 - 앱 소스 폴더 구조 중 `architecture.md`에서 확정하지 않은 부분
@@ -54,7 +55,8 @@
 - 이름(D-1 확정, 사용자 합의): 앱 이름, 실행 파일, 패키지 이름은 `Desktoto`, 번들 식별자는 `com.huniverse.desktoto`다.
   번들 ID를 바꾸면 알림, 로그인 항목, 자동화 권한은 새 앱으로 다시 허용해야 하고, 원본 `ai-run` 앱과는 별개의 앱으로 취급된다(원본 앱은 사용자의 테스트용이며 작업이 끝날 때까지 변경하지 않는다).
 - 데이터 폴더와 스크립트(D-2 확정, 사용자 합의): 제품 동작을 원본과 같게 유지하기 위해 `~/.ai-run`, `ai-run-hook.sh`, `ai-run-statusline.sh` 이름을 그대로 쓴다.
-  원본과 새 앱을 나란히 실행해 대조할 때 같은 입력 파일을 읽게 하고, 새 앱이 시작할 때 `settings.json`을 바꾸지 않게 하기 위해서다. 이름 변경은 동등성 검증 후 별도 이슈에서 다룬다.
+  원본과 새 앱을 나란히 실행해 대조할 때 같은 입력 파일을 읽게 하고, 원본이 이미 연결한 설정에서 새 앱이 시작할 때 `settings.json`을 바꾸지 않게 하기 위해서다.
+  단 원본에서 연동을 해제한 상태라면 새 앱이 다시 연결하고, 번들 ID가 달라 `UserDefaults`가 기본값으로 시작한다. 이 병행 기간의 첫 실행 동작은 #7과 #11에서 정하며 `architecture.md`의 호환성 절에 기록했다. 이름 변경은 동등성 검증 후 별도 이슈에서 다룬다.
   병행 중 새 앱의 "Claude 연동" 해제 메뉴는 두 앱이 공유하는 훅을 제거하므로 누르지 않는다(PR 설명에 기록).
 - 언어 모드(D-3 확정, 사용자가 위임): Swift 6 모드(`swift-tools-version:6.0`)를 쓴다.
   포팅이 아니라 구조를 새로 설계하며 재구현하는 단계라 엄격한 동시성을 처음부터 켜는 비용이 낮고, [Swift 코딩 컨벤션](../../rules/swift-coding-convention.md)의 `Sendable`과 actor 격리 요구를 컴파일러가 강제하게 된다.
@@ -117,15 +119,14 @@
 | AC-8 | `(cd apps/macos && swift test)` 실행 | 실패 없이 종료하고 `CZstdTests`가 실행된다. 실행된 테스트 수를 PR에 적는다 |
 | AC-9 | `architecture.md`와 `Package.swift`를 나란히 읽고 diff 검토 | 불일치 항목이 없다 |
 | AC-10 | `grep -rn $'\xc2\xb7' docs/reverse docs/architecture.md docs/tasks/2` | 결과 없음 |
-
 | AC-11 | `(cd apps/macos && sh scripts/build-app.sh)` 후 `codesign --verify`, `plutil -p`로 번들 ID 확인. 설치와 실행은 하지 않는다 | 검증 통과, `CFBundleIdentifier`가 `com.huniverse.desktoto` |
 
 문서와 골격 작업이라 앱 실행과 실기기 동작 검증은 N/A다. 이유는 PR에 적는다.
 
-## 미결정 사항
+## 결정 기록
 
-아래는 사용자와 합의하기 전까지 확정 요구사항이 아니다. 각 항목의 근거는 `docs/reverse/overview.md`에 있다.
-"막음"은 해당 결정 전에는 `Package.swift` 골격이나 `architecture.md` 확정을 진행할 수 없다는 뜻이다.
+D-1부터 D-12가 모두 해결되어 구현을 막는 미결정은 없다. 각 결정의 근거는 `docs/reverse/overview.md`에 있다.
+"막음"은 해결 전에는 `Package.swift` 골격이나 `architecture.md` 확정을 진행할 수 없었다는 뜻이다(기록용).
 
 | 번호 | 결정할 것 | 선택지 | 막음 여부 |
 |---|---|---|---|
@@ -154,3 +155,4 @@
 | 6 | D-6 확정(기능별 모듈 11개, 접두어 없는 이름, 의존 규칙 3가지) | 사용자가 추천안을 수락했다. 영향받는 AC: AC-2, AC-9 |
 | 7 | D-7 확정(`Boundaries` 프로토콜 5개, 단일 기능 서비스는 해당 모듈에 배치, 테스트 전략) | 사용자가 추천안을 수락했다. 영향받는 AC: AC-3 |
 | 8 | D-8, D-9, D-10 확정. D-9는 "각 테스트 타깃에 최소 1개"에서 "실제 코드가 있는 `CZstdTests`만 골격에 둔다"로 구체화 | 사용자가 추천안을 수락했다. 항상 통과하는 의미 없는 테스트를 만들지 않고 실제 동작하는 코드만 쓰려는 원칙에 맞췄다. 영향받는 AC: AC-5, AC-8 |
+| 9 | 리뷰 반영: `CZstdTests`에 압축 블록 프레임 케이스를 추가(AC-5, AC-8 확인 강화), D-2의 병행 기간 설명 정정(UserDefaults 초기화와 자동 재연결), `apps/web`을 제외에 명시, AC-11 표 서식과 제목 정정 | 코드 리뷰(PR #14)에서 원본 블록 프레임만으로는 해독 경로가 검증되지 않고, "시작 시 settings.json을 바꾸지 않는다"는 서술이 조건부로만 맞는다는 지적을 확인했다. 영향받는 AC: AC-5, AC-6, AC-8, AC-11 |
