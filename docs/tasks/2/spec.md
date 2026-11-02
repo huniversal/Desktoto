@@ -4,7 +4,7 @@
 
 - 이슈: #2 / https://github.com/huniversal/Desktoto/issues/2
 - 브랜치: `feat/architecture-setup/#2`
-- specRevision: 7
+- specRevision: 8
 - 대상 ai-run 원본: 전체
   - `~/Desktop/ai-run/Package.swift`
   - `~/Desktop/ai-run/Sources/AiRun/*.swift` (13개 파일)
@@ -78,6 +78,10 @@
   - 한 기능만 쓰는 시스템 서비스(알림 센터, 로그인 항목, 소리)는 그 기능 모듈 안에 프로토콜을 둔다. `UserDefaults`는 이미 주입 가능하므로 별도 프로토콜을 만들지 않는다.
   - 판정과 파싱은 경계에서 분리해 순수 함수로 둔다. 프로토콜은 `Sendable`로 선언하고 오래 떠 있는 프로세스의 출력은 `AsyncStream`으로 준다.
   - 테스트: 합성 데이터와 `TestSupport`의 가짜 구현(`InMemoryFileSystem`, `FixedTimeSource`, `ScriptedProcessRunner`, `RecordingAppleScriptRunner`)을 쓰고, Live 구현은 임시 폴더에서만 통합 테스트한다. 외부 앱 제어는 실제 Mac에서 수동 검증한다. 프레임워크는 현재 골격의 Swift Testing을 유지한다.
+- 골격과 스크립트(D-8, D-9 확정, 사용자가 추천안을 수락):
+  - 훅과 statusLine 스크립트(`ai-run-hook.sh`, `ai-run-statusline.sh`)는 `apps/macos/Resources`에 두고 앱 번들 `Contents/Resources`에 포함한 뒤 설치 시 `~/.ai-run/bin`으로 복사한다(원본과 같은 방식). 이식과 설치 로직은 #7에서 구현하고, 이 이슈에서는 방향만 정한다.
+  - 골격의 각 타깃은 컴파일되는 최소 소스를 가진다. 의미 없는 테스트(항상 통과하는 단언)는 만들지 않는다. 모듈의 테스트 타깃은 그 모듈에 실제 코드가 생기는 이슈에서 코드와 함께 만든다.
+  - 골격에서 `swift test`가 실제로 실행됨은 `CZstdTests`로 확인한다. 합성 zstd 프레임(매직, 단일 세그먼트 헤더, 원본 블록으로 만든 14바이트)을 `CZstd`로 해독해 원문과 비교하는 실제 테스트이고, 벤더링이 제대로 되었는지(AC-5)도 같이 확인한다. #1의 임시 `DesktotoCoreTests`는 제거한다.
 - 상태와 데이터 흐름: N/A. 문서와 빌드 골격 작업이라 런타임 상태가 없다. 런타임 흐름의 원본 사실은 `overview.md`에 있다.
 - 선택한 방식과 이유: 작업 순서를 "개요 문서, 결정, `architecture.md`, `Package.swift` 골격"으로 둔다.
   언어 모드, 최소 macOS, zstd, 이름이 `Package.swift`의 전제이기 때문에 결정이 끝나기 전에는 골격을 만들지 않는다.
@@ -107,10 +111,10 @@
 | AC-2 | `architecture.md`의 모듈 표와 의존 방향 도표를 읽고, `Package.swift`의 타깃 의존을 대조 | 요구한 5개 구분이 모두 있고 순환 의존이 없다 |
 | AC-3 | `architecture.md`의 경계 절 확인 | 4종 경계마다 프로토콜 이름, 대체 방식, 테스트 방법이 있다 |
 | AC-4 | `architecture.md`와 `Package.swift`의 `platforms`, `swiftLanguageModes` 대조 | 두 곳의 값이 같다 |
-| AC-5 | `architecture.md`의 zstd 절과 `Package.swift`의 zstd 관련 타깃, 의존 대조 | 결정이 반영되어 있고, 벤더링을 유지하면 라이선스 파일이 남아 있다 |
+| AC-5 | `architecture.md`의 zstd 절과 `Package.swift`의 zstd 관련 타깃, 의존 대조. `swift test`에서 `CZstdTests` 확인 | 결정이 반영되어 있고, 벤더링을 유지하면 라이선스 파일이 남아 있다. 합성 프레임 해독 테스트가 통과한다 |
 | AC-6 | `architecture.md`의 이름 절 확인 | 4가지 항목이 모두 확정되어 있고 호환성 영향 절이 있다 |
 | AC-7 | `(cd apps/macos && swift build)` 실행 | 오류 없이 종료한다. 결과를 PR에 붙인다 |
-| AC-8 | `(cd apps/macos && swift test)` 실행 | 실패 없이 종료한다. 실행된 테스트 수를 PR에 적는다 |
+| AC-8 | `(cd apps/macos && swift test)` 실행 | 실패 없이 종료하고 `CZstdTests`가 실행된다. 실행된 테스트 수를 PR에 적는다 |
 | AC-9 | `architecture.md`와 `Package.swift`를 나란히 읽고 diff 검토 | 불일치 항목이 없다 |
 | AC-10 | `grep -rn $'\xc2\xb7' docs/reverse docs/architecture.md docs/tasks/2` | 결과 없음 |
 
@@ -132,9 +136,9 @@
 | D-5 | zstd 처리 | 확정됨(specRevision 5): 벤더링 `CZstd` 유지. Claude 데스크탑 앱 캐시 해독(`ClaudeDesktopUsage.swift`)용이다 | 해결 |
 | D-6 | 모듈 구성안 | 확정됨(specRevision 6): 설계 결정의 "모듈 구성" 참고. 사용자가 추천안을 수락했다 | 해결 |
 | D-7 | 외부 경계 프로토콜 설계 | 확정됨(specRevision 7): 설계 결정의 "외부 경계" 참고. 사용자가 추천안을 수락했다 | 해결 |
-| D-8 | 훅과 statusLine 스크립트의 위치 | 앱 번들 리소스로 포함하고 설치 시 복사하는 방식 등. 구현은 #7에서 하되 방향은 이 이슈에서 정하는 것이 좋다 | 막지 않음 (`architecture.md`에 방향만 기록) |
-| D-9 | 골격에 스모크 테스트 포함 여부 | 각 테스트 타깃에 최소 테스트 1개를 두어 `swift test`가 실제로 실행됨을 확인할지, 빈 타깃만 둘지 | 막지 않음 |
-| D-10 | 이슈 #2 본문 보완 | 마이그레이션 여부, 언어 모드 문구 구체화, 스크립트 위치, 작업 순서를 이슈 본문에 반영할지 | 막지 않음 |
+| D-8 | 훅과 statusLine 스크립트의 위치 | 확정됨(specRevision 8): 설계 결정의 "골격과 스크립트" 참고 | 해결 |
+| D-9 | 골격에 스모크 테스트 포함 여부 | 확정됨(specRevision 8): 설계 결정의 "골격과 스크립트" 참고. 사용자가 추천안을 수락했고 추천 내용을 구체화했다 | 해결 |
+| D-10 | 이슈 #2 본문 보완 | 확정됨(specRevision 8): 이슈 본문은 이번 작업에서 수정하지 않는다. 완료한 항목의 체크는 PR을 올리기 전에 사용자에게 확인받고 한다 | 해결 |
 | D-11 | 번들과 빌드 방식 | 해결: #1에서 `build-app.sh`(빌드, 서명)와 `install-app.sh`(설치, 실행)로 분리했다. 이 이슈는 이름 기본값만 갱신한다 | 해결 |
 | D-12 | 패키지 위치 | 해결: #1에서 확정한 모노레포 구조에 따라 `apps/macos/Package.swift`. 이 이슈는 #1의 임시 골격을 교체한다 | 해결 |
 
@@ -149,3 +153,4 @@
 | 5 | D-5 확정(벤더링 `CZstd` 유지) | 사용자가 합의했다. 영향받는 AC: AC-5, AC-9 |
 | 6 | D-6 확정(기능별 모듈 11개, 접두어 없는 이름, 의존 규칙 3가지) | 사용자가 추천안을 수락했다. 영향받는 AC: AC-2, AC-9 |
 | 7 | D-7 확정(`Boundaries` 프로토콜 5개, 단일 기능 서비스는 해당 모듈에 배치, 테스트 전략) | 사용자가 추천안을 수락했다. 영향받는 AC: AC-3 |
+| 8 | D-8, D-9, D-10 확정. D-9는 "각 테스트 타깃에 최소 1개"에서 "실제 코드가 있는 `CZstdTests`만 골격에 둔다"로 구체화 | 사용자가 추천안을 수락했다. 항상 통과하는 의미 없는 테스트를 만들지 않고 실제 동작하는 코드만 쓰려는 원칙에 맞췄다. 영향받는 AC: AC-5, AC-8 |

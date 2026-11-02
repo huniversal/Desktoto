@@ -55,8 +55,8 @@ apps/macos/
 │   ├── TestSupport/      테스트용 가짜 구현
 │   └── Desktoto/         실행 파일(앱 진입점, 조립)
 ├── Tests/
-│   └── 모듈이름Tests/    모듈마다 하나
-├── Resources/            앱 번들에 복사할 스크립트(8장의 보류 항목 참고)
+│   └── 모듈이름Tests/    그 모듈에 코드가 생기는 이슈에서 만든다(골격 단계에는 CZstdTests만 있다)
+├── Resources/            앱 번들에 복사할 스크립트(8장 참고)
 └── scripts/              패키징 스크립트(#1)
 ```
 
@@ -169,7 +169,8 @@ CZstd  ◄── UsageMonitoring
 | Live 구현 | 임시 폴더에서만 통합 테스트한다. 실제 `~/.claude`, `~/.ai-run`은 읽거나 쓰지 않는다. 사용자 환경의 파일을 수정하는 동작(설정, 훅 설치)은 테스트 준비 과정에서 실행하지 않는다 |
 | 외부 앱 제어 | iTerm2, Terminal, Orca 탭 이동, 알림, 로그인 항목은 실제 Mac에서 수동 검증하고 결과를 PR에 기록한다 |
 | 프레임워크 | Swift Testing(`import Testing`) |
-| 모듈 경계 | 모듈마다 `모듈이름Tests` 테스트 타깃을 둔다 |
+| 모듈 경계 | 모듈마다 `모듈이름Tests` 테스트 타깃을 두되, 그 모듈에 실제 코드가 생기는 이슈에서 코드와 함께 만든다. 항상 통과하는 의미 없는 테스트는 만들지 않는다 |
+| 골격 단계 | `CZstdTests`가 합성 zstd 프레임(14바이트)을 해독해 원문과 비교한다. 이것으로 `swift test`가 실제로 실행되고 벤더링이 올바른지 확인한다 |
 | 환경 | 로컬 Mac(macOS 27.0.1, Xcode 27.1)은 최소 버전(26)보다 높다. 최소 버전 호환은 CI(macos-26, Xcode 26.6)가 확인한다 |
 
 ## 7. 동시성
@@ -182,15 +183,11 @@ Swift 6 모드이므로 컴파일러가 데이터 레이스를 검사한다. 세
 - `@unchecked Sendable`은 근거 없이 쓰지 않는다. AppKit 격리 때문에 막히는 타깃은 `swiftLanguageModes`를 타깃 단위로 낮출 수 있고, 그 경우 이유를 이 문서에 적는다.
 - 원본은 `async/await`, `@MainActor`, `Sendable` 없이 GCD, `NSLock`, `Timer`로 구성되어 있어 재설계가 필요하다(특히 `CodexRateLimitReader`).
 
-## 8. 보류 항목
+## 8. 스크립트와 리소스
 
-[작업 명세](tasks/2/spec.md)의 미결정 사항 중 이 문서에 확정으로 적지 않은 것이다.
-
-| 번호 | 내용 | 비고 |
-| --- | --- | --- |
-| D-8 | 훅과 statusLine 스크립트의 위치 | 구현은 #7. 원본처럼 앱 번들 리소스에 포함해 설치 시 `~/.ai-run/bin`에 복사하는 방향을 검토 |
-| D-9 | 골격의 스모크 테스트 포함 여부 | `swift test`가 테스트를 실제로 실행하는지 확인하기 위해 |
-| D-10 | 이슈 #2 본문 보완 | 이슈 본문은 사용자가 확정 후 수정 |
+훅과 statusLine 스크립트(`ai-run-hook.sh`, `ai-run-statusline.sh`)는 `apps/macos/Resources`에 두고 앱 번들 `Contents/Resources`에 포함한다.
+앱이 Claude Code 설정에 연동을 넣을 때 `~/.ai-run/bin`으로 복사한다(원본과 같은 방식).
+이식과 설치 로직은 #7에서 구현한다. 번들 구성은 `scripts/build-app.sh`의 `RESOURCES_DIR` 옵션을 쓴다.
 
 ## 9. 이후 이슈로 넘기는 것
 
