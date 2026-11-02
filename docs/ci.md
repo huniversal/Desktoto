@@ -82,9 +82,12 @@ sh scripts/build-app.sh
 sh scripts/install-app.sh
 ```
 
+> 주의: `install-app.sh`는 `~/Applications/<앱 이름>.app`을 지우고 덮어쓴다. 대상 경로에 번들 식별자가 다른 앱이 이미 있으면(예: 같은 이름 `Desktoto.app`으로 설치된 원본 `ai-run` 앱)
+> 아무것도 지우지 않고 오류로 중단한다. 이 기간에는 `build-app.sh`만 실행하고 `apps/macos/build/Desktoto.app`을 직접 연다.
+
 값은 환경 변수로 바꾼다: `APP_NAME`, `EXECUTABLE_NAME`, `BUNDLE_ID`, `VERSION`, `BUILD_NUMBER`, `RESOURCES_DIR`.
-`Info.plist`는 `__APP_NAME__` 같은 자리 표시자가 있는 템플릿이다. 앱 이름과 번들 식별자는 #2에서 확정하며,
-그때 스크립트 기본값만 바꾸면 된다. `RESOURCES_DIR`를 지정하면 그 폴더가 번들의 `Contents/Resources`로 복사된다(훅 스크립트 포함은 #7).
+`Info.plist`는 `__APP_NAME__` 같은 자리 표시자가 있는 템플릿이다. 앱 이름과 번들 식별자는 #2에서 확정했고(`Desktoto`, `com.huniverse.desktoto`),
+스크립트 기본값이 이 값이다. 원본 `ai-run` 앱(`com.huniverse.airun`)과 별개의 앱으로 취급되도록 원본과 다른 번들 식별자를 유지한다. `RESOURCES_DIR`를 지정하면 그 폴더가 번들의 `Contents/Resources`로 복사된다(훅 스크립트 포함은 #7).
 
 ## 릴리스
 
