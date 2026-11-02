@@ -16,7 +16,7 @@
 | zstd | 벤더링한 `CZstd` 유지 (v1.5.7, 해독부만) |
 | 패키지 위치 | `apps/macos` (모노레포) |
 | 모듈 구성 | 기능별 모듈 11개와 보조 타깃 2개 (3장) |
-| 외부 경계 | `Boundaries`의 프로토콜 5개와 기능 모듈 안의 단일 기능 서비스 (5장) |
+| 외부 경계 | `Boundaries`의 프로토콜 6개와 기능 모듈 안의 단일 기능 서비스 (5장) |
 
 ### 이름과 호환성
 
@@ -136,11 +136,13 @@ CZstd  ◄── UsageMonitoring
 
 ### 공용 경계 (`Boundaries`)
 
-두 개 이상의 기능이 쓰는 경계만 둔다. 이름에 `Protocol` 접미사는 붙이지 않는다.
+기본적으로 두 개 이상의 기능이 쓰는 경계를 둔다. 이름에 `Protocol` 접미사는 붙이지 않는다.
+설정 파일 쓰기는 #7에서 기존 읽기 경계에 쓰기 권한을 넓히지 않고 공용 가짜 구현으로 실패를 검증하기 위해 별도로 둔다.
 
 | 프로토콜 | 역할 | 쓰는 모듈 |
 | --- | --- | --- |
-| `FileSystem` | 읽기, 끝부분 읽기, 목록(경로, 수정 시각, 종류), 존재 확인, 원자적 쓰기, 복사, 삭제, 홈 폴더. `FileManager`를 그대로 흉내 내지 않고 필요한 동작만 굵게 정의한다 | `SessionMonitoring`, `UsageMonitoring`, `ClaudeIntegration`, `TerminalIntegration`(Claude 터미널 세션 생존 확인에 쓰는 `~/.claude/sessions/*.json`) |
+| `FileSystem` | 읽기, 끝부분 읽기, 목록과 시각, 폴더 존재 확인, 홈 폴더 | `SessionMonitoring`, `UsageMonitoring`, `TerminalIntegration`(Claude 터미널 세션 생존 확인에 쓰는 `~/.claude/sessions/*.json`) |
+| `SettingsFileSystem` | 읽기 실패와 파일 없음 구별, 제한 읽기, 링크 해석, 원자적 쓰기와 덮어쓰지 않는 복사 | `ClaudeIntegration` |
 | `TimeSource` | 현재 시각(`now`). Swift 표준의 `Clock`과 이름이 겹치지 않게 한다. `Timer` 같은 스케줄링은 `Desktoto` 앱이 맡는다 | 거의 전부 |
 | `ProcessRunner` | 짧은 명령 실행과 출력 수집, 프로세스 생존 확인. 장기 실행은 아래 보조 경계로 분리 | `TerminalIntegration`(`ps`, `lsof`, Orca CLI, 생존 확인), `UsageMonitoring`(`codex app-server`) |
 | `AppleScriptRunner` | 스크립트 문자열 실행 | `TerminalIntegration`, `Preferences` |
@@ -198,14 +200,17 @@ Swift 6 모드이므로 컴파일러가 데이터 레이스를 검사한다. 세
 
 훅과 statusLine 스크립트(`ai-run-hook.sh`, `ai-run-statusline.sh`)는 `apps/macos/Resources`에 두고 앱 번들 `Contents/Resources`에 포함한다.
 앱이 Claude Code 설정에 연동을 넣을 때 `~/.ai-run/bin`으로 복사한다(원본과 같은 방식).
-이식과 설치 로직은 #7에서 구현한다. 번들 구성은 `scripts/build-app.sh`의 `RESOURCES_DIR` 옵션을 쓴다.
+이식과 설치 로직은 #7의 `ClaudeIntegration`이 맡는다. 번들 구성은 `scripts/build-app.sh`의 `RESOURCES_DIR` 옵션을 쓰며 기본값은 `Resources`다.
+설정 쓰기는 `Boundaries/SettingsFileSystem.swift`의 별도 경계로 분리한다. 기존 읽기 전용 `FileSystem`은 유지한다.
+`ClaudeIntegrationTests`는 설정 변환, 백업과 쓰기 실패, 임시 HOME에서 스크립트 실행을 검증한다.
+자동 연결 허용 여부의 영속 저장과 앱 조립은 #11에서 맡는다. false이면 시작 연결은 파일을 조회하거나 변경하지 않는다.
 
 ## 9. 이후 이슈로 넘기는 것
 
 - 모듈별 타입과 프로토콜의 상세 시그니처: 각 기능 이슈(#4 이후)의 명세
 - 디자인 토큰 값과 컴포넌트 목록: #3과 `docs/design-system.md`
 - 캐릭터 프레임 규칙, 패널 레이아웃 상수, 캐시와 JSON-RPC 세부 동작: 해당 기능 이슈에서 원본을 다시 읽고 `docs/reverse/`에 추가한다([원본 동작 개요](reverse/overview.md) 9장)
-- 원본에서 의심되는 동작(미검증): statusLine을 다른 명령이 감싼 상태에서 원본의 해제 로직이 따옴표 구조를 잘못 풀어 statusLine이 깨질 수 있다. 코드를 읽은 추정이고 실행으로 확인하지 않았다. #7에서 확인한 뒤 결정한다.
+- 원본 statusLine을 외부 명령이 감싼 경우 해제 시 바깥 명령이 손실됨을 #7에서 합성 실행으로 확인했다. 승인된 방식은 정확한 생성 형식만 복원하고 나머지는 설정 전체를 보존하며 복원 불가를 알리는 것이다. 상세 입력은 `reverse/claude-integration.md`에 기록한다.
 
 ## 10. 원본 파일과 모듈 대응
 
