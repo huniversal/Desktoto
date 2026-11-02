@@ -4,7 +4,7 @@
 
 - 이슈: #2 / https://github.com/huniversal/Desktoto/issues/2
 - 브랜치: `feat/architecture-setup/#2`
-- specRevision: 4
+- specRevision: 5
 - 대상 ai-run 원본: 전체
   - `~/Desktop/ai-run/Package.swift`
   - `~/Desktop/ai-run/Sources/AiRun/*.swift` (13개 파일)
@@ -62,6 +62,9 @@
   AppKit 격리 때문에 막히는 타깃은 `swiftLanguageModes`를 타깃 단위로 낮출 수 있고, 그 경우 이유를 `architecture.md`에 적는다.
 - 최소 macOS(D-4 확정, 사용자가 위임): macOS 26.0을 유지한다. 원본이 쓰는 Liquid Glass(`GlassEffectContainer`, `glassEffect`, `Glass`)가 26 API이고 Liquid Glass 단계 설정이 제품 기능이다.
   `Package.swift`의 `platforms`와 `Info.plist`의 `LSMinimumSystemVersion`을 같은 값으로 맞춘다. 개발 Mac은 macOS 27.0.1, Xcode 27.1이라 최소 버전 호환은 CI(macos-26, Xcode 26.6)로 확인하고 검증 기록에 로컬 버전을 적는다.
+- zstd(D-5 확정, 사용자 합의): 벤더링한 `CZstd`를 유지한다. 용도는 Claude 데스크탑 앱 캐시 응답의 해독뿐이고 쓰는 함수는 스트리밍 해독 5개(`ZSTD_createDStream`, `ZSTD_initDStream`, `ZSTD_DStreamOutSize`, `ZSTD_decompressStream`, `ZSTD_freeDStream`)다.
+  사용자 환경과 외부 패키지에 의존하지 않고 CI에서 추가 설정 없이 빌드되며 원본과 같은 zstd v1.5.7을 쓰기 위해서다.
+  `apps/macos/Sources/CZstd`에 해독부와 `LICENSE`를 두고 `ZSTD_DISABLE_ASM`, `DEBUGLEVEL=0` 설정을 유지한다. 이 파일은 `ai-run` 앱 코드가 아니라 제3자 라이브러리(BSD)이므로 "코드를 그대로 복사하지 않는다" 원칙의 대상이 아니다.
 - 상태와 데이터 흐름: N/A. 문서와 빌드 골격 작업이라 런타임 상태가 없다. 런타임 흐름의 원본 사실은 `overview.md`에 있다.
 - 선택한 방식과 이유: 작업 순서를 "개요 문서, 결정, `architecture.md`, `Package.swift` 골격"으로 둔다.
   언어 모드, 최소 macOS, zstd, 이름이 `Package.swift`의 전제이기 때문에 결정이 끝나기 전에는 골격을 만들지 않는다.
@@ -113,7 +116,7 @@
 | D-2 | 데이터 폴더 `~/.ai-run`과 스크립트 이름 | 확정됨(specRevision 3): `~/.ai-run`, `ai-run-hook.sh`, `ai-run-statusline.sh` 유지. 이름 변경은 동등성 검증 후 별도 이슈 | 해결 |
 | D-3 | Swift 언어 모드 | 확정됨(specRevision 4): Swift 6 모드, `swift-tools-version:6.0`. 사용자가 판단을 위임했다 | 해결 |
 | D-4 | 최소 macOS 버전 | 확정됨(specRevision 4): macOS 26.0 유지. 사용자가 판단을 위임했다 | 해결 |
-| D-5 | zstd 처리 | 벤더링 `CZstd` 유지, 시스템 `libzstd`, 외부 Swift 패키지. Claude 데스크탑 앱 캐시 해독(`ClaudeDesktopUsage.swift`)용이다 | 막음 |
+| D-5 | zstd 처리 | 확정됨(specRevision 5): 벤더링 `CZstd` 유지. Claude 데스크탑 앱 캐시 해독(`ClaudeDesktopUsage.swift`)용이다 | 해결 |
 | D-6 | 모듈 구성안 | 도메인 모델, 외부 경계, 기능, 디자인 시스템, 앱을 어떤 타깃으로 나누고 어떤 방향으로 의존시킬지 | 막음 |
 | D-7 | 외부 경계 프로토콜 설계 | 파일 시스템, 프로세스, 시간, AppleScript 각각의 프로토콜 범위와 대체 구현 방식, 합성 데이터 테스트 전략 | 막음 |
 | D-8 | 훅과 statusLine 스크립트의 위치 | 앱 번들 리소스로 포함하고 설치 시 복사하는 방식 등. 구현은 #7에서 하되 방향은 이 이슈에서 정하는 것이 좋다 | 막지 않음 (`architecture.md`에 방향만 기록) |
@@ -130,3 +133,4 @@
 | 2 | D-1 확정, 패키지 위치를 `apps/macos`로 변경, AC-11 추가, D-2에 병행 설치 고려 추가 | 사용자가 이름 결정에 합의했고, #1이 병합되어 모노레포 구조와 임시 골격, 패키징 스크립트가 들어왔다. 영향받는 AC: AC-7, AC-8, AC-11 |
 | 3 | D-2 확정(`~/.ai-run`과 스크립트 이름 유지), 제외 항목에 설치된 `ai-run` 앱과 사용자 설정 불변 조건 추가 | 동작을 원본과 같게 하고 동등성 검증 입력을 맞추기 위해 사용자가 합의했다. 영향받는 AC: AC-6(이름 항목에 데이터 폴더와 스크립트가 유지로 기록됨) |
 | 4 | D-3 확정(Swift 6 모드, tools-version 6.0), D-4 확정(macOS 26.0 유지) | 사용자가 두 결정을 위임했다. 영향받는 AC: AC-4, AC-7, AC-9 |
+| 5 | D-5 확정(벤더링 `CZstd` 유지) | 사용자가 합의했다. 영향받는 AC: AC-5, AC-9 |
