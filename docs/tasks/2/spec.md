@@ -4,7 +4,7 @@
 
 - 이슈: #2 / https://github.com/huniversal/Desktoto/issues/2
 - 브랜치: `feat/architecture-setup/#2`
-- specRevision: 9
+- specRevision: 10
 - 대상 ai-run 원본: 전체
   - `~/Desktop/ai-run/Package.swift`
   - `~/Desktop/ai-run/Sources/AiRun/*.swift` (13개 파일)
@@ -32,6 +32,7 @@
 - 이름 정리 결정 (앱 이름, 번들 식별자, 실행 파일명, 데이터 폴더 `~/.ai-run` 유지 여부)
 - `apps/macos/Package.swift`와 타깃, 테스트 타깃 골격 생성 (#1이 CI 검증용으로 둔 임시 골격 `Desktoto`, `DesktotoCore`, `DesktotoCoreTests`를 교체)
 - 확정한 이름을 #1이 만든 `apps/macos/scripts/build-app.sh`의 기본값, `apps/macos/scripts/Info.plist`, `docs/ci.md`에 반영
+- `apps/macos/scripts/install-app.sh`가 설치 대상 경로에 번들 식별자가 다른 앱이 있으면 덮어쓰지 않고 중단하는 확인 추가(코드 리뷰 지적 CR-001, 사용자 승인)
 
 ### 제외
 
@@ -104,6 +105,7 @@
 - AC-9: `docs/architecture.md`의 결정과 `Package.swift`의 내용(플랫폼, 타깃 이름, 의존)이 서로 일치한다.
 - AC-10: 이 이슈에서 만들거나 고친 문서에 가운데점(U+00B7)이 없다.
 - AC-11: `apps/macos/scripts/build-app.sh`의 기본값(`APP_NAME`, `EXECUTABLE_NAME`, `BUNDLE_ID`)과 `docs/ci.md`의 이름 설명이 확정한 이름과 일치하고, 새 골격으로 `sh scripts/build-app.sh`가 `.app`을 만들어 `codesign --verify`를 통과한다.
+- AC-12: `install-app.sh`는 설치 대상에 번들 식별자가 다른 앱이 있으면 아무것도 지우지 않고 오류 종료하고, 같은 식별자이거나 대상이 없으면 기존처럼 설치한다.
 
 ## 검증 방법
 
@@ -120,6 +122,7 @@
 | AC-9 | `architecture.md`와 `Package.swift`를 나란히 읽고 diff 검토 | 불일치 항목이 없다 |
 | AC-10 | `grep -rn $'\xc2\xb7' docs/reverse docs/architecture.md docs/tasks/2` | 결과 없음 |
 | AC-11 | `(cd apps/macos && sh scripts/build-app.sh)` 후 `codesign --verify`, `plutil -p`로 번들 ID 확인. 설치와 실행은 하지 않는다 | 검증 통과, `CFBundleIdentifier`가 `com.huniverse.desktoto` |
+| AC-12 | 임시 `HOME` 디렉터리와 가짜 `open`, `pkill`(PATH 앞에 둠)로 `install-app.sh`를 세 경우에 실행한다: 다른 번들 ID가 설치됨, 같은 번들 ID가 설치됨, 대상 없음. 실제 `~/Applications`는 사용하지 않는다 | 첫째는 오류 종료(종료 코드 1)하고 대상 앱이 남아 있다. 나머지 둘은 설치 후 종료 코드 0 |
 
 문서와 골격 작업이라 앱 실행과 실기기 동작 검증은 N/A다. 이유는 PR에 적는다.
 
@@ -156,3 +159,4 @@ D-1부터 D-12가 모두 해결되어 구현을 막는 미결정은 없다. 각 
 | 7 | D-7 확정(`Boundaries` 프로토콜 5개, 단일 기능 서비스는 해당 모듈에 배치, 테스트 전략) | 사용자가 추천안을 수락했다. 영향받는 AC: AC-3 |
 | 8 | D-8, D-9, D-10 확정. D-9는 "각 테스트 타깃에 최소 1개"에서 "실제 코드가 있는 `CZstdTests`만 골격에 둔다"로 구체화 | 사용자가 추천안을 수락했다. 항상 통과하는 의미 없는 테스트를 만들지 않고 실제 동작하는 코드만 쓰려는 원칙에 맞췄다. 영향받는 AC: AC-5, AC-8 |
 | 9 | 리뷰 반영: `CZstdTests`에 압축 블록 프레임 케이스를 추가(AC-5, AC-8 확인 강화), D-2의 병행 기간 설명 정정(UserDefaults 초기화와 자동 재연결), `apps/web`을 제외에 명시, AC-11 표 서식과 제목 정정 | 코드 리뷰(PR #14)에서 원본 블록 프레임만으로는 해독 경로가 검증되지 않고, "시작 시 settings.json을 바꾸지 않는다"는 서술이 조건부로만 맞는다는 지적을 확인했다. 영향받는 AC: AC-5, AC-6, AC-8, AC-11 |
+| 10 | `install-app.sh`의 덮어쓰기 방지 확인을 이 이슈에 포함하고 AC-12를 추가 | 리뷰 지적 CR-001에서 새 앱 이름이 설치된 원본 앱과 같아 충돌하는 경로가 이 이슈의 이름 결정으로 생겼다. 사용자가 이 PR에 넣기로 했다. 영향받는 AC: AC-12 |

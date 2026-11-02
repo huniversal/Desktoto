@@ -34,7 +34,7 @@
 
 작업이 끝날 때까지 사용자가 쓰는 설치된 `ai-run` 앱, `~/Desktop/ai-run` 소스, `~/.ai-run`, `~/.claude/settings.json`을 변경하지 않는다.
 
-- `apps/macos/scripts/install-app.sh`는 `~/Applications/Desktoto.app`을 지우고 덮어쓰는데, 원본 앱이 같은 경로에 설치되어 있다. 실행하지 않는다.
+- `apps/macos/scripts/install-app.sh`는 `~/Applications/Desktoto.app`을 지우고 덮어쓰는데, 원본 앱이 같은 경로에 설치되어 있다. 번들 식별자가 다르면 스크립트가 중단하도록 막아 두었지만, 이 기간에는 실행하지 않는다.
   새 앱은 `apps/macos/build/Desktoto.app`을 직접 연다.
 - 테스트는 실제 `~/.claude`, `~/.ai-run`을 읽거나 쓰지 않는다(임시 폴더와 가짜 구현만 쓴다).
 
