@@ -20,16 +20,23 @@ echo "1/4 릴리스 빌드"
 swift build -c release --product "$EXECUTABLE_NAME"
 BIN_DIR=$(swift build -c release --show-bin-path)
 
+# plist 값으로 넣을 문자열을 XML 내용으로 안전하게 바꾸고(& < >), sed 치환 문자열에서도 그대로 쓰이게 한다(\ & |).
+convert_to_plist_value() {
+  printf '%s' "$1" \
+    | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' \
+    | sed -e 's/[\\&|]/\\&/g'
+}
+
 echo "2/4 앱 패키지 구성"
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 cp "$BIN_DIR/$EXECUTABLE_NAME" "$APP_DIR/Contents/MacOS/$EXECUTABLE_NAME"
 sed \
-  -e "s|__APP_NAME__|$APP_NAME|g" \
-  -e "s|__BUNDLE_ID__|$BUNDLE_ID|g" \
-  -e "s|__EXECUTABLE_NAME__|$EXECUTABLE_NAME|g" \
-  -e "s|__VERSION__|$VERSION|g" \
-  -e "s|__BUILD_NUMBER__|$BUILD_NUMBER|g" \
+  -e "s|__APP_NAME__|$(convert_to_plist_value "$APP_NAME")|g" \
+  -e "s|__BUNDLE_ID__|$(convert_to_plist_value "$BUNDLE_ID")|g" \
+  -e "s|__EXECUTABLE_NAME__|$(convert_to_plist_value "$EXECUTABLE_NAME")|g" \
+  -e "s|__VERSION__|$(convert_to_plist_value "$VERSION")|g" \
+  -e "s|__BUILD_NUMBER__|$(convert_to_plist_value "$BUILD_NUMBER")|g" \
   scripts/Info.plist > "$APP_DIR/Contents/Info.plist"
 plutil -lint "$APP_DIR/Contents/Info.plist"
 if [ -n "$RESOURCES_DIR" ]; then
