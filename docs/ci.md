@@ -85,9 +85,10 @@ Gatekeeper 경고가 나오며, 공증은 하지 않는다. 릴리스 job만 저
 ## 로컬 확인
 
 ```bash
-# 빌드와 테스트
-cd apps/macos && swift build && swift test
+# 빌드와 테스트 (서브셸에서 실행해 현재 위치를 바꾸지 않는다)
+(cd apps/macos && swift build && swift test)
 
+# 아래 두 명령은 저장소 루트에서 실행한다
 # 변경 감지 (base와 head 커밋을 지정)
 BASE_SHA=$(git merge-base origin/develop HEAD) HEAD_SHA=HEAD bash .github/scripts/detect-changes.sh
 
