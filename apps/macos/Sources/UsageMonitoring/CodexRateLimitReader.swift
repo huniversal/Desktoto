@@ -32,15 +32,24 @@ public actor CodexRateLimitReader {
         fileSystem: any FileSystem = LiveFileSystem(),
         launcher: any ProcessLauncher = SystemProcessLauncher(),
         timeSource: any TimeSource = SystemTimeSource(),
-        sleep: @escaping @Sendable (TimeInterval) async throws -> Void = { try await Task.sleep(for: .seconds($0)) },
-        onUpdate: @escaping @MainActor @Sendable () async -> Void = {}
+        sleep: (@Sendable (TimeInterval) async throws -> Void)? = nil,
+        onUpdate: (@MainActor @Sendable () async -> Void)? = nil
     ) {
         files = fileSystem
         self.launcher = launcher
         time = timeSource
-        self.sleep = sleep
-        self.onUpdate = onUpdate
+        self.sleep = sleep ?? Self.wait
+        self.onUpdate = onUpdate ?? Self.ignoreUpdate
     }
+
+    // 공개 기본 인자의 async 클로저가 클라이언트 모듈마다 생성되는 것을 피한다.
+    // Swift 이슈: https://github.com/swiftlang/swift/issues/92017
+    private static func wait(seconds: TimeInterval) async throws {
+        let clock = ContinuousClock()
+        try await clock.sleep(until: clock.now.advanced(by: .seconds(seconds)))
+    }
+
+    @MainActor private static func ignoreUpdate() async {}
 
     public func setEnabled(_ value: Bool) {
         enabled = value

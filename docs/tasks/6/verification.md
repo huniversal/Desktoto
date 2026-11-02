@@ -46,3 +46,12 @@
 - `CodexRateLimitReader`가 응답 종류를 추적하고 수신 처리 안에서 값 저장, 요청 완료와 유휴 종료 예약을 끝낸 뒤 continuation을 재개하도록 수정했다. 이전 refresh가 뒤늦게 값을 저장하지 않는다.
 - `ResponseOrderingTests` 두 개로 응답 10%와 후속 알림 60%가 같은 조각인 경우 최종 60% 유지, 응답 10% 직후 EOF인 경우 10% 보존을 검증했다.
 - 수정 후 `swift build` 성공, 전체 테스트 151개 통과, 실제 네 소스의 원본 비교도 다시 일치했다.
+
+
+## CI 네이티브 실행 크래시 보완
+
+- PR #18 최초 CI의 Xcode 26.6 환경에서 컴파일은 성공했으나 테스트 프로세스가 signal 6과 `freed pointer was not the last allocation` 메시지로 종료됐다. 로컬 기본 실행에서는 드러나지 않았던 크래시를 `swift test --build-system native`로 동일하게 재현했다.
+- 공개 init의 async 기본 클로저를 optional nil 기본값으로 바꾸고, 기본 비동기 함수는 모듈 내부에서 제공하도록 변경했다. 기본 대기는 `ContinuousClock.sleep(until:)`로 구현했다. 시간 간격과 취소, 메인 actor 콜백 계약은 유지한다.
+- 참고: [Swift #92017](https://github.com/swiftlang/swift/issues/92017), [Swift #86204](https://github.com/swiftlang/swift/issues/86204). 유사한 컴파일과 링크 문제의 우회 방식을 적용한 것이며, CI의 정확한 컴파일러 내부 원인까지 확정한 것은 아니다.
+- 변경 후 네이티브 테스트는 빌드를 포함한 1회와 같은 바이너리를 이용한 추가 3회 모두 151개 통과했다. 기본 `swift build`와 `swift test`도 통과했다. 로컬 도구는 native 옵션 폐기 예정 경고를 표시하므로 이 옵션은 CI 실행 방식의 재현 확인에만 사용한다.
+- 서브에이전트의 수정 diff 재검토에서 새 결함 없음. 원격 CI 결과는 PR 검사로 확인한다.
