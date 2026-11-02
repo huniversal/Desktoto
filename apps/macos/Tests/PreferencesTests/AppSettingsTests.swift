@@ -23,7 +23,8 @@ struct AppSettingsTests {
         #expect(settings.theme == .system)
         #expect(settings.glassStyle == .regular)
         #expect(settings.sendsNotifications)
-        #expect(settings.connectsClaudeCode)
+        // 원본은 true였다. 새 앱은 최초 실행에서 자동 연결하지 않는다(#11 D-1).
+        #expect(!settings.connectsClaudeCode)
         #expect(settings.fetchesCodexUsage)
     }
 
@@ -101,7 +102,7 @@ struct AppSettingsTests {
         #expect(settings.sendsNotifications)
         #expect(settings.showsUsage)
         #expect(settings.showsContext)
-        #expect(settings.connectsClaudeCode)
+        #expect(!settings.connectsClaudeCode)
         #expect(settings.fetchesCodexUsage)
     }
 
