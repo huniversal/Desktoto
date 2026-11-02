@@ -16,7 +16,11 @@ public actor CodexRateLimitReader {
     private var process: (any RunningProcess)?
     private var outputTask: Task<Void, Never>?
     private var idleTask: Task<Void, Never>?
-    private var pending: [Int: CheckedContinuation<JSONValue?, Never>] = [:]
+    private struct PendingRequest {
+        let method: String
+        let continuation: CheckedContinuation<JSONValue?, Never>
+    }
+    private var pending: [Int: PendingRequest] = [:]
     private var deadlines: [Int: Task<Void, Never>] = [:]
     private var nextID = 1
     private var generation = 0
@@ -58,7 +62,7 @@ public actor CodexRateLimitReader {
         pending = [:]
         deadlines.values.forEach { $0.cancel() }
         deadlines = [:]
-        handlers.forEach { $0.resume(returning: nil) }
+        handlers.forEach { $0.continuation.resume(returning: nil) }
         requesting = false
     }
 
@@ -88,11 +92,17 @@ public actor CodexRateLimitReader {
         }
         let result = await request(method: "account/rateLimits/read", params: nil)
         guard generation == current else { return }
-        guard let limits = result?["rateLimits"], let usage = UsageParser.codex(limits, live: true, updatedAt: time.now) else { fail(); return }
+        guard result != nil else { fail(); return }
+    }
+
+    // 수신 순서대로 성공 값을 저장한 뒤 대기 중인 호출을 재개한다.
+    // 이후 알림이나 EOF가 먼저 처리되어도 이 값은 보존된다.
+    private func finishUsage(_ usage: ToolUsage) {
         latest = usage
         requesting = false
         let sleep = sleep
         let revision = idleRevision
+        let current = generation
         idleTask = Task { [weak self] in
             do { try await sleep(60) } catch { return }
             guard !Task.isCancelled else { return }
@@ -163,7 +173,7 @@ public actor CodexRateLimitReader {
     private func enqueueRequest(id: Int, method: String, params: [String: Any]?) async -> JSONValue? {
         guard !Task.isCancelled else { stop(); return nil }
         return await withCheckedContinuation { continuation in
-            pending[id] = continuation
+            pending[id] = PendingRequest(method: method, continuation: continuation)
             var message: [String: Any] = ["id": id, "method": method]
             if let params { message["params"] = params }
             guard send(message) else { fail(); return }
@@ -195,8 +205,15 @@ public actor CodexRateLimitReader {
             guard let message = JSONValue.parseObject(from: line) else { continue }
             if let id = message["id"]?.intValue, let handler = pending.removeValue(forKey: id) {
                 deadlines.removeValue(forKey: id)?.cancel()
-                let result = message["result"]
-                handler.resume(returning: message["error"] == nil && result?.objectValue != nil ? result : nil)
+                var result = message["error"] == nil ? message["result"] : nil
+                if result?.objectValue == nil { result = nil }
+                if handler.method == "account/rateLimits/read" {
+                    if let limits = result?["rateLimits"],
+                       let usage = UsageParser.codex(limits, live: true, updatedAt: time.now) {
+                        finishUsage(usage)
+                    } else { result = nil }
+                }
+                handler.continuation.resume(returning: result)
             } else if message["method"]?.stringValue == "account/rateLimits/updated",
                       let limits = message["params"]?["rateLimits"],
                       let usage = UsageParser.codex(limits, live: true, updatedAt: time.now) {
