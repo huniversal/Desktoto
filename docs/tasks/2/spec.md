@@ -4,7 +4,7 @@
 
 - 이슈: #2 / https://github.com/huniversal/Desktoto/issues/2
 - 브랜치: `feat/architecture-setup/#2`
-- specRevision: 5
+- specRevision: 6
 - 대상 ai-run 원본: 전체
   - `~/Desktop/ai-run/Package.swift`
   - `~/Desktop/ai-run/Sources/AiRun/*.swift` (13개 파일)
@@ -65,6 +65,14 @@
 - zstd(D-5 확정, 사용자 합의): 벤더링한 `CZstd`를 유지한다. 용도는 Claude 데스크탑 앱 캐시 응답의 해독뿐이고 쓰는 함수는 스트리밍 해독 5개(`ZSTD_createDStream`, `ZSTD_initDStream`, `ZSTD_DStreamOutSize`, `ZSTD_decompressStream`, `ZSTD_freeDStream`)다.
   사용자 환경과 외부 패키지에 의존하지 않고 CI에서 추가 설정 없이 빌드되며 원본과 같은 zstd v1.5.7을 쓰기 위해서다.
   `apps/macos/Sources/CZstd`에 해독부와 `LICENSE`를 두고 `ZSTD_DISABLE_ASM`, `DEBUGLEVEL=0` 설정을 유지한다. 이 파일은 `ai-run` 앱 코드가 아니라 제3자 라이브러리(BSD)이므로 "코드를 그대로 복사하지 않는다" 원칙의 대상이 아니다.
+- 모듈 구성(D-6 확정, 사용자가 추천안을 수락): 기능별로 나눈 모듈 11개와 보조 타깃 2개를 `apps/macos/Sources` 아래에 둔다. 상세 표와 의존 도표는 `docs/architecture.md`에 쓴다.
+  - 도메인 모델 `Domain`, 외부 경계 `Boundaries`, 디자인 시스템 `DesignSystem`
+  - 기능 `SessionMonitoring`, `UsageMonitoring`, `ClaudeIntegration`, `TerminalIntegration`, `Preferences`
+  - UI `MenuBarIcon`, `SessionPanel`
+  - 앱 실행 파일 `Desktoto`, 보조 `CZstd`(C), `TestSupport`(가짜 구현)
+  - 모듈 이름에는 `Desktoto` 접두어를 붙이지 않는다(패키지를 외부에 공개하지 않아 충돌 위험이 낮다).
+  - 의존 규칙(컴파일러가 강제): (1) 기능 모듈끼리 서로 import하지 않고 조립은 `Desktoto` 앱만 한다. (2) UI 모듈은 `Boundaries`를 import하지 않는다. (3) `DesignSystem`은 `Domain`을 모른다. `Domain`은 의존이 없다.
+  - 원본에서 `SessionWatcher`가 `TerminalJumper`를 직접 호출하던 교차 의존은, `SessionMonitoring`이 필요한 질문만 담은 프로토콜을 `Domain`에 두고 `TerminalIntegration`이 구현해 앱이 연결하는 방식으로 푼다.
 - 상태와 데이터 흐름: N/A. 문서와 빌드 골격 작업이라 런타임 상태가 없다. 런타임 흐름의 원본 사실은 `overview.md`에 있다.
 - 선택한 방식과 이유: 작업 순서를 "개요 문서, 결정, `architecture.md`, `Package.swift` 골격"으로 둔다.
   언어 모드, 최소 macOS, zstd, 이름이 `Package.swift`의 전제이기 때문에 결정이 끝나기 전에는 골격을 만들지 않는다.
@@ -117,7 +125,7 @@
 | D-3 | Swift 언어 모드 | 확정됨(specRevision 4): Swift 6 모드, `swift-tools-version:6.0`. 사용자가 판단을 위임했다 | 해결 |
 | D-4 | 최소 macOS 버전 | 확정됨(specRevision 4): macOS 26.0 유지. 사용자가 판단을 위임했다 | 해결 |
 | D-5 | zstd 처리 | 확정됨(specRevision 5): 벤더링 `CZstd` 유지. Claude 데스크탑 앱 캐시 해독(`ClaudeDesktopUsage.swift`)용이다 | 해결 |
-| D-6 | 모듈 구성안 | 도메인 모델, 외부 경계, 기능, 디자인 시스템, 앱을 어떤 타깃으로 나누고 어떤 방향으로 의존시킬지 | 막음 |
+| D-6 | 모듈 구성안 | 확정됨(specRevision 6): 설계 결정의 "모듈 구성" 참고. 사용자가 추천안을 수락했다 | 해결 |
 | D-7 | 외부 경계 프로토콜 설계 | 파일 시스템, 프로세스, 시간, AppleScript 각각의 프로토콜 범위와 대체 구현 방식, 합성 데이터 테스트 전략 | 막음 |
 | D-8 | 훅과 statusLine 스크립트의 위치 | 앱 번들 리소스로 포함하고 설치 시 복사하는 방식 등. 구현은 #7에서 하되 방향은 이 이슈에서 정하는 것이 좋다 | 막지 않음 (`architecture.md`에 방향만 기록) |
 | D-9 | 골격에 스모크 테스트 포함 여부 | 각 테스트 타깃에 최소 테스트 1개를 두어 `swift test`가 실제로 실행됨을 확인할지, 빈 타깃만 둘지 | 막지 않음 |
@@ -134,3 +142,4 @@
 | 3 | D-2 확정(`~/.ai-run`과 스크립트 이름 유지), 제외 항목에 설치된 `ai-run` 앱과 사용자 설정 불변 조건 추가 | 동작을 원본과 같게 하고 동등성 검증 입력을 맞추기 위해 사용자가 합의했다. 영향받는 AC: AC-6(이름 항목에 데이터 폴더와 스크립트가 유지로 기록됨) |
 | 4 | D-3 확정(Swift 6 모드, tools-version 6.0), D-4 확정(macOS 26.0 유지) | 사용자가 두 결정을 위임했다. 영향받는 AC: AC-4, AC-7, AC-9 |
 | 5 | D-5 확정(벤더링 `CZstd` 유지) | 사용자가 합의했다. 영향받는 AC: AC-5, AC-9 |
+| 6 | D-6 확정(기능별 모듈 11개, 접두어 없는 이름, 의존 규칙 3가지) | 사용자가 추천안을 수락했다. 영향받는 AC: AC-2, AC-9 |
