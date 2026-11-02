@@ -13,6 +13,7 @@ public final class InMemoryFileSystem: FileSystem {
     private struct State {
         var files: [String: StoredFile] = [:]
         var readCounts: [String: Int] = [:]
+        var directories: Set<String> = []
     }
 
     public let homeDirectory: URL
@@ -31,6 +32,11 @@ public final class InMemoryFileSystem: FileSystem {
 
     public func addFile(at url: URL, text: String, modifiedAt: Date, createdAt: Date? = nil) {
         addFile(at: url, data: Data(text.utf8), modifiedAt: modifiedAt, createdAt: createdAt)
+    }
+
+    /// 비어 있는 폴더를 만든다. 파일이 들어 있는 폴더는 따로 만들지 않아도 있는 것으로 본다.
+    public func addDirectory(at url: URL) {
+        state.withLock { _ = $0.directories.insert(url.path) }
     }
 
     /// 내용은 그대로 두고 수정 시각만 바꾼다.
@@ -78,6 +84,13 @@ public final class InMemoryFileSystem: FileSystem {
 
     public func creationDate(of url: URL) -> Date? {
         state.withLock { $0.files[url.path]?.createdAt }
+    }
+
+    public func directoryExists(at url: URL) -> Bool {
+        let prefix = "\(url.path)/"
+        return state.withLock { state in
+            state.directories.contains(url.path) || state.files.keys.contains { $0.hasPrefix(prefix) }
+        }
     }
 
     private func readContents<Result>(of url: URL, transform: (Data) -> Result) -> Result? {

@@ -74,10 +74,10 @@ apps/macos/
 | `Domain` | 값 타입: `AiTool`, `SessionInfo`, `SessionRunState`, `WaitingKind`, `ToolUsage`, `UsageWindow`와 기능 사이 연결용 프로토콜 | 없음 | #4, #6 | `SessionWatcher`와 `UsageWatcher`의 타입 선언 |
 | `Boundaries` | 외부 경계 프로토콜 5개와 실제(Live) 구현, 두 기능이 쓰는 JSONL 끝부분 읽기 | `Domain`은 쓰지 않음 | 전체 | `LogTail`, 여러 파일에 흩어진 파일, 프로세스, 시간 접근 코드 |
 | `DesignSystem` | 디자인 토큰(색, 간격, 곡률, 그림자, 타이포), `GlassStyle`, `Theme`, `ColorMode`, 공용 컴포넌트 | 없음 | #3 | `SessionPanelView`의 상수와 컴포넌트, `AppSettings`의 스타일 타입 |
-| `SessionMonitoring` | 기록 탐색, 진행과 완료와 대기 판정, 컨텍스트 창 판정, 데스크탑 앱 딥링크 매핑, 승인 대기 신호 읽기 | `Domain`, `Boundaries` | #4 | `SessionWatcher` |
+| `SessionMonitoring` | 기록 탐색, 진행과 완료와 대기 판정, 컨텍스트 창 판정, 승인 대기 신호 읽기 | `Domain`, `Boundaries` | #4 | `SessionWatcher` |
 | `UsageMonitoring` | 사용량 소스 4곳(데스크탑 캐시, statusLine 파일, Codex 서버, Codex 기록)과 최신값 선택, zstd 해독 | `Domain`, `Boundaries`, `CZstd` | #6 | `UsageWatcher`, `ClaudeDesktopUsage`, `CodexRateLimitReader` |
 | `ClaudeIntegration` | `settings.json`의 훅과 statusLine 연결과 해제, 백업, 스크립트 설치 | `Boundaries` | #7 | `ClaudeIntegration`, `scripts/*.sh` |
-| `TerminalIntegration` | CLI 프로세스 탐색, 세션과의 매칭, 터미널 생존 확인, iTerm2와 Terminal과 Orca 탭 이동 | `Domain`, `Boundaries` | #5 | `TerminalJumper`, `SessionWatcher`의 생존 확인 |
+| `TerminalIntegration` | CLI 프로세스 탐색, 세션과의 매칭, 터미널 생존 확인, Claude 데스크탑 앱 딥링크 매핑, iTerm2와 Terminal과 Orca 탭 이동, 세션 열기 | `Domain`, `Boundaries` | #5 | `TerminalJumper`, `SessionWatcher`의 생존 확인 |
 | `Preferences` | 설정 모델과 저장, 알림, 로그인 항목 | `DesignSystem`, `Boundaries` | #8 | `AppSettings`, `NotificationSender` |
 | `MenuBarIcon` | 캐릭터 격자, 프레임 계산, 이미지 그리기 | `Domain`, `DesignSystem` | #9 | `SpriteRenderer` |
 | `SessionPanel` | 패널 View, 패널 모델, 투명 패널 창과 위치 계산 | `Domain`, `DesignSystem` | #10 | `SessionPanelView`, `AppDelegate`의 `GlassPanel` |
@@ -119,7 +119,7 @@ CZstd  ◄── UsageMonitoring
 - `SessionMonitoring`은 이 프로토콜을 주입받아 쓴다.
 - `TerminalIntegration`이 구현하고 `Desktoto` 앱이 연결한다.
 
-프로토콜의 이름과 시그니처는 #4와 #5에서 구현하면서 정한다.
+프로토콜은 #5에서 `Domain`에 `TerminalSessionChecker`(터미널 세션이 닫혔는지)와 `SessionLinkResolver`(Claude 세션의 데스크탑 앱 링크)로 정했다.
 
 ## 4. 책임 배치 원칙
 

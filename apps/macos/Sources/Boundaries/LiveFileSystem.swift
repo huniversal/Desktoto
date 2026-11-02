@@ -48,4 +48,9 @@ public struct LiveFileSystem: FileSystem {
     public func creationDate(of url: URL) -> Date? {
         try? url.resourceValues(forKeys: [.creationDateKey]).creationDate
     }
+
+    public func directoryExists(at url: URL) -> Bool {
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
+    }
 }

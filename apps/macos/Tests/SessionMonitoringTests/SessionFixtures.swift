@@ -134,8 +134,18 @@ struct Harness {
         now.addingTimeInterval(-seconds)
     }
 
-    func makeMonitor(environment: [String: String] = [:]) -> SessionMonitor {
-        SessionMonitor(fileSystem: fileSystem, timeSource: timeSource, environment: environment)
+    func makeMonitor(
+        environment: [String: String] = [:],
+        terminalSessionChecker: (any TerminalSessionChecker)? = nil,
+        sessionLinkResolver: (any SessionLinkResolver)? = nil
+    ) -> SessionMonitor {
+        SessionMonitor(
+            fileSystem: fileSystem,
+            timeSource: timeSource,
+            environment: environment,
+            terminalSessionChecker: terminalSessionChecker,
+            sessionLinkResolver: sessionLinkResolver
+        )
     }
 
     func claudeURL(id: String, project: String = "-Users-test-app") -> URL {
