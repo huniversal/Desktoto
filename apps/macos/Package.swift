@@ -7,7 +7,9 @@ let package = Package(
     platforms: [.macOS("26.0")],
     targets: [
         .target(name: "DesktotoCore"),
+        .target(name: "DesignSystem"),
         .executableTarget(name: "Desktoto", dependencies: ["DesktotoCore"]),
-        .testTarget(name: "DesktotoCoreTests", dependencies: ["DesktotoCore"])
+        .testTarget(name: "DesktotoCoreTests", dependencies: ["DesktotoCore"]),
+        .testTarget(name: "DesignSystemTests", dependencies: ["DesignSystem"])
     ]
 )
