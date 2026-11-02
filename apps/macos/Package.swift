@@ -42,7 +42,8 @@ let package = Package(
             ]
         ),
 
-        .testTarget(name: "CZstdTests", dependencies: ["CZstd"])
+        .testTarget(name: "CZstdTests", dependencies: ["CZstd"]),
+        .testTarget(name: "DesignSystemTests", dependencies: ["DesignSystem"])
     ],
     swiftLanguageModes: [.v6]
 )
