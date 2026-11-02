@@ -15,6 +15,18 @@ if [ ! -d "$APP_DIR" ]; then
   exit 1
 fi
 
+# 같은 이름으로 설치된 다른 앱(번들 식별자가 다른 앱, 예: 원본 ai-run)을 지우고 덮어쓰지 않도록 먼저 확인한다.
+INSTALLED_PLIST="$INSTALL_DIR/$APP_NAME.app/Contents/Info.plist"
+if [ -f "$INSTALLED_PLIST" ]; then
+  NEW_BUNDLE_ID=$(plutil -extract CFBundleIdentifier raw -o - "$APP_DIR/Contents/Info.plist")
+  INSTALLED_BUNDLE_ID=$(plutil -extract CFBundleIdentifier raw -o - "$INSTALLED_PLIST" 2>/dev/null || true)
+  if [ "$INSTALLED_BUNDLE_ID" != "$NEW_BUNDLE_ID" ]; then
+    echo "$INSTALL_DIR/$APP_NAME.app 에 다른 앱(번들 식별자: ${INSTALLED_BUNDLE_ID:-알 수 없음})이 설치되어 있어서 중단합니다." >&2
+    echo "설치하려는 앱의 번들 식별자는 $NEW_BUNDLE_ID 입니다. 덮어쓰지 않았습니다." >&2
+    exit 1
+  fi
+fi
+
 pkill -x "$EXECUTABLE_NAME" 2>/dev/null || true
 sleep 1
 mkdir -p "$INSTALL_DIR"
