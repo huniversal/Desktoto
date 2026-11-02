@@ -4,7 +4,7 @@
 
 - 이슈: #2 / https://github.com/huniversal/Desktoto/issues/2
 - 브랜치: `feat/architecture-setup/#2`
-- specRevision: 1
+- specRevision: 2
 - 대상 ai-run 원본: 전체
   - `~/Desktop/ai-run/Package.swift`
   - `~/Desktop/ai-run/Sources/AiRun/*.swift` (13개 파일)
@@ -30,7 +30,8 @@
 - 언어 모드와 최소 macOS 버전 확정
 - zstd 처리 방식 결정 (벤더링한 `CZstd` 유지, 시스템 라이브러리, 외부 패키지 중 선택)
 - 이름 정리 결정 (앱 이름, 번들 식별자, 실행 파일명, 데이터 폴더 `~/.ai-run` 유지 여부)
-- `Package.swift`와 타깃, 테스트 타깃 골격 생성
+- `apps/macos/Package.swift`와 타깃, 테스트 타깃 골격 생성 (#1이 CI 검증용으로 둔 임시 골격 `Desktoto`, `DesktotoCore`, `DesktotoCoreTests`를 교체)
+- 확정한 이름을 #1이 만든 `apps/macos/scripts/build-app.sh`의 기본값, `apps/macos/scripts/Info.plist`, `docs/ci.md`에 반영
 
 ### 제외
 
@@ -47,6 +48,9 @@
   - `docs/reverse/overview.md`: 원본에서 확인한 사실만 기록한다(설계 없음).
   - `docs/architecture.md`: 이 이슈에서 내린 결정과 그 이유를 기록한다. 이후 이슈의 전제가 된다.
   - `Package.swift`와 `Sources`, `Tests`의 빈 골격: `architecture.md`의 결정을 그대로 반영한다. 로직은 담지 않는다.
+- 패키지 위치: 저장소는 모노레포이고 Swift 패키지는 `apps/macos`에 둔다(#1에서 확정, `docs/rules/macos-development.md`와 `docs/ci.md`). 빌드와 테스트는 `cd apps/macos` 뒤에 실행한다.
+- 이름(D-1 확정, 사용자 합의): 앱 이름, 실행 파일, 패키지 이름은 `Desktoto`, 번들 식별자는 `com.huniverse.desktoto`다.
+  번들 ID를 바꾸면 알림, 로그인 항목, 자동화 권한은 새 앱으로 다시 허용해야 하고, 원본 `ai-run` 앱과는 별개의 앱으로 설치된다(원본은 지워도 되는 테스트용이라는 합의).
 - 상태와 데이터 흐름: N/A. 문서와 빌드 골격 작업이라 런타임 상태가 없다. 런타임 흐름의 원본 사실은 `overview.md`에 있다.
 - 선택한 방식과 이유: 작업 순서를 "개요 문서, 결정, `architecture.md`, `Package.swift` 골격"으로 둔다.
   언어 모드, 최소 macOS, zstd, 이름이 `Package.swift`의 전제이기 때문에 결정이 끝나기 전에는 골격을 만들지 않는다.
@@ -62,10 +66,11 @@
 - AC-4: `docs/architecture.md`가 Swift 언어 모드와 최소 macOS 버전을 확정해 기록한다.
 - AC-5: `docs/architecture.md`가 zstd 처리 방식과 선택 이유를 기록하고, `Package.swift`가 그 결정을 반영한다.
 - AC-6: `docs/architecture.md`가 앱 이름, 번들 식별자, 실행 파일명, 데이터 폴더(`~/.ai-run`) 유지 여부를 확정해 기록하고, 기존 사용자(훅 경로, 알림 권한, 로그인 항목)에 미치는 영향과 대응을 함께 적는다.
-- AC-7: `Package.swift`와 `architecture.md`에서 정의한 타깃, 테스트 타깃 골격이 있고, `swift build`가 성공한다.
+- AC-7: `apps/macos/Package.swift`와 `architecture.md`에서 정의한 타깃, 테스트 타깃 골격이 있고, `apps/macos`에서 `swift build`가 성공한다.
 - AC-8: `swift test`가 테스트 타깃을 실제로 실행하고 실패 없이 끝난다. 실행된 테스트가 없다면 그 사실을 검증 기록에 밝힌다.
 - AC-9: `docs/architecture.md`의 결정과 `Package.swift`의 내용(플랫폼, 타깃 이름, 의존)이 서로 일치한다.
 - AC-10: 이 이슈에서 만들거나 고친 문서에 가운데점(U+00B7)이 없다.
+- AC-11: `apps/macos/scripts/build-app.sh`의 기본값(`APP_NAME`, `EXECUTABLE_NAME`, `BUNDLE_ID`)과 `docs/ci.md`의 이름 설명이 확정한 이름과 일치하고, 새 골격으로 `sh scripts/build-app.sh`가 `.app`을 만들어 `codesign --verify`를 통과한다.
 
 ## 검증 방법
 
@@ -77,10 +82,12 @@
 | AC-4 | `architecture.md`와 `Package.swift`의 `platforms`, `swiftLanguageModes` 대조 | 두 곳의 값이 같다 |
 | AC-5 | `architecture.md`의 zstd 절과 `Package.swift`의 zstd 관련 타깃, 의존 대조 | 결정이 반영되어 있고, 벤더링을 유지하면 라이선스 파일이 남아 있다 |
 | AC-6 | `architecture.md`의 이름 절 확인 | 4가지 항목이 모두 확정되어 있고 호환성 영향 절이 있다 |
-| AC-7 | `swift build` 실행 | 오류 없이 종료한다. 결과를 PR에 붙인다 |
-| AC-8 | `swift test` 실행 | 실패 없이 종료한다. 실행된 테스트 수를 PR에 적는다 |
+| AC-7 | `(cd apps/macos && swift build)` 실행 | 오류 없이 종료한다. 결과를 PR에 붙인다 |
+| AC-8 | `(cd apps/macos && swift test)` 실행 | 실패 없이 종료한다. 실행된 테스트 수를 PR에 적는다 |
 | AC-9 | `architecture.md`와 `Package.swift`를 나란히 읽고 diff 검토 | 불일치 항목이 없다 |
 | AC-10 | `grep -rn $'\xc2\xb7' docs/reverse docs/architecture.md docs/tasks/2` | 결과 없음 |
+
+| AC-11 | `(cd apps/macos && sh scripts/build-app.sh)` 후 `codesign --verify`, `plutil -p`로 번들 ID 확인. 설치와 실행은 하지 않는다 | 검증 통과, `CFBundleIdentifier`가 `com.huniverse.desktoto` |
 
 문서와 골격 작업이라 앱 실행과 실기기 동작 검증은 N/A다. 이유는 PR에 적는다.
 
@@ -91,20 +98,22 @@
 
 | 번호 | 결정할 것 | 선택지 | 막음 여부 |
 |---|---|---|---|
-| D-1 | 이름 정리 | 앱 이름은 `Desktoto`(`CFBundleName`)로 통일할지, 번들 ID는 `com.huniverse.airun` 유지 또는 변경, 실행 파일은 `AiRun`에서 변경 여부. 번들 ID를 바꾸면 알림 권한, 로그인 항목, 자동화 권한이 초기화된다 | 막음. #1의 패키징도 이 값에 의존 |
-| D-2 | 데이터 폴더 `~/.ai-run` | 유지, 새 경로로 변경, 변경하고 구 경로 병행 읽기 또는 마이그레이션. 사용자의 `~/.claude/settings.json`에 이미 기록된 훅과 statusLine 명령이 구 경로를 가리킨다 | 막음 |
+| D-1 | 이름 정리 | 확정됨(specRevision 2): 앱, 실행 파일, 패키지는 `Desktoto`, 번들 ID는 `com.huniverse.desktoto`. 스크립트 이름은 D-2와 함께 정한다 | 해결 |
+| D-2 | 데이터 폴더 `~/.ai-run`과 스크립트 이름 | 유지, 새 경로로 변경, 변경하고 구 경로 병행 읽기 또는 마이그레이션. 사용자의 `~/.claude/settings.json`에 이미 기록된 훅과 statusLine 명령이 구 경로를 가리킨다. 원본 앱과 새 앱이 같은 기간에 설치되어 같은 `settings.json`과 폴더를 공유하는 경우(훅 중복, statusLine 감싸기, 한쪽 해제가 다른 쪽에 영향)를 어떻게 다룰지 포함한다 | 막음 |
 | D-3 | Swift 언어 모드 | Swift 5 모드 또는 Swift 6 모드(엄격한 동시성). 원본은 `swift-tools-version:5.9` | 막음 |
-| D-4 | 최소 macOS 버전 | 원본과 같이 26 이상 유지(Liquid Glass 사용) 또는 낮춤 | 막음 |
+| D-4 | 최소 macOS 버전 | 원본과 같이 26 이상 유지(Liquid Glass 사용) 또는 낮춤. CI는 macos-26 러너와 Xcode 26.6으로 고정되어 있다(#1) | 막음 |
 | D-5 | zstd 처리 | 벤더링 `CZstd` 유지, 시스템 `libzstd`, 외부 Swift 패키지. Claude 데스크탑 앱 캐시 해독(`ClaudeDesktopUsage.swift`)용이다 | 막음 |
 | D-6 | 모듈 구성안 | 도메인 모델, 외부 경계, 기능, 디자인 시스템, 앱을 어떤 타깃으로 나누고 어떤 방향으로 의존시킬지 | 막음 |
 | D-7 | 외부 경계 프로토콜 설계 | 파일 시스템, 프로세스, 시간, AppleScript 각각의 프로토콜 범위와 대체 구현 방식, 합성 데이터 테스트 전략 | 막음 |
 | D-8 | 훅과 statusLine 스크립트의 위치 | 앱 번들 리소스로 포함하고 설치 시 복사하는 방식 등. 구현은 #7에서 하되 방향은 이 이슈에서 정하는 것이 좋다 | 막지 않음 (`architecture.md`에 방향만 기록) |
 | D-9 | 골격에 스모크 테스트 포함 여부 | 각 테스트 타깃에 최소 테스트 1개를 두어 `swift test`가 실제로 실행됨을 확인할지, 빈 타깃만 둘지 | 막지 않음 |
 | D-10 | 이슈 #2 본문 보완 | 마이그레이션 여부, 언어 모드 문구 구체화, 스크립트 위치, 작업 순서를 이슈 본문에 반영할지 | 막지 않음 |
-| D-11 | 번들과 빌드 방식 | 원본의 `scripts/build-app.sh`(ad hoc 서명, `~/Applications` 설치) 방식의 유지 여부. 패키징 세부는 #1과 경계를 정한다 | 막지 않음 |
+| D-11 | 번들과 빌드 방식 | 해결: #1에서 `build-app.sh`(빌드, 서명)와 `install-app.sh`(설치, 실행)로 분리했다. 이 이슈는 이름 기본값만 갱신한다 | 해결 |
+| D-12 | 패키지 위치 | 해결: #1에서 확정한 모노레포 구조에 따라 `apps/macos/Package.swift`. 이 이슈는 #1의 임시 골격을 교체한다 | 해결 |
 
 ## 주요 설계 변경
 
 | specRevision | 변경한 결정 | 이유 |
 |---|---|---|
 | 1 | 최초 설계 | 이슈 #2의 작업 목록과 `overview.md` 조사 결과를 바탕으로 정리. 결정 항목은 사용자와 합의 전이므로 미결정으로 둔다 |
+| 2 | D-1 확정, 패키지 위치를 `apps/macos`로 변경, AC-11 추가, D-2에 병행 설치 고려 추가 | 사용자가 이름 결정에 합의했고, #1이 병합되어 모노레포 구조와 임시 골격, 패키징 스크립트가 들어왔다. 영향받는 AC: AC-7, AC-8, AC-11 |
