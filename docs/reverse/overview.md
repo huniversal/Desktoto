@@ -302,7 +302,7 @@ Codex는 `last_token_usage.input_tokens`다. 목록은 활동 시각 최신순�
 `ClaudeDesktopUsage`, `CodexRateLimitReader`, `TerminalJumper`, `ClaudeIntegration`, `SessionPanelView`는 앞부분과 핵심 함수만 읽었다.
 `SpriteRenderer`는 상수와 선언만 확인했다. 아래는 해당 기능 이슈에서 원본 코드를 다시 읽고 보완한다.
 
-- 캐릭터 프레임의 구체적인 그리기 규칙과 폭죽, 잠듦 프레임 수 (이슈 #9)
+- ~~캐릭터 프레임의 구체적인 그리기 규칙과 폭죽, 잠듦 프레임 수~~ (이슈 #9에서 [메뉴바 아이콘 원본 동작](menubar-icon.md)에 정리함)
 - 패널 레이아웃, 그라데이션, 유리 스타일별 색 값 (이슈 #10)
 - Chromium 캐시의 응답 JSON 필드 파싱과 Codex JSON-RPC의 요청, 응답 세부 (이슈 #6)
 - statusLine 감싸기와 백업 파일 이름 규칙의 경계 사례 (이슈 #7)
