@@ -63,6 +63,24 @@ public final class InMemoryFileSystem: FileSystem {
         }
     }
 
+    public func listDirectory(at url: URL) -> [FileEntry] {
+        state.withLock { state in
+            state.files.compactMap { path, file in
+                let item = URL(fileURLWithPath: path)
+                guard item.deletingLastPathComponent().path == url.path, !item.lastPathComponent.hasPrefix(".") else { return nil }
+                return FileEntry(url: item, modifiedAt: file.modifiedAt)
+            }
+        }
+    }
+
+    public func fileSize(at url: URL) -> Int? {
+        state.withLock { $0.files[url.path]?.data.count }
+    }
+
+    public func isExecutable(at url: URL) -> Bool {
+        state.withLock { $0.files[url.path] != nil }
+    }
+
     public func readTail(of url: URL, maxBytes: UInt64) -> FileTail? {
         readContents(of: url) { data in
             let readSize = min(UInt64(data.count), maxBytes)

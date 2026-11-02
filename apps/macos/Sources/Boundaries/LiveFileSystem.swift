@@ -21,6 +21,21 @@ public struct LiveFileSystem: FileSystem {
         return entries
     }
 
+    public func listDirectory(at url: URL) -> [FileEntry] {
+        let urls = (try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: [.contentModificationDateKey], options: [.skipsHiddenFiles])) ?? []
+        return urls.compactMap { item in
+            modificationDate(of: item).map { FileEntry(url: item, modifiedAt: $0) }
+        }
+    }
+
+    public func fileSize(at url: URL) -> Int? {
+        try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize
+    }
+
+    public func isExecutable(at url: URL) -> Bool {
+        FileManager.default.isExecutableFile(atPath: url.path)
+    }
+
     public func readTail(of url: URL, maxBytes: UInt64) -> FileTail? {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }

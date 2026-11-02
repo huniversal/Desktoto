@@ -42,6 +42,7 @@ let package = Package(
             ]
         ),
 
+        .testTarget(name: "UsageMonitoringTests", dependencies: ["UsageMonitoring", "Domain", "Boundaries", "TestSupport"]),
         .testTarget(name: "CZstdTests", dependencies: ["CZstd"]),
         .testTarget(name: "DesignSystemTests", dependencies: ["DesignSystem"]),
         .testTarget(name: "BoundariesTests", dependencies: ["Boundaries", "TestSupport"]),

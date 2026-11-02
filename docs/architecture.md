@@ -142,11 +142,17 @@ CZstd  ◄── UsageMonitoring
 | --- | --- | --- |
 | `FileSystem` | 읽기, 끝부분 읽기, 목록(경로, 수정 시각, 종류), 존재 확인, 원자적 쓰기, 복사, 삭제, 홈 폴더. `FileManager`를 그대로 흉내 내지 않고 필요한 동작만 굵게 정의한다 | `SessionMonitoring`, `UsageMonitoring`, `ClaudeIntegration`, `TerminalIntegration`(Claude 터미널 세션 생존 확인에 쓰는 `~/.claude/sessions/*.json`) |
 | `TimeSource` | 현재 시각(`now`). Swift 표준의 `Clock`과 이름이 겹치지 않게 한다. `Timer` 같은 스케줄링은 `Desktoto` 앱이 맡는다 | 거의 전부 |
-| `ProcessRunner` | 짧은 명령 실행과 출력 수집, 오래 떠 있는 프로세스 실행(입력 쓰기, 출력 스트림, 종료), 프로세스 생존 확인 | `TerminalIntegration`(`ps`, `lsof`, Orca CLI, 생존 확인), `UsageMonitoring`(`codex app-server`) |
+| `ProcessRunner` | 짧은 명령 실행과 출력 수집, 프로세스 생존 확인. 장기 실행은 아래 보조 경계로 분리 | `TerminalIntegration`(`ps`, `lsof`, Orca CLI, 생존 확인), `UsageMonitoring`(`codex app-server`) |
 | `AppleScriptRunner` | 스크립트 문자열 실행 | `TerminalIntegration`, `Preferences` |
 | `URLOpener` | URL 열기, 실행 중인 앱 확인 | `TerminalIntegration`, `Desktoto` |
 
 사용처 열은 원본 분석에 따른 현재 예상이며 #4와 #5 구현에서 확정한다. 한 곳만 쓰는 것으로 드러난 경계(예: `URLOpener`)는 그 기능 모듈 안으로 옮긴다.
+
+장기 실행 프로세스는 #6에서 `Boundaries`의 보조 프로토콜 `ProcessLauncher`와 `RunningProcess`로 분리했다.
+`ProcessLauncher.launch(executable:arguments:environment:)`가 프로세스를 만들고, `RunningProcess`가 stdin 쓰기, stdout `AsyncStream<Data>`, 종료를 제공한다.
+기존 짧은 명령 호출부에 장기 프로세스 수명 관리를 강제하지 않기 위한 분리다.
+`UsageMonitoring.CodexRateLimitReader` actor가 요청, 제한 시간, 유휴 종료와 세대 번호를 소유하며 이전 프로세스 출력을 배제한다.
+`UsageMonitor` actor는 파일 캐시와 Claude 캐시 탐색 작업을 소유한다.
 
 ### 단일 기능 서비스
 
