@@ -4,7 +4,7 @@
 
 - 이슈: #2 / https://github.com/huniversal/Desktoto/issues/2
 - 브랜치: `feat/architecture-setup/#2`
-- specRevision: 6
+- specRevision: 7
 - 대상 ai-run 원본: 전체
   - `~/Desktop/ai-run/Package.swift`
   - `~/Desktop/ai-run/Sources/AiRun/*.swift` (13개 파일)
@@ -73,6 +73,11 @@
   - 모듈 이름에는 `Desktoto` 접두어를 붙이지 않는다(패키지를 외부에 공개하지 않아 충돌 위험이 낮다).
   - 의존 규칙(컴파일러가 강제): (1) 기능 모듈끼리 서로 import하지 않고 조립은 `Desktoto` 앱만 한다. (2) UI 모듈은 `Boundaries`를 import하지 않는다. (3) `DesignSystem`은 `Domain`을 모른다. `Domain`은 의존이 없다.
   - 원본에서 `SessionWatcher`가 `TerminalJumper`를 직접 호출하던 교차 의존은, `SessionMonitoring`이 필요한 질문만 담은 프로토콜을 `Domain`에 두고 `TerminalIntegration`이 구현해 앱이 연결하는 방식으로 푼다.
+- 외부 경계(D-7 확정, 사용자가 추천안을 수락): 두 개 이상의 기능이 쓰는 경계만 `Boundaries`에 프로토콜로 둔다. 프로토콜 이름에 `Protocol` 접미사는 붙이지 않는다.
+  - `FileSystem`, `TimeSource`, `ProcessRunner`, `AppleScriptRunner`, `URLOpener`
+  - 한 기능만 쓰는 시스템 서비스(알림 센터, 로그인 항목, 소리)는 그 기능 모듈 안에 프로토콜을 둔다. `UserDefaults`는 이미 주입 가능하므로 별도 프로토콜을 만들지 않는다.
+  - 판정과 파싱은 경계에서 분리해 순수 함수로 둔다. 프로토콜은 `Sendable`로 선언하고 오래 떠 있는 프로세스의 출력은 `AsyncStream`으로 준다.
+  - 테스트: 합성 데이터와 `TestSupport`의 가짜 구현(`InMemoryFileSystem`, `FixedTimeSource`, `ScriptedProcessRunner`, `RecordingAppleScriptRunner`)을 쓰고, Live 구현은 임시 폴더에서만 통합 테스트한다. 외부 앱 제어는 실제 Mac에서 수동 검증한다. 프레임워크는 현재 골격의 Swift Testing을 유지한다.
 - 상태와 데이터 흐름: N/A. 문서와 빌드 골격 작업이라 런타임 상태가 없다. 런타임 흐름의 원본 사실은 `overview.md`에 있다.
 - 선택한 방식과 이유: 작업 순서를 "개요 문서, 결정, `architecture.md`, `Package.swift` 골격"으로 둔다.
   언어 모드, 최소 macOS, zstd, 이름이 `Package.swift`의 전제이기 때문에 결정이 끝나기 전에는 골격을 만들지 않는다.
@@ -126,7 +131,7 @@
 | D-4 | 최소 macOS 버전 | 확정됨(specRevision 4): macOS 26.0 유지. 사용자가 판단을 위임했다 | 해결 |
 | D-5 | zstd 처리 | 확정됨(specRevision 5): 벤더링 `CZstd` 유지. Claude 데스크탑 앱 캐시 해독(`ClaudeDesktopUsage.swift`)용이다 | 해결 |
 | D-6 | 모듈 구성안 | 확정됨(specRevision 6): 설계 결정의 "모듈 구성" 참고. 사용자가 추천안을 수락했다 | 해결 |
-| D-7 | 외부 경계 프로토콜 설계 | 파일 시스템, 프로세스, 시간, AppleScript 각각의 프로토콜 범위와 대체 구현 방식, 합성 데이터 테스트 전략 | 막음 |
+| D-7 | 외부 경계 프로토콜 설계 | 확정됨(specRevision 7): 설계 결정의 "외부 경계" 참고. 사용자가 추천안을 수락했다 | 해결 |
 | D-8 | 훅과 statusLine 스크립트의 위치 | 앱 번들 리소스로 포함하고 설치 시 복사하는 방식 등. 구현은 #7에서 하되 방향은 이 이슈에서 정하는 것이 좋다 | 막지 않음 (`architecture.md`에 방향만 기록) |
 | D-9 | 골격에 스모크 테스트 포함 여부 | 각 테스트 타깃에 최소 테스트 1개를 두어 `swift test`가 실제로 실행됨을 확인할지, 빈 타깃만 둘지 | 막지 않음 |
 | D-10 | 이슈 #2 본문 보완 | 마이그레이션 여부, 언어 모드 문구 구체화, 스크립트 위치, 작업 순서를 이슈 본문에 반영할지 | 막지 않음 |
@@ -143,3 +148,4 @@
 | 4 | D-3 확정(Swift 6 모드, tools-version 6.0), D-4 확정(macOS 26.0 유지) | 사용자가 두 결정을 위임했다. 영향받는 AC: AC-4, AC-7, AC-9 |
 | 5 | D-5 확정(벤더링 `CZstd` 유지) | 사용자가 합의했다. 영향받는 AC: AC-5, AC-9 |
 | 6 | D-6 확정(기능별 모듈 11개, 접두어 없는 이름, 의존 규칙 3가지) | 사용자가 추천안을 수락했다. 영향받는 AC: AC-2, AC-9 |
+| 7 | D-7 확정(`Boundaries` 프로토콜 5개, 단일 기능 서비스는 해당 모듈에 배치, 테스트 전략) | 사용자가 추천안을 수락했다. 영향받는 AC: AC-3 |
