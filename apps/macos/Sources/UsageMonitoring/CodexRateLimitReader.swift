@@ -8,7 +8,7 @@ public actor CodexRateLimitReader {
     private let launcher: any ProcessLauncher
     private let time: any TimeSource
     private let sleep: @Sendable (TimeInterval) async throws -> Void
-    private let onUpdate: @Sendable () async -> Void
+    private let onUpdate: @MainActor @Sendable () async -> Void
     private var enabled = true
     private var requesting = false
     private var lastRequest = Date.distantPast
@@ -29,7 +29,7 @@ public actor CodexRateLimitReader {
         launcher: any ProcessLauncher = SystemProcessLauncher(),
         timeSource: any TimeSource = SystemTimeSource(),
         sleep: @escaping @Sendable (TimeInterval) async throws -> Void = { try await Task.sleep(for: .seconds($0)) },
-        onUpdate: @escaping @Sendable () async -> Void = {}
+        onUpdate: @escaping @MainActor @Sendable () async -> Void = {}
     ) {
         files = fileSystem
         self.launcher = launcher
@@ -69,9 +69,14 @@ public actor CodexRateLimitReader {
         lastRequest = now
         idleRevision += 1
         idleTask?.cancel()
-        guard process != nil || launch() else {
-            requesting = false
-            blockedUntil = now.addingTimeInterval(findBinary() == nil ? 600 : 120)
+        guard let binary = findBinary() else {
+            blockedUntil = now.addingTimeInterval(600)
+            stop()
+            return
+        }
+        guard process != nil || launch(binary: binary) else {
+            blockedUntil = now.addingTimeInterval(120)
+            stop()
             return
         }
         let current = generation
@@ -118,8 +123,7 @@ public actor CodexRateLimitReader {
         return (relative.map { files.homeDirectory.appendingPathComponent($0) } + absolute.map { URL(fileURLWithPath: $0) }).first { files.isExecutable(at: $0) }
     }
 
-    private func launch() -> Bool {
-        guard let binary = findBinary() else { return false }
+    private func launch(binary: URL) -> Bool {
         var environment = ProcessInfo.processInfo.environment
         environment["PATH"] = [environment["PATH"], "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"].compactMap { $0 }.joined(separator: ":")
         do { process = try launcher.launch(executable: binary, arguments: ["app-server"], environment: environment) } catch { return false }
@@ -191,7 +195,8 @@ public actor CodexRateLimitReader {
             guard let message = JSONValue.parseObject(from: line) else { continue }
             if let id = message["id"]?.intValue, let handler = pending.removeValue(forKey: id) {
                 deadlines.removeValue(forKey: id)?.cancel()
-                handler.resume(returning: message["error"] == nil ? message["result"] : nil)
+                let result = message["result"]
+                handler.resume(returning: message["error"] == nil && result?.objectValue != nil ? result : nil)
             } else if message["method"]?.stringValue == "account/rateLimits/updated",
                       let limits = message["params"]?["rateLimits"],
                       let usage = UsageParser.codex(limits, live: true, updatedAt: time.now) {

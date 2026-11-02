@@ -17,7 +17,7 @@ public struct SystemProcessLauncher: ProcessLauncher {
     }
 }
 
-/// Foundation Processとハンドルはロックで直列化する。出力は単一ストリームへ転送する。
+/// Foundation Process와 입력 핸들은 잠금으로 직렬화하고, 출력은 단일 스트림으로 전달한다.
 private final class PipeProcess: RunningProcess, @unchecked Sendable {
     let output: AsyncStream<Data>
     private let continuation: AsyncStream<Data>.Continuation

@@ -218,4 +218,16 @@ struct LifecycleTests {
         await reader.stop()
     }
 
+    @Test func primitiveInitializeResultIsRejected() async {
+        let launcher = ScriptedProcessLauncher { bytes in
+            guard let id = JSONValue.parseObject(from: bytes)?["id"]?.intValue else { return [] }
+            return [Data("{\"id\":\(id),\"result\":true}\n".utf8)]
+        }
+        let reader = CodexRateLimitReader(fileSystem: files(), launcher: launcher)
+        await reader.refresh(minInterval: 0)
+        #expect(launcher.writes.count == 1)
+        #expect(launcher.terminationCount == 1)
+        #expect(await reader.latest == nil)
+    }
+
 }
