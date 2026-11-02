@@ -4,7 +4,7 @@
 
 - 이슈: #2 / https://github.com/huniversal/Desktoto/issues/2
 - 브랜치: `feat/architecture-setup/#2`
-- specRevision: 3
+- specRevision: 4
 - 대상 ai-run 원본: 전체
   - `~/Desktop/ai-run/Package.swift`
   - `~/Desktop/ai-run/Sources/AiRun/*.swift` (13개 파일)
@@ -56,6 +56,12 @@
 - 데이터 폴더와 스크립트(D-2 확정, 사용자 합의): 제품 동작을 원본과 같게 유지하기 위해 `~/.ai-run`, `ai-run-hook.sh`, `ai-run-statusline.sh` 이름을 그대로 쓴다.
   원본과 새 앱을 나란히 실행해 대조할 때 같은 입력 파일을 읽게 하고, 새 앱이 시작할 때 `settings.json`을 바꾸지 않게 하기 위해서다. 이름 변경은 동등성 검증 후 별도 이슈에서 다룬다.
   병행 중 새 앱의 "Claude 연동" 해제 메뉴는 두 앱이 공유하는 훅을 제거하므로 누르지 않는다(PR 설명에 기록).
+- 언어 모드(D-3 확정, 사용자가 위임): Swift 6 모드(`swift-tools-version:6.0`)를 쓴다.
+  포팅이 아니라 구조를 새로 설계하며 재구현하는 단계라 엄격한 동시성을 처음부터 켜는 비용이 낮고, [Swift 코딩 컨벤션](../../rules/swift-coding-convention.md)의 `Sendable`과 actor 격리 요구를 컴파일러가 강제하게 된다.
+  원본은 `async/await`, `@MainActor`, `Sendable` 없이 GCD, `NSLock`, `Timer`로 구성되어 있어 재설계가 필요하다(특히 `CodexRateLimitReader`).
+  AppKit 격리 때문에 막히는 타깃은 `swiftLanguageModes`를 타깃 단위로 낮출 수 있고, 그 경우 이유를 `architecture.md`에 적는다.
+- 최소 macOS(D-4 확정, 사용자가 위임): macOS 26.0을 유지한다. 원본이 쓰는 Liquid Glass(`GlassEffectContainer`, `glassEffect`, `Glass`)가 26 API이고 Liquid Glass 단계 설정이 제품 기능이다.
+  `Package.swift`의 `platforms`와 `Info.plist`의 `LSMinimumSystemVersion`을 같은 값으로 맞춘다. 개발 Mac은 macOS 27.0.1, Xcode 27.1이라 최소 버전 호환은 CI(macos-26, Xcode 26.6)로 확인하고 검증 기록에 로컬 버전을 적는다.
 - 상태와 데이터 흐름: N/A. 문서와 빌드 골격 작업이라 런타임 상태가 없다. 런타임 흐름의 원본 사실은 `overview.md`에 있다.
 - 선택한 방식과 이유: 작업 순서를 "개요 문서, 결정, `architecture.md`, `Package.swift` 골격"으로 둔다.
   언어 모드, 최소 macOS, zstd, 이름이 `Package.swift`의 전제이기 때문에 결정이 끝나기 전에는 골격을 만들지 않는다.
@@ -105,8 +111,8 @@
 |---|---|---|---|
 | D-1 | 이름 정리 | 확정됨(specRevision 2): 앱, 실행 파일, 패키지는 `Desktoto`, 번들 ID는 `com.huniverse.desktoto`. 스크립트 이름은 D-2와 함께 정한다 | 해결 |
 | D-2 | 데이터 폴더 `~/.ai-run`과 스크립트 이름 | 확정됨(specRevision 3): `~/.ai-run`, `ai-run-hook.sh`, `ai-run-statusline.sh` 유지. 이름 변경은 동등성 검증 후 별도 이슈 | 해결 |
-| D-3 | Swift 언어 모드 | Swift 5 모드 또는 Swift 6 모드(엄격한 동시성). 원본은 `swift-tools-version:5.9` | 막음 |
-| D-4 | 최소 macOS 버전 | 원본과 같이 26 이상 유지(Liquid Glass 사용) 또는 낮춤. CI는 macos-26 러너와 Xcode 26.6으로 고정되어 있다(#1) | 막음 |
+| D-3 | Swift 언어 모드 | 확정됨(specRevision 4): Swift 6 모드, `swift-tools-version:6.0`. 사용자가 판단을 위임했다 | 해결 |
+| D-4 | 최소 macOS 버전 | 확정됨(specRevision 4): macOS 26.0 유지. 사용자가 판단을 위임했다 | 해결 |
 | D-5 | zstd 처리 | 벤더링 `CZstd` 유지, 시스템 `libzstd`, 외부 Swift 패키지. Claude 데스크탑 앱 캐시 해독(`ClaudeDesktopUsage.swift`)용이다 | 막음 |
 | D-6 | 모듈 구성안 | 도메인 모델, 외부 경계, 기능, 디자인 시스템, 앱을 어떤 타깃으로 나누고 어떤 방향으로 의존시킬지 | 막음 |
 | D-7 | 외부 경계 프로토콜 설계 | 파일 시스템, 프로세스, 시간, AppleScript 각각의 프로토콜 범위와 대체 구현 방식, 합성 데이터 테스트 전략 | 막음 |
@@ -123,3 +129,4 @@
 | 1 | 최초 설계 | 이슈 #2의 작업 목록과 `overview.md` 조사 결과를 바탕으로 정리. 결정 항목은 사용자와 합의 전이므로 미결정으로 둔다 |
 | 2 | D-1 확정, 패키지 위치를 `apps/macos`로 변경, AC-11 추가, D-2에 병행 설치 고려 추가 | 사용자가 이름 결정에 합의했고, #1이 병합되어 모노레포 구조와 임시 골격, 패키징 스크립트가 들어왔다. 영향받는 AC: AC-7, AC-8, AC-11 |
 | 3 | D-2 확정(`~/.ai-run`과 스크립트 이름 유지), 제외 항목에 설치된 `ai-run` 앱과 사용자 설정 불변 조건 추가 | 동작을 원본과 같게 하고 동등성 검증 입력을 맞추기 위해 사용자가 합의했다. 영향받는 AC: AC-6(이름 항목에 데이터 폴더와 스크립트가 유지로 기록됨) |
+| 4 | D-3 확정(Swift 6 모드, tools-version 6.0), D-4 확정(macOS 26.0 유지) | 사용자가 두 결정을 위임했다. 영향받는 AC: AC-4, AC-7, AC-9 |
