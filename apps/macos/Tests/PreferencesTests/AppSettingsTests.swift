@@ -89,7 +89,10 @@ struct AppSettingsTests {
         defaults.set(3, forKey: "theme")
         defaults.set(true, forKey: "colorMode")
         defaults.set("no", forKey: "sendsNotifications")
-        defaults.set(1, forKey: "showsUsagePanel")
+        defaults.set(0, forKey: "showsUsagePanel")
+        defaults.set(0, forKey: "showsContextPanel")
+        defaults.set(0, forKey: "connectsClaudeCode")
+        defaults.set(1, forKey: "fetchesCodexUsage")
         let settings = AppSettings(defaults: defaults)
 
         #expect(settings.glassStyle == .regular)
@@ -97,6 +100,9 @@ struct AppSettingsTests {
         #expect(settings.colorMode == .white)
         #expect(settings.sendsNotifications)
         #expect(settings.showsUsage)
+        #expect(settings.showsContext)
+        #expect(settings.connectsClaudeCode)
+        #expect(settings.fetchesCodexUsage)
     }
 
     // AC-3

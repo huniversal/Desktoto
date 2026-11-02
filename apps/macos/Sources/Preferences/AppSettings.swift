@@ -51,14 +51,21 @@ public final class AppSettings {
     // 저장된 값이 없으면 두 패널을 모두 보여주고, 흰색, 시스템 테마, 보통 유리를 쓰고, 알림을 보내고, 두 연동을 켠다.
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        showsUsage = defaults.object(forKey: Key.showsUsage) as? Bool ?? true
-        showsContext = defaults.object(forKey: Key.showsContext) as? Bool ?? true
+        showsUsage = Self.readBool(defaults, forKey: Key.showsUsage) ?? true
+        showsContext = Self.readBool(defaults, forKey: Key.showsContext) ?? true
         colorMode = defaults.string(forKey: Key.colorMode).flatMap(ColorMode.init(rawValue:)) ?? .white
         theme = defaults.string(forKey: Key.theme).flatMap(Theme.init(rawValue:)) ?? .system
         glassStyle = defaults.string(forKey: Key.glassStyle).flatMap(GlassStyle.init(rawValue:)) ?? .regular
-        sendsNotifications = defaults.object(forKey: Key.sendsNotifications) as? Bool ?? true
-        connectsClaudeCode = defaults.object(forKey: Key.connectsClaudeCode) as? Bool ?? true
-        fetchesCodexUsage = defaults.object(forKey: Key.fetchesCodexUsage) as? Bool ?? true
+        sendsNotifications = Self.readBool(defaults, forKey: Key.sendsNotifications) ?? true
+        connectsClaudeCode = Self.readBool(defaults, forKey: Key.connectsClaudeCode) ?? true
+        fetchesCodexUsage = Self.readBool(defaults, forKey: Key.fetchesCodexUsage) ?? true
+    }
+
+    // 숫자 0과 1은 `as? Bool`로 읽히므로, 실제로 Bool로 저장된 값만 받아들인다.
+    private static func readBool(_ defaults: UserDefaults, forKey key: String) -> Bool? {
+        guard let value = defaults.object(forKey: key) as CFTypeRef?,
+              CFGetTypeID(value) == CFBooleanGetTypeID() else { return nil }
+        return defaults.bool(forKey: key)
     }
 
     // 두 패널이 모두 꺼져 있으면 보여줄 것이 없어서 패널을 열지 않는다.
