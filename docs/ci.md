@@ -45,7 +45,7 @@ Git 실패나 입력 누락은 스크립트 실패이고, 그 결과 `CI Result`
 - 문서만 바꿔 모든 검사를 생략해도 감지 성공과 의도된 생략을 확인한 뒤 통과한다.
 
 워크플로 전체에 경로 필터를 두지 않고 job을 조건부로 실행한다. 그래서 필수 검사가 영원히 대기하는 일이 없다.
-필수 검사로 연결할 이름은 `CI Result` 하나다. 브랜치 보호 규칙은 아직 적용하지 않았고, `CI Result`가 한 번 성공한 뒤 적용한다.
+필수 검사로 연결한 이름은 `CI Result` 하나다. 적용한 규칙은 [브랜치 보호](#브랜치-보호)에 기록했다.
 
 ## 환경과 버전
 
@@ -54,6 +54,22 @@ Git 실패나 입력 누락은 스크립트 실패이고, 그 결과 `CI Result`
   [macOS 26 러너 설치 목록](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md)을 확인한다.
 - `actions/checkout`은 v7.0.1을 전체 커밋 SHA로 고정했다. 갱신할 때 공식 태그와 변경 내용을 확인하고 SHA와 버전 주석을 함께 바꾼다.
 - 의존성 캐시는 쓰지 않는다. 외부 패키지가 생기면 캐시를 검토한다.
+
+## 브랜치 보호
+
+저장소 설정(Settings, Rules, Rulesets)의 `protect-main-develop` 룰셋(ID 26367609)을 `main`과 `develop`에 적용했다.
+이 설정은 저장소 파일이 아니라 GitHub에 있으므로 바꾸면 이 표도 함께 갱신한다.
+
+| 규칙 | 값 |
+| --- | --- |
+| PR 필수 | 승인 인원 0명 (1인 저장소), 병합 방식은 Merge commit만 허용, 리뷰 스레드 해결은 강제하지 않음 |
+| 필수 상태 검사 | `CI Result` (GitHub Actions), 최신 base 반영은 강제하지 않음 |
+| 브랜치 삭제와 force push | 차단 |
+| bypass 권한자 | 없음 (관리자도 우회 불가) |
+
+보호 대상은 두 브랜치뿐이라 `feat/*` 브랜치는 자유롭게 push하고 force push할 수 있다.
+`.github/**` 파일만 따로 보호하는 규칙은 두지 않았다. PR의 CI 정의 변경은 PR 필수와 `CI Result`로만 걸러지며,
+워크플로 파일도 PR의 merge commit에서 읽히므로 이 보호에는 한계가 있다.
 
 ## 앱 패키징
 
@@ -103,5 +119,4 @@ NEEDS_JSON='{"changes":{"result":"success","outputs":{"macos":"true","web":"fals
 ## 후속 작업
 
 - Web job: #12에서 랜딩 스택을 정한 뒤 추가하고 `check-result.sh`에 `check_job web web`을 더한다.
-- 브랜치 보호: `main`, `develop`에 PR 필수와 `CI Result` 필수 검사를 적용한다.
 - 코드 서명 인증서와 공증, 자동 업데이트.
