@@ -74,10 +74,10 @@ Desktoto의 색, 간격, 반경, 그림자, 타이포, 모션과 공용 컴포�
 
 ## 아직 쓰는 곳이 없는 항목
 
-원본 패널을 옮기는 #10에서 처음 쓰인다. 지금은 컴포넌트가 사용하지 않는다.
+- `Theme`: 설정 값으로만 존재한다. 패널 테마 적용은 앱 쪽(#11)에서 한다.
 
-- `Theme`: 설정 값으로만 존재한다. 패널 테마 적용은 앱 쪽에서 한다.
-- `DSMotion.stateChange`, `DSMotion.detail`: 줄 상태 전환과 상세 줄 펼침 애니메이션에서 쓴다.
+`DSMotion.stateChange`, `DSMotion.detail`은 #10의 `SessionPanel`이 줄 상태 전환과 상세 줄 펼침 애니메이션에서 쓴다.
+화면 배치 값(상세 줄 예약 높이, 사용량 열 폭, 완료 점 위치 보정 등)은 토큰이 아니라 `SessionPanel/PanelLayout.swift`에 둔다.
 
 ## 접근 범위
 
