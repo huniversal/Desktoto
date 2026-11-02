@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="${APP_NAME:-Desktoto}"
 EXECUTABLE_NAME="${EXECUTABLE_NAME:-Desktoto}"
-BUNDLE_ID="${BUNDLE_ID:-com.huniverse.airun}"
+BUNDLE_ID="${BUNDLE_ID:-com.huniverse.desktoto}"
 VERSION="${VERSION:-1.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
 RESOURCES_DIR="${RESOURCES_DIR:-}"
