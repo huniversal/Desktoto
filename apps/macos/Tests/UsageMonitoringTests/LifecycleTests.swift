@@ -41,9 +41,11 @@ struct LifecycleTests {
     let now = Date(timeIntervalSince1970: 2_000_000_000)
 
     private func waitFor(_ condition: @escaping () async -> Bool) async throws {
-        for _ in 0..<10_000 {
+        // yield 횟수는 CPU가 바쁠 때 금방 소진되므로 마감 시간까지 짧게 쉬면서 기다린다.
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        while ContinuousClock.now < deadline {
             if await condition() { return }
-            await Task.yield()
+            try await Task.sleep(for: .milliseconds(1))
         }
         throw CocoaError(.coderValueNotFound)
     }
@@ -154,7 +156,7 @@ struct LifecycleTests {
         #expect(await reader.latest == nil)
     }
 
-    @Test func missingBinaryWaitsTenMinutes() async {
+    @Test func missingBinaryWaitsTenMinutes() async throws {
         let files = InMemoryFileSystem()
         let clock = FixedTimeSource(now: now)
         let launcher = ScriptedProcessLauncher { _ in [] }
@@ -166,11 +168,7 @@ struct LifecycleTests {
         #expect(launcher.launchCount == 0)
         clock.advance(by: 1)
         let fetch = Task { await reader.refresh(minInterval: 0) }
-        for _ in 0..<1000 {
-            if launcher.launchCount == 1 { break }
-            await Task.yield()
-        }
-        #expect(launcher.launchCount == 1)
+        try await waitFor { launcher.launchCount == 1 }
         await reader.stop()
         await fetch.value
     }

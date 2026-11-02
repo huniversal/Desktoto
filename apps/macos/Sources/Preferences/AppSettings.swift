@@ -1,0 +1,75 @@
+import DesignSystem
+import Foundation
+import Observation
+
+// 우클릭 메뉴에서 바꾸는 설정. 바뀌는 즉시 저장하고, 패널(SwiftUI)이 값을 지켜보다가 바로 다시 그린다.
+// 키 이름은 원본(ai-run)과 같게 유지한다. 저장된 값이 enum과 맞지 않으면 기본값을 쓴다.
+@MainActor
+@Observable
+public final class AppSettings {
+    enum Key {
+        static let showsUsage = "showsUsagePanel"
+        static let showsContext = "showsContextPanel"
+        static let colorMode = "colorMode"
+        static let sendsNotifications = "sendsNotifications"
+        static let glassStyle = "glassStyle"
+        static let theme = "theme"
+        static let connectsClaudeCode = "connectsClaudeCode"
+        static let fetchesCodexUsage = "fetchesCodexUsage"
+    }
+
+    @ObservationIgnored private let defaults: UserDefaults
+
+    public var showsUsage: Bool {
+        didSet { defaults.set(showsUsage, forKey: Key.showsUsage) }
+    }
+    public var showsContext: Bool {
+        didSet { defaults.set(showsContext, forKey: Key.showsContext) }
+    }
+    public var colorMode: ColorMode {
+        didSet { defaults.set(colorMode.rawValue, forKey: Key.colorMode) }
+    }
+    public var theme: Theme {
+        didSet { defaults.set(theme.rawValue, forKey: Key.theme) }
+    }
+    public var glassStyle: GlassStyle {
+        didSet { defaults.set(glassStyle.rawValue, forKey: Key.glassStyle) }
+    }
+    // Claude Code 설정에 연동을 자동으로 넣을지. 사용자가 연동을 해제하면 false가 되어 다시 넣지 않는다.
+    public var connectsClaudeCode: Bool {
+        didSet { defaults.set(connectsClaudeCode, forKey: Key.connectsClaudeCode) }
+    }
+    // Codex 사용량을 codex 프로그램에 물어봐서 현재 값으로 보여줄지. 끄면 세션 기록의 값만 쓴다.
+    public var fetchesCodexUsage: Bool {
+        didSet { defaults.set(fetchesCodexUsage, forKey: Key.fetchesCodexUsage) }
+    }
+    // macOS 알림(배너) 여부. 소리와 아이콘 표시는 이 설정과 무관하다.
+    public var sendsNotifications: Bool {
+        didSet { defaults.set(sendsNotifications, forKey: Key.sendsNotifications) }
+    }
+
+    // 저장된 값이 없으면 두 패널을 모두 보여주고, 흰색, 시스템 테마, 보통 유리를 쓰고, 알림을 보내고, 두 연동을 켠다.
+    public init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        showsUsage = Self.readBool(defaults, forKey: Key.showsUsage) ?? true
+        showsContext = Self.readBool(defaults, forKey: Key.showsContext) ?? true
+        colorMode = defaults.string(forKey: Key.colorMode).flatMap(ColorMode.init(rawValue:)) ?? .white
+        theme = defaults.string(forKey: Key.theme).flatMap(Theme.init(rawValue:)) ?? .system
+        glassStyle = defaults.string(forKey: Key.glassStyle).flatMap(GlassStyle.init(rawValue:)) ?? .regular
+        sendsNotifications = Self.readBool(defaults, forKey: Key.sendsNotifications) ?? true
+        connectsClaudeCode = Self.readBool(defaults, forKey: Key.connectsClaudeCode) ?? true
+        fetchesCodexUsage = Self.readBool(defaults, forKey: Key.fetchesCodexUsage) ?? true
+    }
+
+    // 숫자 0과 1은 `as? Bool`로 읽히므로, 실제로 Bool로 저장된 값만 받아들인다.
+    private static func readBool(_ defaults: UserDefaults, forKey key: String) -> Bool? {
+        guard let value = defaults.object(forKey: key) as CFTypeRef?,
+              CFGetTypeID(value) == CFBooleanGetTypeID() else { return nil }
+        return defaults.bool(forKey: key)
+    }
+
+    // 두 패널이 모두 꺼져 있으면 보여줄 것이 없어서 패널을 열지 않는다.
+    public var hasVisiblePanel: Bool {
+        showsUsage || showsContext
+    }
+}

@@ -48,6 +48,7 @@ let package = Package(
         .testTarget(name: "BoundariesTests", dependencies: ["Boundaries", "TestSupport"]),
         .testTarget(name: "ClaudeIntegrationTests", dependencies: ["ClaudeIntegration", "Boundaries", "TestSupport"]),
         .testTarget(name: "SessionMonitoringTests", dependencies: ["SessionMonitoring", "Domain", "Boundaries", "TestSupport"]),
+        .testTarget(name: "PreferencesTests", dependencies: ["Preferences", "DesignSystem", "Boundaries", "TestSupport"]),
         .testTarget(name: "TerminalIntegrationTests", dependencies: ["TerminalIntegration", "Domain", "Boundaries", "TestSupport"]),
         .testTarget(name: "MenuBarIconTests", dependencies: ["MenuBarIcon", "DesignSystem"])
     ],
