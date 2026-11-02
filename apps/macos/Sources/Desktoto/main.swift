@@ -1,3 +1,1 @@
-import DesktotoCore
-
-print(AppInfo.name)
+// 앱 진입점과 조립은 #11에서 구현한다.
