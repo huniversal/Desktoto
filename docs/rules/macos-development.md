@@ -24,15 +24,16 @@
 
 ## 빌드와 테스트
 
-Swift Package 기반이다.
+Swift Package 기반이며 패키지는 `apps/macos`에 있다. CI 구성은 [CI와 릴리스 운영](../ci.md)을 따른다.
 
 ```bash
+cd apps/macos
 swift build
 swift test
 ```
 
 - 테스트 타깃이 없으면 `swift test`의 통과는 의미가 없다. 테스트가 없다는 사실을 보고에 밝힌다.
-- 앱 번들 생성 방식은 아키텍처 설계 단계에서 정한다(원본은 `scripts/build-app.sh`).
+- 앱 번들은 `apps/macos/scripts/build-app.sh`로 만든다. 설치와 실행은 `install-app.sh`가 따로 맡는다.
 - 빌드 통과만으로 파일 접근, 알림, 외부 앱 연동 같은 실제 동작을 검증했다고 하지 않는다.
 - 실기기 검증에서는 macOS와 Xcode 버전, 대상 외부 앱과 버전을 기록한다.
 - 코드 서명, 공증, 배포 설정은 별도 배포 작업이다.
