@@ -79,7 +79,7 @@ apps/macos/
 | `ClaudeIntegration` | `settings.json`의 훅과 statusLine 연결과 해제, 백업, 스크립트 설치 | `Boundaries` | #7 | `ClaudeIntegration`, `scripts/*.sh` |
 | `TerminalIntegration` | CLI 프로세스 탐색, 세션과의 매칭, 터미널 생존 확인, Claude 데스크탑 앱 딥링크 매핑, iTerm2와 Terminal과 Orca 탭 이동, 세션 열기 | `Domain`, `Boundaries` | #5 | `TerminalJumper`, `SessionWatcher`의 생존 확인 |
 | `Preferences` | 설정 모델과 저장, 알림, 로그인 항목 | `DesignSystem`, `Boundaries` | #8 | `AppSettings`, `NotificationSender` |
-| `MenuBarIcon` | 캐릭터 격자, 프레임 계산, 이미지 그리기 | `Domain`, `DesignSystem` | #9 | `SpriteRenderer` |
+| `MenuBarIcon` | 캐릭터 격자, 프레임 계산, 상태에서 보여 줄 프레임 선택과 진행, 이미지 그리기와 비트맵 묶음 | `Domain`, `DesignSystem` | #9 | `SpriteRenderer`, `AppDelegate`의 아이콘 갱신 |
 | `SessionPanel` | 패널 View, 패널 모델, 투명 패널 창과 위치 계산 | `Domain`, `DesignSystem` | #10 | `SessionPanelView`, `AppDelegate`의 `GlassPanel` |
 | `Desktoto` | 진입점, 오케스트레이션(감시 타이머, 상태에서 UI로 전달, 알림 트리거, 세션 열기, 시작 시 연동), 우클릭 메뉴 | 위 모듈 중 `CZstd`, `TestSupport`를 제외한 모두 | #11 | `AppDelegate`, `main` |
 | `CZstd` | 벤더링한 zstd 해독부 (C) | 없음 | #6 | `Sources/CZstd` |
