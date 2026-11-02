@@ -24,6 +24,9 @@ public struct FileTail: Sendable, Equatable {
 /// 기록 파일을 읽는 데 필요한 동작만 굵게 정의한 파일 시스템 경계. 읽지 못하면 nil을 돌려준다.
 public protocol FileSystem: Sendable {
     var homeDirectory: URL { get }
+    func listDirectory(at url: URL) -> [FileEntry]
+    func fileSize(at url: URL) -> Int?
+    func isExecutable(at url: URL) -> Bool
 
     /// root 아래의 파일을 하위 폴더까지 찾아 확장자가 맞는 것만 수정 시각과 함께 돌려준다. 숨김 파일과 숨김 폴더는 제외한다.
     func listFiles(under root: URL, withExtension pathExtension: String) -> [FileEntry]
