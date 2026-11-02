@@ -4,7 +4,7 @@
 
 - 이슈: #4 / https://github.com/huniversal/Desktoto/issues/4
 - 브랜치: `feat/session-log-watcher/#4`
-- specRevision: 1
+- specRevision: 2
 - 대상 ai-run 원본:
   - `~/Desktop/ai-run/Sources/AiRun/SessionWatcher.swift` (736줄, 기록 판정 책임만)
   - `~/Desktop/ai-run/Sources/AiRun/LogTail.swift` (25줄)
@@ -70,20 +70,24 @@ apps/macos/Sources/
 │   ├── SessionRunState.swift   enum SessionRunState, enum WaitingKind
 │   └── SessionInfo.swift       struct SessionInfo
 ├── Boundaries/
-│   ├── FileSystem.swift        protocol FileSystem (+ 목록 항목 값 타입)
+│   ├── FileSystem.swift        protocol FileSystem, FileEntry, FileTail
 │   ├── LiveFileSystem.swift    FileManager 기반 실제 구현
 │   ├── TimeSource.swift        protocol TimeSource, SystemTimeSource
 │   ├── JSONValue.swift         Sendable JSON 값 (기록 한 줄의 해석 결과)
-│   └── LogTail.swift           끝부분 읽기(경계 호출)와 줄 해석(순수 함수)
+│   └── LogTail.swift           끝부분 읽기(경계 호출)와 줄 해석(순수 함수), LogTailResult
 ├── SessionMonitoring/
-│   ├── SessionLogFinder.swift       기록 파일 탐색, 600초 창 필터
-│   ├── ActivityJudge.swift          Claude, Codex 기록에서 활동 시각과 결과 판정(순수)
-│   ├── RunStateJudge.swift          결과와 활동 시각에서 SessionRunState 판정(순수)
-│   ├── WaitingJudge.swift           기록에서 질문, 계획 승인 대기 판정(순수)
-│   ├── WaitingSignalReader.swift    ~/.ai-run/waiting 읽기, 만료와 처리 완료 판정
-│   ├── SessionInfoReader.swift      모델, 토큰, 제목, 작업 폴더 읽기
-│   ├── ContextWindowResolver.swift  Claude 컨텍스트 창 크기 판정
-│   └── SessionMonitor.swift         위 조각을 조립하고 캐시를 소유하는 진입점
+│   ├── SessionMonitoringPolicy.swift  원본의 상수 모음
+│   ├── LogFile.swift                  LogFile, LogOutcome, ActivitySnapshot
+│   ├── RecordTimestamp.swift          기록의 ISO 8601 시각 해석
+│   ├── LogRecordReader.swift          끝부분을 단계적으로 넓혀 읽기
+│   ├── ActivityJudge.swift            Claude, Codex 기록에서 활동 시각과 결과 판정(순수)
+│   ├── RunStateJudge.swift            결과와 활동 시각에서 SessionRunState 판정(순수)
+│   ├── WaitingJudge.swift             기록에서 질문, 계획 승인 대기 판정(순수)
+│   ├── WaitingSignalReader.swift      ~/.ai-run/waiting 읽기, 만료와 처리 완료 판정
+│   ├── CodexOrigin.swift              Codex 첫 줄(session_meta) 해석과 열기 URL
+│   ├── SessionInfoReader.swift        모델, 토큰, 제목, 작업 폴더 읽기
+│   ├── ContextWindowResolver.swift    Claude 컨텍스트 창 크기 판정
+│   └── SessionMonitor.swift           기록 탐색과 캐시를 소유하고 위 조각을 조립하는 진입점 (actor)
 └── TestSupport/
     ├── InMemoryFileSystem.swift
     └── FixedTimeSource.swift
@@ -155,7 +159,7 @@ apps/macos/Sources/
 | AC-5 | `SessionMonitoringTests`: 신호 파일(유효, 1800초 경과, 숫자가 아닌 내용, 뒤에 새 기록 있음), 질문과 계획 승인 도구 호출, `wrap_up` ask 있음과 없음과 빈 문자열, 도구 결과만 있는 `user`, 턴 경계 | 대기 이유와 `isRunning`이 표대로 |
 | AC-6 | `SessionMonitoringTests`: 모델과 토큰이 큰 줄 뒤에 있어 64KB 창 밖에 있는 경우를 포함한 합성 기록 | 모델, 토큰, 프로젝트 이름, 제목이 기대와 일치. 창을 넓혀 찾음 |
 | AC-7 | `SessionMonitoringTests`: 읽기 횟수를 세는 `FileSystem` 대체 구현으로 같은 수정 시각에 두 번 판정 | 두 번째에 본문 읽기 횟수가 늘지 않음 |
-| AC-8 | `FixedTimeSource`와 `InMemoryFileSystem`만으로 모든 테스트 실행. 테스트 코드에서 `FileManager`와 `Date()` 직접 사용 검색 | 직접 사용 없음 |
+| AC-8 | `FixedTimeSource`와 `InMemoryFileSystem`만으로 `SessionMonitoringTests` 실행. `Sources/SessionMonitoring`과 `Tests/SessionMonitoringTests`에서 `FileManager`와 `Date()` 직접 사용 검색 | 직접 사용 없음. `Boundaries`의 `LiveFileSystem` 통합 테스트만 임시 폴더에서 `FileManager`를 쓴다 |
 | AC-9 | `SessionMonitoringTests`: 각 단계별 합성 파일(statusLine 일치와 불일치, config 접두어 둘 중 긴 쪽, `[1m]` 설정, `CLAUDE_CODE_DISABLE_1M_CONTEXT`, 모델 이름 경계 `opus-4-6`과 `opus-4-7`, `sonnet-5`, `haiku-5-4`와 `haiku-5-5`, 토큰 초과 보정). 환경 변수는 주입 | 단계 우선순위와 추정 여부가 표대로 |
 | AC-10 | `SessionMonitoringTests`: Codex 첫 줄 `Codex Desktop`, `codex-tui`, `codex_cli_rs`, 첫 줄이 1MB를 넘거나 개행 없음, Claude `entrypoint` 유무 | `openURL`과 터미널 세션 여부가 기대와 일치 |
 | AC-11 | `cd apps/macos && swift build && swift test`, `Package.swift` diff 검토 | 모두 통과, 테스트 개수와 결과를 PR에 기록 |
@@ -175,10 +179,11 @@ apps/macos/Sources/
 | D-C | `ACTIVE_WINDOW`와 `CLAUDE_PENDING_WINDOW` 두 상수를 유지한다. |
 | D-D | `SessionMonitor`는 `actor`로 시작하고 #11에서 조정한다. |
 | D-E | `LogTail`의 첫 줄 버림은 동등성을 위해 원본대로 두고, 이 사실을 `docs/reverse/overview.md`에 기록한다. 줄 경계 확인으로 고치는 일은 동등성 검증 뒤에 정한다. |
-| D-F | 질문 대기 캐시는 현재 대상 파일에 없는 항목을 정리한다. |
+| D-F | 질문 대기 캐시는 현재 대상 파일에 없는 항목을 정리한다. 캐시가 `private`라 단위 테스트는 두지 않는다(메모리 외 영향 없음). |
 
 ## 주요 설계 변경
 
 | specRevision | 변경한 결정 | 이유 |
 | --- | --- | --- |
 | 1 | 최초 설계. 미결정 D-A부터 D-F를 추천안으로 확정해 범위에 Claude 창 크기 판정과 Codex 열기 URL 추가 | 사용자와 합의한 작업 범위 |
+| 2 | 파일 구조를 구현에 맞춤(`SessionLogFinder` 없이 탐색을 `SessionMonitor`에 둠, 보조 타입 파일 추가). AC-8 검증 범위 명확화. D-F 테스트 생략 명시 | 탐색이 활동 캐시와 얽혀 있어 분리하면 캐시 소유가 복잡해짐. 코드 리뷰 지적 반영. 영향 AC: AC-8 |
