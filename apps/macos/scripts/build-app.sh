@@ -2,7 +2,7 @@
 # 앱 번들(.app)을 만들고 ad-hoc 서명한다. 설치와 실행은 하지 않는다(install-app.sh 참고).
 # 사용법: sh scripts/build-app.sh
 # 환경 변수(모두 선택): APP_NAME, EXECUTABLE_NAME, BUNDLE_ID, VERSION, BUILD_NUMBER, RESOURCES_DIR
-#   RESOURCES_DIR: 지정하면 그 폴더의 내용을 번들의 Contents/Resources에 복사한다.
+#   RESOURCES_DIR: 기본 Resources 폴더의 내용을 번들의 Contents/Resources에 복사한다.
 set -e
 cd "$(dirname "$0")/.."
 
@@ -11,7 +11,7 @@ EXECUTABLE_NAME="${EXECUTABLE_NAME:-Desktoto}"
 BUNDLE_ID="${BUNDLE_ID:-com.huniverse.desktoto}"
 VERSION="${VERSION:-1.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
-RESOURCES_DIR="${RESOURCES_DIR:-}"
+RESOURCES_DIR="${RESOURCES_DIR:-Resources}"
 
 BUILD_DIR="build"
 APP_DIR="$BUILD_DIR/$APP_NAME.app"

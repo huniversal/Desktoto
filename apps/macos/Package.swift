@@ -46,6 +46,7 @@ let package = Package(
         .testTarget(name: "CZstdTests", dependencies: ["CZstd"]),
         .testTarget(name: "DesignSystemTests", dependencies: ["DesignSystem"]),
         .testTarget(name: "BoundariesTests", dependencies: ["Boundaries", "TestSupport"]),
+        .testTarget(name: "ClaudeIntegrationTests", dependencies: ["ClaudeIntegration", "Boundaries", "TestSupport"]),
         .testTarget(name: "SessionMonitoringTests", dependencies: ["SessionMonitoring", "Domain", "Boundaries", "TestSupport"]),
         .testTarget(name: "TerminalIntegrationTests", dependencies: ["TerminalIntegration", "Domain", "Boundaries", "TestSupport"])
     ],

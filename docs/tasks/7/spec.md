@@ -41,7 +41,7 @@ Claude Code의 승인 대기와 사용량 입력을 앱에 전달하는 연동�
 
 - 파일 구조와 책임: `apps/macos/Sources/ClaudeIntegration/`에서 순수 설정 변환과 파일 연동 서비스를 분리한다. 파일별 세부 이름은 구현 시 역할에 맞춰 정한다.
 - 경계: `apps/macos/Sources/Boundaries/`에 설정 파일 읽기와 쓰기에 필요한 별도 프로토콜과 Live 구현을 추가한다. 기존 읽기용 `FileSystem`, 프로세스 경계와 #6 구현은 변경하지 않는다. 가짜 구현은 `apps/macos/Sources/TestSupport/`에 추가한다.
-- 리소스: `apps/macos/Resources/ai-run-hook.sh`, `apps/macos/Resources/ai-run-statusline.sh`를 번들의 Resources에 포함한다. 기존 `apps/macos/scripts/build-app.sh`의 RESOURCES_DIR 지원을 활용하고 기본 리소스 경로 처리 필요 여부를 확인한다.
+- 리소스: `apps/macos/Resources/ai-run-hook.sh`, `apps/macos/Resources/ai-run-statusline.sh`를 번들의 Resources에 포함한다. 기존 `apps/macos/scripts/build-app.sh`의 RESOURCES_DIR 지원을 활용하고 기본값을 Resources로 지정한다.
 - 테스트 등록: `apps/macos/Package.swift`에 ClaudeIntegrationTests를 추가한다. 변경 시 `docs/architecture.md`도 맞춘다.
 - 상태: 연결 상태는 설정 파일에서 조회한다. 사용자의 자동 연결 허용 여부는 호출자가 전달하며, 영속 저장 책임은 #11에 둔다. 해제 이후 허용 여부가 false이면 시작 연결은 파일을 변경하지 않는다.
 - 호환성: #2에서 결정한 `~/.ai-run`, 두 스크립트 이름, waiting 파일과 status JSON 형식을 유지한다. #6과의 직접 import는 추가하지 않는다.
@@ -50,7 +50,6 @@ Claude Code의 승인 대기와 사용량 입력을 앱에 전달하는 연동�
 - 안전한 쓰기: 설정 파일의 심볼릭 링크를 해석한 실제 대상에 백업과 원자적 쓰기를 수행한다. 기존 설정은 읽기에 성공한 경우에만 변경한다. 백업 실패 시 설정 쓰기를 진행하지 않는다. 같은 초의 백업은 번호를 붙여 보존한다.
 - 실패 처리: 설정 없음과 읽기 실패를 구별한다. 빈 파일은 원본처럼 빈 객체로 취급하고, 객체가 아닌 JSON과 손상된 JSON은 실패로 보고 원본을 보존한다. 스크립트 설치나 설정 쓰기 실패를 연결 성공으로 보고하지 않는다. 설치 후 설정 쓰기가 실패하면 스크립트가 남을 수 있으며 그 한계를 결과와 검증에 기록한다.
 - 재진입: 같은 서비스 인스턴스의 연결과 해제는 직렬화한다. 외부 편집기와 여러 앱 프로세스에 걸친 완전한 트랜잭션은 보장하지 않는다.
-
 - 승인된 해제 방식: 외부 명령으로 감싼 statusLine은 설정 전체를 변경하지 않고 복원 불가를 반환한다. 정확히 생성한 형식만 복원한다.
 
 ## 완료 조건
@@ -83,9 +82,8 @@ Claude Code의 승인 대기와 사용량 입력을 앱에 전달하는 연동�
 ## 미결정 사항
 
 - 최초 실행의 자동 연결 기본값은 #7과 #11에서 확정해야 한다. 제안은 미설정 상태에서는 자동 연결하지 않고 명시적 연결을 받는 방식이다. #7 모듈의 명시적 연결과 비허용 시 건너뛰기 구현을 막지 않는다.
-- 없음. 외부 명령으로 감싼 statusLine은 변경하지 않고 복원 불가를 알리는 처리에 사용자 승인을 받았다. 정확한 생성 형식만 복원한다.
 - 저장 시 실패한 스크립트 설치의 전역 롤백은 원본에 없다. 현재 설계는 설정 파일 보존과 실패 결과에 집중하며, 설치된 스크립트가 남는 경우를 명시한다.
-- 명세 선행 커밋과 구현 진행에 사용자 승인을 받았다. push와 PR 권한은 포함하지 않는다.
+- 명세 선행 커밋과 구현 진행에 사용자 승인을 받았다. 2026-11-03에는 최종 검토와 구현 커밋도 승인받았다. push와 PR 권한은 포함하지 않는다.
 
 ## 주요 설계 변경
 
@@ -97,4 +95,30 @@ Claude Code의 승인 대기와 사용량 입력을 앱에 전달하는 연동�
 ## 검증 기록
 
 - 2026-11-02: 원본 ClaudeIntegration.swift를 임시 캐시 경로로 컴파일해 합성 명령의 해제를 실행했다. 정상 생성 명령의 인용 왕복은 성공했고, 외부 sh -c가 감싼 명령은 바깥 명령이 손실됐다. 상세 입력과 결과는 원본 동작 문서에 기록했다.
-- 앱 구현, 앱 빌드, 전체 테스트, 실제 Claude Code 연동은 아직 실행하지 않았다.
+- 2026-11-02: 기능 구현 완료. 명세 선행 커밋은 `b21a717`이며 당시 구현과 검증 기록은 미커밋 상태였다.
+- 검증 환경: macOS 27.0.1 (26A434), Xcode 27.1 (27A9275), Apple Swift 6.4, jq-1.7.1-apple (/usr/bin/jq).
+- AC-1부터 AC-10: 전체 테스트 155개 통과. 이 중 ClaudeIntegrationTests 29개이며 매개변수 입력을 추가로 실행한다. 연결과 해제, 부분 연결 복구, 기존 연결 무변경, 백업 충돌, 백업과 쓰기 실패, 읽기 권한 거부, 손상된 JSON, 외부 wrapper 보존, 동시 연결, status saver 읽기 제한을 검증했다.
+- 임시 HOME에서 실제 /bin/sh와 jq를 실행했다. hook의 transcript 우선과 session_id 대체, status JSON의 입력 보존, 설치 경로에 작은따옴표가 있는 생성 명령의 실행, 기존 명령의 stdin과 stdout 전달을 확인했다.
+- Live 경계는 임시 폴더의 상대 심볼릭 링크를 유지하고 실제 대상만 변경했다. 백업은 원본 바이트를 보존했다.
+- AC-11: debug 빌드와 전체 테스트 성공. 최초 기본 캐시 경로는 샌드박스로 막혔고, 테스트 코드의 누락된 try를 수정한 뒤 최종 테스트가 통과했다. 최종 명령은 아래와 같다. 임시 캐시와 SwiftPM 설정 경로만 사용했다.
+
+```sh
+CLANG_MODULE_CACHE_PATH=/private/tmp/desktoto-7-module-cache \
+SWIFTPM_MODULECACHE_OVERRIDE=/private/tmp/desktoto-7-module-cache \
+swift test --disable-sandbox \
+  --cache-path /private/tmp/desktoto-7-spm-cache \
+  --config-path /private/tmp/desktoto-7-spm-config \
+  --security-path /private/tmp/desktoto-7-spm-security
+```
+
+- debug 빌드는 같은 환경과 옵션에서 swift test 대신 swift build로 성공했다.
+- 앱 번들 빌드는 샌드박스 안의 sandbox-exec 제한으로 중단되어 권한 확장 후 `sh scripts/build-app.sh`로 재실행했다. 릴리스 빌드, Info.plist 검사, 아이콘 생성, ad-hoc 서명과 codesign 검증이 모두 통과했다. 설치와 실행은 하지 않았다.
+- 번들의 두 스크립트는 원본과 저장소 리소스에 바이트 단위로 일치했다. sh -n 검사도 통과했다.
+- AC-12 미검증: 실제 Claude Code에서 승인 프롬프트를 발생시키거나 statusLine을 호출해 원본 앱과 대조하지 않았다. 실제 사용자 설정, 공유 데이터와 설치된 앱은 변경하지 않았다.
+- 제한: 앱 시작과 메뉴, 영속 설정 조립은 #11 범위다. 최초 자동 연결 기본값은 미결정이다. 스크립트 설치 후 백업이나 설정 쓰기가 실패하면 스크립트가 남을 수 있고, 여러 앱 프로세스와 외부 편집기에 대한 완전한 트랜잭션은 보장하지 않는다.
+
+- 2026-11-03: #6이 병합된 origin/develop(e885239)을 현재 브랜치에 병합했다. 병합 커밋은 0a7392f다. 기존 #7 미커밋 변경과 새 파일을 임시 보관 후 복원했고, 테스트 등록과 아키텍처 문서는 양쪽 내용을 보존했다. 병합 후 같은 검증 명령으로 전체 테스트 180개가 통과했다. 실제 Claude Code 연동 비교는 여전히 미검증이다.
+
+- 2026-11-03: 병합 후 릴리스 앱 번들 빌드, 리소스 일치와 codesign 검증을 다시 통과했다. 최종 검토 후 전체 테스트 180개를 다시 통과했다. 실제 Claude Code 2.1.316을 임시 HOME과 CLAUDE_CONFIG_DIR로 실행했으나 인증이 없어 실제 이벤트 검증은 완료하지 못했다. 상세 근거와 검토 결과는 [최종 검증 기록](verification.md)에 기록한다.
+
+- 2026-11-03: 사용자가 실제 Claude Code 연동은 미검증으로 기록하도록 선택했다. AC-12를 미완료로 유지하고, 검증 한계를 포함해 구현을 커밋한다.
