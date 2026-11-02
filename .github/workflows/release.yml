@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    name: Release
+    runs-on: macos-26
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      TAG_NAME: ${{ github.ref_name }}
+    steps:
+      - name: Check out tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate tag and compute version
+        id: version
+        run: |
+          if [[ ! "$TAG_NAME" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::태그 형식은 v1.2.3 또는 v1.2.3-rc.1 이어야 합니다: $TAG_NAME"
+            exit 1
+          fi
+          echo "number=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          if [ -n "${BASH_REMATCH[2]}" ]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Show build environment
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Test
+        working-directory: apps/macos
+        run: swift test
+      - name: Package app bundle
+        working-directory: apps/macos
+        env:
+          VERSION: ${{ steps.version.outputs.number }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: sh scripts/build-app.sh
+      - name: Create zip
+        id: zip
+        working-directory: apps/macos/build
+        run: |
+          zip_name="Desktoto-${TAG_NAME#v}.zip"
+          ditto -c -k --keepParent Desktoto.app "$zip_name"
+          shasum -a 256 "$zip_name" | tee "$zip_name.sha256"
+          echo "name=$zip_name" >> "$GITHUB_OUTPUT"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ZIP_NAME: ${{ steps.zip.outputs.name }}
+          IS_PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          flags=()
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            flags+=(--prerelease)
+          fi
+          gh release create "$TAG_NAME" \
+            "apps/macos/build/$ZIP_NAME" \
+            "apps/macos/build/$ZIP_NAME.sha256" \
+            --title "$TAG_NAME" \
+            --generate-notes \
+            "${flags[@]}"
