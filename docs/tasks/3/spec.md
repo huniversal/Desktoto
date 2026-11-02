@@ -4,8 +4,8 @@
 
 - 이슈: #3 / https://github.com/huniversal/Desktoto/issues/3
 - 브랜치: `feat/design-system/#3`
-- specRevision: 2
-- 선행 이슈: #2 (모듈 구성 D-6, 언어 모드 D-3, 최소 macOS D-4는 아직 미확정)
+- specRevision: 3
+- 선행 이슈: #2 (develop에 병합 완료. 모듈 구성, Swift 6 모드, 최소 macOS 26.0 확정)
 - 대상 ai-run 원본 (읽기 전용):
   - `~/Desktop/ai-run/Sources/AiRun/SessionPanelView.swift` (17~76행 상수, 163~173행 `GlassCard`, 364~398행 `FlowingGradientBackground`, 400~465행 유리와 보조 글자, 467~489행 `UsageBar`)
   - `~/Desktop/ai-run/Sources/AiRun/AppSettings.swift` (1~44행 `ColorMode`, `GlassStyle`, `Theme`)
@@ -122,10 +122,10 @@
 
 | 번호 | 결정할 것 | 막음 여부 |
 |---|---|---|
-| D-1 | 모듈 이름과 위치. #2의 D-6 결과에 따른다. 현재는 `Sources/DesignSystem/`로 잠정 | 구현 시작은 막지 않음 |
+| D-1 | 해결: #2가 `DesignSystem` 타깃(`Sources/DesignSystem/`)을 확정했다(`docs/architecture.md`). 의존은 없다 | 해결 |
 | D-2 | `GlassStyle.title`, `Theme.title`(메뉴에 보이는 한국어 이름)을 디자인 시스템에 둘지 앱 쪽에 둘지. 도메인 문구를 두지 않는 원칙과 충돌한다 | 막지 않음 (기본안: 앱 쪽) |
 | D-3 | 호박색 불일치. 원본 `APPROVAL_PILL_COLOR`는 (1.00, 0.78, 0.30)이고 주석은 메뉴바 물음표와 같은 색이라고 하지만, 실제 `QUESTION_COLOR`(`SpriteRenderer.swift:55`)는 (1.00, 0.80, 0.35)다. 별개 값으로 유지할지 통일할지 | 막지 않음 (기본안: 원본 그대로 두 값 유지, 알약 색만 이 이슈에서 토큰화) |
-| D-4 | 언어 모드와 최소 macOS 버전은 #2의 D-3, D-4를 따른다. `Glass`, `MeshGradient`는 macOS 26 이상 API다 | 막지 않음 |
+| D-4 | 해결: #2가 Swift 6 모드와 최소 macOS 26.0으로 확정했다. `Glass`, `MeshGradient`는 macOS 26 이상 API라 전제가 맞다 | 해결 |
 
 ## 주요 설계 변경
 
@@ -133,3 +133,4 @@
 |---|---|---|
 | 1 | 최초 설계 | 원본을 읽고 사용자와 합의한 범위. `ratio` 클램프 테스트 제외, 화면 배치 값 제외, `title` 위치는 미결정으로 둠 |
 | 2 | 값 표에 승인 알약 안쪽 여백(8, 3) 추가 | 구현 중 원본 View에 박혀 있던 값을 토큰으로 올렸다. 영향받는 AC: AC-1 |
+| 3 | D-1, D-4 해결. 위치 잠정 문구 제거 | #2가 develop에 병합되어 모듈 이름과 위치, Swift 6 모드, 최소 macOS가 확정되었다. 영향받는 AC: AC-9(Swift 6 모드에서 빌드와 테스트) |

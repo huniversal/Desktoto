@@ -2,7 +2,7 @@
 
 Desktoto의 색, 간격, 반경, 그림자, 타이포, 모션과 공용 컴포넌트를 `apps/macos/Sources/DesignSystem/`에 모았다.
 값은 원본 `ai-run`의 `SessionPanelView.swift`와 `AppSettings.swift`에서 그대로 옮겼고, 새로 만든 값은 없다.
-모듈 이름과 위치는 아키텍처 설계(#2)에서 확정되면 맞춘다(작업 명세 `docs/tasks/3/spec.md`의 D-1).
+모듈 구성과 의존 규칙은 [아키텍처 문서](architecture.md)를 따른다. `DesignSystem`은 다른 모듈에 의존하지 않고, UI 모듈이 의존한다.
 
 ## 사용 규칙
 
