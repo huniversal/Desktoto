@@ -102,7 +102,7 @@ apps/macos/Sources/
 - 기록 한 줄은 `JSONValue`(Sendable)로 해석한다. 원본의 `[String: Any]`는 Swift 6 모드에서 actor 경계를 넘길 수 없다.
 - `SessionMonitor`가 캐시(활동 판정은 파일 경로와 수정 시각, 질문 대기 판정은 세션 id와 수정 시각, Codex 첫 줄 정보는 경로)를 소유한다. 수정 시각이 같으면 이전 판정을 재사용해서 1초 폴링에도 바뀐 파일만 다시 읽는다(원본 동작).
   `SessionMonitor`는 `actor`로 시작한다. #11 조립에서 호출 방식이 굳어지면 조정한다(D-D). 캐시는 현재 대상 파일에 없는 항목을 정리한다(D-F).
-- 흐름: `SessionLogFinder`가 파일 목록과 수정 시각을 얻고 600초 안의 파일만 남김 → `ActivityJudge`가 끝부분 64KB, 512KB, 4MB 순으로 읽어 활동 시각과 결과를 판정 → 기록 안의 활동 시각도 600초 안인 파일만 남김 → `RunStateJudge`와 `WaitingSignalReader`와 `WaitingJudge`로 상태 결정 → 상세는 `SessionInfoReader`가 512KB, 4MB, 16MB 순으로 읽어 채움.
+- 흐름: `SessionMonitor`가 파일 목록과 수정 시각을 얻고 600초 안의 파일만 남김 → `ActivityJudge`가 끝부분 64KB, 512KB, 4MB 순으로 읽어 활동 시각과 결과를 판정 → 기록 안의 활동 시각도 600초 안인 파일만 남김 → `RunStateJudge`와 `WaitingSignalReader`와 `WaitingJudge`로 상태 결정 → 상세는 `SessionInfoReader`가 512KB, 4MB, 16MB 순으로 읽어 채움.
 - 현재 시각은 항상 `TimeSource`에서 한 번 읽어 한 번의 판정 전체에 같은 값을 쓴다(원본은 호출마다 `Date()`를 새로 읽는다).
 
 ### 선택한 방식과 이유
