@@ -46,7 +46,7 @@ let package = Package(
         .testTarget(name: "DesignSystemTests", dependencies: ["DesignSystem"]),
         .testTarget(name: "BoundariesTests", dependencies: ["Boundaries", "TestSupport"]),
         .testTarget(name: "SessionMonitoringTests", dependencies: ["SessionMonitoring", "Domain", "Boundaries", "TestSupport"]),
-        .testTarget(name: "TerminalIntegrationTests", dependencies: ["TerminalIntegration", "Boundaries", "TestSupport"])
+        .testTarget(name: "TerminalIntegrationTests", dependencies: ["TerminalIntegration", "Domain", "Boundaries", "TestSupport"])
     ],
     swiftLanguageModes: [.v6]
 )
