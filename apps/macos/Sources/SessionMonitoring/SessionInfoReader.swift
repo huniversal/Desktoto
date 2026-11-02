@@ -12,7 +12,8 @@ struct SessionInfoReader: Sendable {
         file: LogFile,
         startedAt: Date?,
         isRunning: Bool,
-        waitingKind: WaitingKind?
+        waitingKind: WaitingKind?,
+        openURL: URL?
     ) -> SessionInfo {
         let workingDirectory = records.compactMap { $0["cwd"]?.stringValue }.first
         let title = records.first { $0["type"]?.stringValue == "custom-title" }?["customTitle"]?.stringValue
@@ -46,7 +47,7 @@ struct SessionInfoReader: Sendable {
             isWindowEstimated: window.isEstimated,
             isRunning: isRunning,
             waitingKind: waitingKind,
-            openURL: nil,
+            openURL: openURL,
             workingDirectory: workingDirectory,
             startedAt: startedAt,
             isTerminalSession: records.contains { $0["entrypoint"]?.stringValue == "cli" }

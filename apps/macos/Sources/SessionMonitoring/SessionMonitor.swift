@@ -4,7 +4,7 @@ import Foundation
 
 /// Claude Code(`~/.claude/projects`)와 Codex(`~/.codex/sessions`)의 기록 파일을 감시해
 /// 세션이 작업 중인지 판정하고, 세션별 모델과 컨텍스트 사용량을 읽는다.
-/// 터미널 프로세스가 살아 있는지는 확인하지 않는다(#5).
+/// 터미널 프로세스가 살아 있는지는 직접 확인하지 않고, 주입받은 `TerminalSessionChecker`에 묻는다.
 public actor SessionMonitor {
     private struct CachedActivity {
         let modifiedAt: Date
@@ -22,6 +22,8 @@ public actor SessionMonitor {
     private let waitingSignalReader: WaitingSignalReader
     private let originReader: CodexOriginReader
     private let infoReader: SessionInfoReader
+    private let terminalSessionChecker: (any TerminalSessionChecker)?
+    private let sessionLinkResolver: (any SessionLinkResolver)?
 
     /// 수정 시각이 같으면 이전 결과를 다시 쓴다. 1초마다 호출되어도 기록 파일은 바뀔 때만 읽는다.
     private var activityCache: [String: CachedActivity] = [:]
@@ -29,15 +31,21 @@ public actor SessionMonitor {
     private var logWaitingCache: [String: CachedWaiting] = [:]
     /// 첫 줄은 바뀌지 않으므로 경로별로 한 번만 읽는다.
     private var codexOriginCache: [String: CodexOrigin] = [:]
+    /// Claude 기록이 터미널 세션의 것인지. 기록을 읽지 못한 경우는 저장하지 않는다.
+    private var claudeTerminalCache: [String: Bool] = [:]
     private var recentFiles: [String: LogFile] = [:]
 
     public init(
         fileSystem: any FileSystem,
         timeSource: any TimeSource,
-        environment: [String: String] = ProcessInfo.processInfo.environment
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        terminalSessionChecker: (any TerminalSessionChecker)? = nil,
+        sessionLinkResolver: (any SessionLinkResolver)? = nil
     ) {
         self.fileSystem = fileSystem
         self.timeSource = timeSource
+        self.terminalSessionChecker = terminalSessionChecker
+        self.sessionLinkResolver = sessionLinkResolver
         recordReader = LogRecordReader(fileSystem: fileSystem)
         waitingSignalReader = WaitingSignalReader(fileSystem: fileSystem)
         originReader = CodexOriginReader(fileSystem: fileSystem)
@@ -95,19 +103,54 @@ public actor SessionMonitor {
                 seenPaths.insert(entry.url.path)
                 let snapshot = activitySnapshot(of: entry, tool: tool)
                 guard now.timeIntervalSince(snapshot.lastActivity) < SessionMonitoringPolicy.activeWindow else { continue }
-                files.append(LogFile(
+                let file = LogFile(
                     url: entry.url,
                     modifiedAt: entry.modifiedAt,
                     tool: tool,
                     activity: snapshot.lastActivity,
                     outcome: snapshot.outcome
-                ))
+                )
+                guard !isClosedTerminalSession(file) else { continue }
+                files.append(file)
             }
         }
         activityCache = activityCache.filter { seenPaths.contains($0.key) }
+        claudeTerminalCache = claudeTerminalCache.filter { seenPaths.contains($0.key) }
         let currentIDs = Set(files.map(\.id))
         logWaitingCache = logWaitingCache.filter { currentIDs.contains($0.key) }
         return files
+    }
+
+    // MARK: - 터미널 세션 생존
+
+    /// 터미널에서 시작한 세션이고 그 프로세스가 끝났으면 true. 터미널 세션이 아니거나 판단할 수 없으면 false다.
+    private func isClosedTerminalSession(_ file: LogFile) -> Bool {
+        guard let terminalSessionChecker else { return false }
+        switch file.tool {
+        case .claude:
+            guard isClaudeTerminalLog(file) else { return false }
+            return terminalSessionChecker.isClosed(sessionID: file.id, tool: .claude, workingDirectory: nil)
+        case .codex:
+            let origin = codexOrigin(of: file.url)
+            guard origin.isTerminalSession else { return false }
+            return terminalSessionChecker.isClosed(sessionID: file.id, tool: .codex, workingDirectory: origin.workingDirectory)
+        }
+    }
+
+    /// 기록에 entrypoint가 cli인 줄이 있으면 터미널 세션이다. 첫 읽기 범위 안에서만 찾는다(원본과 같다).
+    private func isClaudeTerminalLog(_ file: LogFile) -> Bool {
+        if let cached = claudeTerminalCache[file.url.path] { return cached }
+        let records = recordReader.records(
+            at: file.url,
+            tool: .claude,
+            claudeTypes: SessionMonitoringPolicy.claudeInfoTypes,
+            steps: [SessionMonitoringPolicy.infoTailByteSteps[0]],
+            isSufficient: { _ in true }
+        )
+        guard !records.isEmpty else { return false }
+        let isTerminal = records.contains { $0["entrypoint"]?.stringValue == "cli" }
+        claudeTerminalCache[file.url.path] = isTerminal
+        return isTerminal
     }
 
     // MARK: - 활동 판정
@@ -163,7 +206,14 @@ public actor SessionMonitor {
         let startedAt = fileSystem.creationDate(of: file.url)
         switch file.tool {
         case .claude:
-            return infoReader.claudeInfo(records: records, file: file, startedAt: startedAt, isRunning: isRunning, waitingKind: waitingKind)
+            return infoReader.claudeInfo(
+                records: records,
+                file: file,
+                startedAt: startedAt,
+                isRunning: isRunning,
+                waitingKind: waitingKind,
+                openURL: sessionLinkResolver?.url(forSessionID: file.id)
+            )
         case .codex:
             return infoReader.codexInfo(
                 records: records,
