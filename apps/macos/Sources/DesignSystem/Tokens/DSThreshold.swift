@@ -1,4 +1,4 @@
-public struct DSThreshold: Equatable {
+public struct DSThreshold: Equatable, Sendable {
     public let warning: Double
     public let danger: Double
 

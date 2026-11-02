@@ -1,13 +1,13 @@
 import SwiftUI
 
 // 막대 채움이 어떤 색으로 그려질지
-public enum UsageBarFill: Equatable {
+enum UsageBarFill: Equatable {
     case danger
     case warning
     case gradient
     case plain
 
-    public init(ratio: Double, colorMode: ColorMode, thresholds: DSThreshold) {
+    init(ratio: Double, colorMode: ColorMode, thresholds: DSThreshold) {
         if ratio >= thresholds.danger {
             self = .danger
         } else if ratio >= thresholds.warning {

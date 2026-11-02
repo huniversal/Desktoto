@@ -2,20 +2,20 @@ import AppKit
 import SwiftUI
 
 // 막대와 캐릭터의 색상. 흰색은 단색이고, 컬러는 막대에 그라데이션이 들어간다.
-public enum ColorMode: String {
+public enum ColorMode: String, Sendable {
     case white
     case color
 }
 
 // 패널의 테마. 시스템은 macOS의 라이트와 다크 설정을 따른다.
-public enum Theme: String, CaseIterable {
+public enum Theme: String, CaseIterable, Sendable {
     case light
     case dark
     case system
 }
 
 // 패널 유리의 투명한 정도 5단계. 이미 저장된 clear, regular, tinted 값은 그대로 읽힌다.
-public enum GlassStyle: String, CaseIterable {
+public enum GlassStyle: String, CaseIterable, Sendable {
     case clear
     case slightlyClear
     case regular
@@ -23,7 +23,7 @@ public enum GlassStyle: String, CaseIterable {
     case tinted
 
     // 창 배경색을 입히는 불투명도. 입히지 않는 단계는 nil이다.
-    public var tintOpacity: Double? {
+    var tintOpacity: Double? {
         switch self {
         case .clear: return 0.12
         case .slightlyClear: return 0.35
@@ -34,7 +34,7 @@ public enum GlassStyle: String, CaseIterable {
     }
 
     // 투명 쪽은 맑은 유리, 진한 쪽은 일반 유리를 쓴다.
-    public var isClearGlass: Bool {
+    var isClearGlass: Bool {
         self == .clear || self == .slightlyClear
     }
 

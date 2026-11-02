@@ -70,3 +70,15 @@ Desktoto의 색, 간격, 반경, 그림자, 타이포, 모션과 공용 컴포�
 ## 토큰이 아닌 내부 값
 
 `FlowingGradientBackground`의 점 이동 폭(0.18, 0.2)과 코사인 속도 비율(0.8), `UsageBar`의 그림자 반경(0.5)은 원본의 계산식에 속한 값이라 토큰으로 올리지 않았다.
+`.black`(그림자 색), `Color.primary`, `Color(nsColor: .windowBackgroundColor)`(유리 틴트 색)는 원본과 같은 시스템 색이라 토큰으로 정의하지 않았다.
+
+## 아직 쓰는 곳이 없는 항목
+
+원본 패널을 옮기는 #10에서 처음 쓰인다. 지금은 컴포넌트가 사용하지 않는다.
+
+- `Theme`: 설정 값으로만 존재한다. 패널 테마 적용은 앱 쪽에서 한다.
+- `DSMotion.stateChange`, `DSMotion.detail`: 줄 상태 전환과 상세 줄 펼침 애니메이션에서 쓴다.
+
+## 접근 범위
+
+`UsageBarFill`(막대 색 선택)과 `GlassStyle.tintOpacity`, `GlassStyle.isClearGlass`는 모듈 내부용(internal)이다. 필요해지면 그때 공개한다.
