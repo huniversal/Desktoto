@@ -4,7 +4,7 @@
 
 - 이슈: #2 / https://github.com/huniversal/Desktoto/issues/2
 - 브랜치: `feat/architecture-setup/#2`
-- specRevision: 2
+- specRevision: 3
 - 대상 ai-run 원본: 전체
   - `~/Desktop/ai-run/Package.swift`
   - `~/Desktop/ai-run/Sources/AiRun/*.swift` (13개 파일)
@@ -41,6 +41,8 @@
 - 기능별 상세 동작 문서화의 보완 (`overview.md` 9장에 적은 항목은 해당 기능 이슈에서)
 - 린터, 포맷터, Git 훅 도입 (합의 전까지 추가하지 않음)
 - 앱 소스 폴더 구조 중 `architecture.md`에서 확정하지 않은 부분
+- 사용자가 쓰는 설치된 `ai-run` 앱, `~/.ai-run`, `~/.claude/settings.json`의 변경 (불변 조건: 전체 작업이 끝날 때까지 건드리지 않는다)
+  - `install-app.sh`는 `~/Applications/Desktoto.app`을 지우고 덮어쓰므로 이 작업에서 실행하지 않는다. 새 앱은 `apps/macos/build/Desktoto.app`을 직접 연다.
 
 ## 설계 결정
 
@@ -50,7 +52,10 @@
   - `Package.swift`와 `Sources`, `Tests`의 빈 골격: `architecture.md`의 결정을 그대로 반영한다. 로직은 담지 않는다.
 - 패키지 위치: 저장소는 모노레포이고 Swift 패키지는 `apps/macos`에 둔다(#1에서 확정, `docs/rules/macos-development.md`와 `docs/ci.md`). 빌드와 테스트는 `cd apps/macos` 뒤에 실행한다.
 - 이름(D-1 확정, 사용자 합의): 앱 이름, 실행 파일, 패키지 이름은 `Desktoto`, 번들 식별자는 `com.huniverse.desktoto`다.
-  번들 ID를 바꾸면 알림, 로그인 항목, 자동화 권한은 새 앱으로 다시 허용해야 하고, 원본 `ai-run` 앱과는 별개의 앱으로 설치된다(원본은 지워도 되는 테스트용이라는 합의).
+  번들 ID를 바꾸면 알림, 로그인 항목, 자동화 권한은 새 앱으로 다시 허용해야 하고, 원본 `ai-run` 앱과는 별개의 앱으로 취급된다(원본 앱은 사용자의 테스트용이며 작업이 끝날 때까지 변경하지 않는다).
+- 데이터 폴더와 스크립트(D-2 확정, 사용자 합의): 제품 동작을 원본과 같게 유지하기 위해 `~/.ai-run`, `ai-run-hook.sh`, `ai-run-statusline.sh` 이름을 그대로 쓴다.
+  원본과 새 앱을 나란히 실행해 대조할 때 같은 입력 파일을 읽게 하고, 새 앱이 시작할 때 `settings.json`을 바꾸지 않게 하기 위해서다. 이름 변경은 동등성 검증 후 별도 이슈에서 다룬다.
+  병행 중 새 앱의 "Claude 연동" 해제 메뉴는 두 앱이 공유하는 훅을 제거하므로 누르지 않는다(PR 설명에 기록).
 - 상태와 데이터 흐름: N/A. 문서와 빌드 골격 작업이라 런타임 상태가 없다. 런타임 흐름의 원본 사실은 `overview.md`에 있다.
 - 선택한 방식과 이유: 작업 순서를 "개요 문서, 결정, `architecture.md`, `Package.swift` 골격"으로 둔다.
   언어 모드, 최소 macOS, zstd, 이름이 `Package.swift`의 전제이기 때문에 결정이 끝나기 전에는 골격을 만들지 않는다.
@@ -99,7 +104,7 @@
 | 번호 | 결정할 것 | 선택지 | 막음 여부 |
 |---|---|---|---|
 | D-1 | 이름 정리 | 확정됨(specRevision 2): 앱, 실행 파일, 패키지는 `Desktoto`, 번들 ID는 `com.huniverse.desktoto`. 스크립트 이름은 D-2와 함께 정한다 | 해결 |
-| D-2 | 데이터 폴더 `~/.ai-run`과 스크립트 이름 | 유지, 새 경로로 변경, 변경하고 구 경로 병행 읽기 또는 마이그레이션. 사용자의 `~/.claude/settings.json`에 이미 기록된 훅과 statusLine 명령이 구 경로를 가리킨다. 원본 앱과 새 앱이 같은 기간에 설치되어 같은 `settings.json`과 폴더를 공유하는 경우(훅 중복, statusLine 감싸기, 한쪽 해제가 다른 쪽에 영향)를 어떻게 다룰지 포함한다 | 막음 |
+| D-2 | 데이터 폴더 `~/.ai-run`과 스크립트 이름 | 확정됨(specRevision 3): `~/.ai-run`, `ai-run-hook.sh`, `ai-run-statusline.sh` 유지. 이름 변경은 동등성 검증 후 별도 이슈 | 해결 |
 | D-3 | Swift 언어 모드 | Swift 5 모드 또는 Swift 6 모드(엄격한 동시성). 원본은 `swift-tools-version:5.9` | 막음 |
 | D-4 | 최소 macOS 버전 | 원본과 같이 26 이상 유지(Liquid Glass 사용) 또는 낮춤. CI는 macos-26 러너와 Xcode 26.6으로 고정되어 있다(#1) | 막음 |
 | D-5 | zstd 처리 | 벤더링 `CZstd` 유지, 시스템 `libzstd`, 외부 Swift 패키지. Claude 데스크탑 앱 캐시 해독(`ClaudeDesktopUsage.swift`)용이다 | 막음 |
@@ -117,3 +122,4 @@
 |---|---|---|
 | 1 | 최초 설계 | 이슈 #2의 작업 목록과 `overview.md` 조사 결과를 바탕으로 정리. 결정 항목은 사용자와 합의 전이므로 미결정으로 둔다 |
 | 2 | D-1 확정, 패키지 위치를 `apps/macos`로 변경, AC-11 추가, D-2에 병행 설치 고려 추가 | 사용자가 이름 결정에 합의했고, #1이 병합되어 모노레포 구조와 임시 골격, 패키징 스크립트가 들어왔다. 영향받는 AC: AC-7, AC-8, AC-11 |
+| 3 | D-2 확정(`~/.ai-run`과 스크립트 이름 유지), 제외 항목에 설치된 `ai-run` 앱과 사용자 설정 불변 조건 추가 | 동작을 원본과 같게 하고 동등성 검증 입력을 맞추기 위해 사용자가 합의했다. 영향받는 AC: AC-6(이름 항목에 데이터 폴더와 스크립트가 유지로 기록됨) |
