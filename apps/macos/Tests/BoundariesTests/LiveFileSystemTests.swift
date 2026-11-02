@@ -56,3 +56,15 @@ private func withTemporaryDirectory(_ body: (URL) throws -> Void) throws {
     #expect(fileSystem.modificationDate(of: missing) == nil)
     #expect(fileSystem.listFiles(under: missing, withExtension: "jsonl").isEmpty)
 }
+
+@Test func liveFileSystemTellsDirectoriesFromFilesAndMissingPaths() throws {
+    try withTemporaryDirectory { directory in
+        let file = directory.appendingPathComponent("a.json")
+        try Data("x".utf8).write(to: file)
+        let fileSystem = LiveFileSystem(homeDirectory: directory)
+
+        #expect(fileSystem.directoryExists(at: directory))
+        #expect(!fileSystem.directoryExists(at: file))
+        #expect(!fileSystem.directoryExists(at: directory.appendingPathComponent("missing")))
+    }
+}

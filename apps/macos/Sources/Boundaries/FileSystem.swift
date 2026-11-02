@@ -34,4 +34,6 @@ public protocol FileSystem: Sendable {
     func readAll(of url: URL) -> Data?
     func modificationDate(of url: URL) -> Date?
     func creationDate(of url: URL) -> Date?
+    /// 폴더가 있는지. 비어 있는 폴더와 없는 폴더를 구분해야 할 때 쓴다.
+    func directoryExists(at url: URL) -> Bool
 }
