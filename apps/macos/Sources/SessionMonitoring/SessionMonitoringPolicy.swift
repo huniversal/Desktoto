@@ -13,6 +13,12 @@ enum SessionMonitoringPolicy {
     static let stateTailByteSteps: [UInt64] = [65_536, 524_288, 4_194_304]
     static let infoTailByteSteps: [UInt64] = [524_288, 4_194_304, 16_777_216]
 
+    /// Claude Code는 서브 에이전트의 기록을 `<프로젝트>/<세션>/subagents/agent-*.jsonl`에 따로 남긴다. 사용자가 보는 세션이 아니라서 제외한다.
+    static let claudeSubagentDirectoryName = "subagents"
+
+    /// Codex 데스크탑 앱이 스레드 제목을 적어 두는 파일. 홈 폴더 기준 경로다.
+    static let codexTitleIndexPath = ".codex/session_index.jsonl"
+
     static let maxSessionCount = 10
     static let unknownProjectName = "알 수 없음"
 

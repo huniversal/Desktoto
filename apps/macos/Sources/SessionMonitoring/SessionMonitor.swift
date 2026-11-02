@@ -34,6 +34,8 @@ public actor SessionMonitor {
     /// Claude 기록이 터미널 세션의 것인지. 기록을 읽지 못한 경우는 저장하지 않는다.
     private var claudeTerminalCache: [String: Bool] = [:]
     private var recentFiles: [String: LogFile] = [:]
+    /// Codex 제목 목록. 파일의 수정 시각이 바뀔 때만 다시 읽는다.
+    private var codexTitleCache: (modifiedAt: Date, titles: [String: String])?
 
     public init(
         fileSystem: any FileSystem,
@@ -101,6 +103,8 @@ public actor SessionMonitor {
             for entry in fileSystem.listFiles(under: root, withExtension: "jsonl")
             where now.timeIntervalSince(entry.modifiedAt) < SessionMonitoringPolicy.activeWindow {
                 seenPaths.insert(entry.url.path)
+                // 서브 에이전트와 자동 리뷰는 사용자가 따로 열어 보는 세션이 아니라서 목록, 알림, 승인 대기에서 뺀다.
+                guard !isSubagentLog(at: entry.url, tool: tool, root: root) else { continue }
                 let snapshot = activitySnapshot(of: entry, tool: tool)
                 guard now.timeIntervalSince(snapshot.lastActivity) < SessionMonitoringPolicy.activeWindow else { continue }
                 let file = LogFile(
@@ -119,6 +123,20 @@ public actor SessionMonitor {
         let currentIDs = Set(files.map(\.id))
         logWaitingCache = logWaitingCache.filter { currentIDs.contains($0.key) }
         return files
+    }
+
+    // MARK: - 서브 에이전트 제외
+
+    /// Claude는 기록이 subagents 폴더 아래에 있으면, Codex는 기록 첫 줄의 source가 subagent이면 서브 에이전트다.
+    /// 루트 아래의 경로 조각만 보므로 홈이나 프로젝트 이름에 같은 단어가 있어도 영향이 없다.
+    private func isSubagentLog(at url: URL, tool: AiTool, root: URL) -> Bool {
+        switch tool {
+        case .claude:
+            return url.pathComponents.dropFirst(root.pathComponents.count)
+                .contains(SessionMonitoringPolicy.claudeSubagentDirectoryName)
+        case .codex:
+            return codexOrigin(of: url).isSubagent
+        }
     }
 
     // MARK: - 터미널 세션 생존
@@ -219,11 +237,26 @@ public actor SessionMonitor {
                 records: records,
                 file: file,
                 origin: codexOrigin(of: file.url),
+                title: codexOrigin(of: file.url).threadID.flatMap(codexTitle(forThreadID:)),
                 startedAt: startedAt,
                 isRunning: isRunning,
                 waitingKind: waitingKind
             )
         }
+    }
+
+    /// 제목 파일을 읽을 수 없거나 그 스레드의 제목이 없으면 nil이다. 그러면 화면에는 프로젝트 이름이 나온다.
+    private func codexTitle(forThreadID threadID: String) -> String? {
+        let url = fileSystem.homeDirectory.appendingPathComponent(SessionMonitoringPolicy.codexTitleIndexPath)
+        guard let modifiedAt = fileSystem.modificationDate(of: url) else {
+            codexTitleCache = nil
+            return nil
+        }
+        if codexTitleCache?.modifiedAt != modifiedAt {
+            let titles = fileSystem.readAll(of: url).map(CodexTitleIndex.titles(from:)) ?? [:]
+            codexTitleCache = (modifiedAt, titles)
+        }
+        return codexTitleCache?.titles[threadID]
     }
 
     private func codexOrigin(of url: URL) -> CodexOrigin {
