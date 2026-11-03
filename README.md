@@ -5,7 +5,7 @@
 </p>
 
 <img src="docs/images/readme/hero.png" alt="Desktoto: AI가 일하는 동안, 메뉴바에서 지켜보세요. 메뉴바 캐릭터와 세션 패널" width="100%">
-<img src="docs/images/readme/install.png" alt="설치: Homebrew는 brew install --cask huniversal/tap/desktoto, dmg는 열어서 응용 프로그램 폴더로 옮기기. macOS 26 이상, Apple Silicon" width="100%">
+<img src="docs/images/readme/install.png" alt="설치: Homebrew는 brew install --cask huniversal/tap/desktoto 한 줄로 설치해요. dmg는 Desktoto.dmg를 열어 응용 프로그램 폴더로 끌어다 놓고, 처음 열 때 개발자를 확인할 수 없다는 경고가 뜨면 창을 닫은 뒤 시스템 설정, 개인정보 보호 및 보안 맨 아래의 그래도 열기를 누르고 암호를 입력해요. 터미널에서는 xattr -dr com.apple.quarantine /Applications/Desktoto.app 명령으로 경고 없이 열 수 있어요. macOS 26 이상, Apple Silicon만 지원하고 Intel Mac은 지원하지 않아요." width="100%">
 <img src="docs/images/readme/problem.png" alt="세션을 여러 개 돌리면 놓치게 돼요. 끝난 지 한참 뒤에야 알게 되고, 승인 창에서 AI가 멈춘 줄 모르고, 컨텍스트가 얼마나 찼는지 알 수 없어요." width="100%">
 <img src="docs/images/readme/states.png" alt="캐릭터 상태 5가지: 달리는 중, 폭죽(작업 끝), 물음표(승인이나 답변 필요), 보라색 점(확인하지 않은 완료), 졸음(10분 동안 활동 없음)" width="100%">
 <img src="docs/images/readme/features.png" alt="기능: 한 패널에 모든 세션, AI 사용량, 컨텍스트 사용률, 카드를 누르면 그 세션으로 이동, 알림 이동, 색상과 테마와 Liquid Glass 설정" width="100%">
