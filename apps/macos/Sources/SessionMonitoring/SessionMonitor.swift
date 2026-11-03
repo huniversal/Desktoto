@@ -253,8 +253,12 @@ public actor SessionMonitor {
             return nil
         }
         if codexTitleCache?.modifiedAt != modifiedAt {
-            let titles = fileSystem.readAll(of: url).map(CodexTitleIndex.titles(from:)) ?? [:]
-            codexTitleCache = (modifiedAt, titles)
+            // 읽기에 실패하면 빈 제목을 캐시하지 않고 다음 조회에서 다시 읽는다.
+            guard let data = fileSystem.readAll(of: url) else {
+                codexTitleCache = nil
+                return nil
+            }
+            codexTitleCache = (modifiedAt, CodexTitleIndex.titles(from: data))
         }
         return codexTitleCache?.titles[threadID]
     }

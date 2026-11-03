@@ -7,7 +7,8 @@ enum NotificationText {
 
     /// 세션 제목, 없으면 프로젝트 이름, 둘 다 모르면 "AI"
     static func title(for session: SessionInfo?) -> String {
-        truncated(session?.title ?? session?.projectName ?? "AI")
+        let sessionTitle = session?.title.flatMap { $0.isEmpty ? nil : $0 }
+        return truncated(sessionTitle ?? session?.projectName ?? "AI")
     }
 
     static func waitingBody(for kind: WaitingKind) -> String {

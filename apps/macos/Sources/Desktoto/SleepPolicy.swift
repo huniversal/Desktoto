@@ -13,9 +13,13 @@ struct SleepPolicy: Equatable {
         lastActiveAt = startedAt
     }
 
-    /// 확인용으로 환경 변수(초)로 바꿀 수 있다. 숫자가 아니면 기본값을 쓴다.
+    /// 확인용으로 환경 변수(초)로 바꿀 수 있다. 숫자가 아니거나 nan, inf처럼 유한하지 않으면 기본값을 쓴다.
     static func idleSeconds(environment: [String: String]) -> TimeInterval {
-        environment[environmentKey].flatMap(Double.init) ?? defaultIdleSeconds
+        guard let text = environment[environmentKey],
+              let value = Double(text),
+              value.isFinite
+        else { return defaultIdleSeconds }
+        return value
     }
 
     /// 달리거나 응답을 기다리는 중이거나 방금 끝났으면 활동 시각을 갱신하고, 지금 잠들어야 하는지 돌려준다.

@@ -75,4 +75,14 @@ struct SleepPolicyTests {
         #expect(SleepPolicy.idleSeconds(environment: [:]) == 600)
         #expect(SleepPolicy.idleSeconds(environment: ["AIRUN_SLEEP_AFTER": "abc"]) == 600)
     }
+
+    @Test func 환경_변수가_유한한_숫자가_아니면_기본값을_쓴다() {
+        for text in ["nan", "inf", "-inf", "infinity", "abc", ""] {
+            let seconds = SleepPolicy.idleSeconds(environment: [SleepPolicy.environmentKey: text])
+
+            #expect(seconds == SleepPolicy.defaultIdleSeconds)
+        }
+        #expect(SleepPolicy.idleSeconds(environment: [SleepPolicy.environmentKey: "5"]) == 5)
+        #expect(SleepPolicy.idleSeconds(environment: [:]) == SleepPolicy.defaultIdleSeconds)
+    }
 }

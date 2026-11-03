@@ -55,6 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastUsageRefreshAt = Date.distantPast
     // 늦게 끝난 사용량 조회가 더 최근 조회의 결과를 덮어쓰지 않게 한다.
     private var usageRequestID = 0
+    // 닫았다가 다시 열 때 먼저 시작한 세션 조회가 나중에 끝나 새 목록을 덮어쓰지 않게 한다.
+    private var sessionRequestID = 0
+    // 패널을 열려고 값을 채우는 동안(아직 창이 뜨기 전)이면 true.
+    private var isOpenPending = false
     private var pollTimer: Timer?
     private var panelRefreshTimer: Timer?
 
@@ -266,11 +270,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.hoveredID = nil
         unseenFinishedIDs.removeAll()
         applyIconState()
+        isOpenPending = true
 
         // 처음 열 때 패널 높이가 바로 맞도록 값을 채운 뒤에 보여 준다.
         Task {
             await refreshPanel()
             guard generation == openGeneration, isPanelOpen else { return }
+            isOpenPending = false
             if settings.showsUsage { requestCodexRefresh(minInterval: 0) }
             panelController.show(buttonWindow: statusItem.button?.window)
             startPanelRefreshTimer()
@@ -278,6 +284,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func closePanel() {
+        // 창이 뜨기 전에 닫으면 사용자는 완료를 본 적이 없으니 확인하지 않은 완료로 되돌린다.
+        if isOpenPending {
+            isOpenPending = false
+            let model = panelController.model
+            unseenFinishedIDs.formUnion(model.finishedIDs)
+            model.finishedIDs.removeAll()
+            applyIconState()
+        }
         isPanelOpen = false
         openGeneration += 1
         panelRefreshTimer?.invalidate()
@@ -298,7 +312,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         isRefreshingPanel = true
         Task {
             await refreshPanel()
-            if settings.showsUsage {
+            if settings.showsUsage, isPanelOpen {
                 requestCodexRefresh(minInterval: RefreshPolicy.codexLiveMinInterval(isPanelOpen: true))
             }
             // 값이 화면에 반영된 뒤의 크기로 맞춘다.
@@ -317,8 +331,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // 승인 대기 세션을 맨 위로, 그다음 진행 중인 세션, 방금 끝난 세션, 나머지는 최근 활동순으로 보여준다.
     private func refreshPanel() async {
         syncPanelModel()
+        sessionRequestID += 1
+        let requestID = sessionRequestID
         await refreshUsages()
         let sessions = await sessionMonitor.activeSessions()
+        guard requestID == sessionRequestID else { return }
         let model = panelController.model
         model.sessions = PanelSessionSorter.sorted(sessions, finishedIDs: model.finishedIDs)
         model.now = timeSource.now
@@ -368,13 +385,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func runPollTick() async {
-        let states = await sessionMonitor.sessionStates()
         if RefreshPolicy.shouldPreloadUsage(now: timeSource.now, lastRefreshAt: lastUsageRefreshAt, isPanelOpen: isPanelOpen) {
             await refreshUsages()
         }
         if !isPanelOpen, settings.showsUsage {
             requestCodexRefresh(minInterval: RefreshPolicy.codexLiveMinInterval(isPanelOpen: false))
         }
+        // 사용량 조회가 길어져도 이번 틱에서 완료를 놓치지 않게 두 상태를 같은 시점에 읽는다.
+        let states = await sessionMonitor.sessionStates()
         let waitingKinds = await sessionMonitor.waitingKinds()
 
         let result = pollTracker.advance(states: states, waitingKinds: waitingKinds)

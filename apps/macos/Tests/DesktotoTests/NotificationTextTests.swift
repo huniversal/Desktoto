@@ -12,6 +12,10 @@ struct NotificationTextTests {
         #expect(NotificationText.title(for: makeSession(projectName: "proj")) == "proj")
     }
 
+    @Test func 제목이_빈_문자열이면_프로젝트_이름을_쓴다() {
+        #expect(NotificationText.title(for: makeSession(projectName: "proj", title: "")) == "proj")
+    }
+
     @Test func 세션을_모르면_AI를_쓴다() {
         #expect(NotificationText.title(for: nil) == "AI")
     }
