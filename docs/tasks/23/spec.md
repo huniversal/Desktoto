@@ -79,7 +79,7 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
 | 완료 조건 | 확인 방법 | 기대 결과 |
 |---|---|---|
 | AC-1 | `brew audit --cask --online huniversal/tap/desktoto`, cask 파일 diff 검토 | 오류 없음. 미통과 항목은 원인을 기록 |
-| AC-2 | 프리릴리스 태그로 릴리스 워크플로를 실행해 tap 커밋 생성 여부 확인 | tap에 올바른 버전과 해시의 커밋이 생김 |
+| AC-2 | 정식 태그(`v1.2.3`)로 릴리스 워크플로를 실행해 tap 커밋 생성 여부 확인. 프리릴리스 태그(`v1.2.3-rc.1`)에서는 `update-tap` job이 건너뛰어졌는지 확인 | 정식 태그에서 tap에 올바른 버전과 해시의 커밋이 생긴다. 프리릴리스에서는 tap 커밋이 생기지 않는다 |
 | AC-3 | 깨끗한 환경(새 사용자 계정 또는 Homebrew와 앱을 지운 Mac)에서 설치 후 Finder 또는 `open`으로 실행. macOS와 Homebrew 버전 기록 | 경고 없이 메뉴바에 앱이 뜬다 |
 | AC-4 | 낮은 버전 설치 후 새 버전을 릴리스하고 `brew update && brew upgrade --cask desktoto`, 이후 `brew uninstall --cask desktoto` | 버전이 바뀌고, 삭제 후 `/Applications/Desktoto.app`이 없다 |
 | AC-5 | README diff 검토, zip 수동 설치 절차를 그대로 따라 실행 | 문서대로 따라 하면 앱이 열린다 |

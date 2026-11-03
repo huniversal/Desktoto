@@ -111,7 +111,9 @@ Gatekeeper 경고가 나오며, 공증은 하지 않는다. 릴리스 job만 저
 brew install --cask huniversal/tap/desktoto
 ```
 
-- 릴리스 job이 성공해야 실행하고, 별도 job이라 실패해도 이미 올라간 GitHub Release는 남는다. 실패는 Actions에서 확인하고 같은 태그의 워크플로를 다시 실행한다.
+- 릴리스 job이 성공해야 실행하고, 별도 job이라 실패해도 이미 올라간 GitHub Release는 남는다. 실패는 Actions에서 확인하고 같은 태그의 실행에서 실패한 job만 다시 실행한다(Re-run failed jobs).
+  전체를 다시 실행하면 `release` job이 이미 있는 릴리스를 만들려다 실패해 `update-tap`에 도달하지 않는다.
+- tap의 현재 버전이 릴리스 버전보다 새로우면 덮어쓰지 않고 실패한다. 늦게 끝난 이전 태그의 실행이 최신 cask를 되돌리지 못하게 하기 위함이다.
 - `-rc.1` 같은 프리릴리스는 건너뛴다. 사용자가 `brew upgrade`로 불안정한 버전을 받지 않게 하기 위함이다.
 - tap을 고치기 전에 공개된 zip을 다시 내려받아 릴리스 단계의 sha256과 같은지 확인한다. 다르면 tap을 바꾸지 않고 실패한다.
 - cask는 설치 직후 `postflight_steps`에서 `xattr -dr com.apple.quarantine`을 실행해 서명 없는 앱이 처음 실행할 때 막히지 않게 한다.

@@ -30,6 +30,15 @@ struct AppSettingsTests {
     }
 
     // #23 AC-7
+    @Test func treatsExistingStoredSettingsAsNotFirstLaunch() {
+        let (defaults, suiteName) = makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set("dark", forKey: "theme")
+
+        #expect(AppSettings(defaults: defaults).hasAppliedLoginItemDefault)
+    }
+
+    // #23 AC-7
     @Test func keepsUserChoicesAcrossRelaunch() {
         let (defaults, suiteName) = makeDefaults()
         defer { defaults.removePersistentDomain(forName: suiteName) }

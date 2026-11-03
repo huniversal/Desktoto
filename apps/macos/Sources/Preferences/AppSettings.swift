@@ -66,7 +66,16 @@ public final class AppSettings {
         sendsNotifications = Self.readBool(defaults, forKey: Key.sendsNotifications) ?? true
         connectsClaudeCode = Self.readBool(defaults, forKey: Key.connectsClaudeCode) ?? true
         fetchesCodexUsage = Self.readBool(defaults, forKey: Key.fetchesCodexUsage) ?? true
-        hasAppliedLoginItemDefault = Self.readBool(defaults, forKey: Key.hasAppliedLoginItemDefault) ?? false
+        // 표지가 없어도 저장된 설정이 하나라도 있으면 이전 버전 사용자라서 첫 실행으로 보지 않는다.
+        hasAppliedLoginItemDefault = Self.readBool(defaults, forKey: Key.hasAppliedLoginItemDefault)
+            ?? Self.hasStoredSettings(defaults)
+    }
+
+    private static func hasStoredSettings(_ defaults: UserDefaults) -> Bool {
+        [
+            Key.showsUsage, Key.showsContext, Key.colorMode, Key.sendsNotifications,
+            Key.glassStyle, Key.theme, Key.connectsClaudeCode, Key.fetchesCodexUsage
+        ].contains { defaults.object(forKey: $0) != nil }
     }
 
     // 숫자 0과 1은 `as? Bool`로 읽히므로, 실제로 Bool로 저장된 값만 받아들인다.

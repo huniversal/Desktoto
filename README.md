@@ -13,13 +13,15 @@ AI 코딩 도구(Claude Code, Codex)의 세션 상태와 사용량을 macOS 메�
 
 ## 요구 사항
 
-- macOS 26 이상, Xcode 26.6 이상(Swift 6, Swift Package Manager)
+- macOS 26 이상
+- 소스에서 빌드할 때만: Xcode 26.6 이상(Swift 6, Swift Package Manager)
 - 이 앱이 읽는 위치: `~/.claude/projects`, `~/.codex/sessions`, `~/.codex/session_index.jsonl`, Claude 데스크탑 앱 캐시, 설치된 `codex`(사용량 조회).
 
 ## 설치
 
 Apple Developer 서명과 공증 없이 배포하는 앱이라 설치 방법에 따라 처음 실행할 때 경고가 나올 수 있다.
-처음 실행하면 로그인 시 자동 실행, 알림 보내기, Codex 연동, Claude 연동이 모두 켜진 상태로 시작하고, 우클릭 메뉴에서 언제든 끌 수 있다.
+처음 실행하면 로그인 시 자동 실행, 알림 보내기, Codex 연동, Claude 연동이 켜진 상태로 시작하고, 우클릭 메뉴에서 언제든 끌 수 있다.
+로그인 시 자동 실행은 시스템 등록이 실패하거나 승인이 필요하면 꺼진 상태로 남고 다시 시도하지 않는다. 이미 설정을 저장한 사용자는 첫 실행으로 보지 않는다.
 
 ### Homebrew
 

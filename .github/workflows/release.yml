@@ -134,6 +134,12 @@ jobs:
         working-directory: tap
         run: |
           cask="Casks/desktoto.rb"
+          current=$(sed -n -E 's/^  version "([^"]*)"$/\1/p' "$cask")
+          newest=$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | tail -n 1)
+          if [ "$newest" != "$VERSION" ]; then
+            echo "::error::tap의 버전($current)이 릴리스 버전($VERSION)보다 새 버전입니다."
+            exit 1
+          fi
           sed -i -E "s/^(  version \")[^\"]*(\")/\1${VERSION}\2/" "$cask"
           sed -i -E "s/^(  sha256 \")[^\"]*(\")/\1${ZIP_SHA256}\2/" "$cask"
           grep -q "^  version \"${VERSION}\"$" "$cask"
