@@ -1,18 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}</style>
 <title>Desktoto</title>
 <meta name="description" content="Desktoto는 AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요. 작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.">
-<!-- 링크 미리보기(카카오톡, 슬랙 등). 이미지는 landing/og.png(원본: og-source.html)를 같은 주소 아래에 올려서 쓴다. -->
+<!-- 링크 미리보기(카카오톡, 슬랙 등). 이미지는 apps/web/og.png(원본: og-source.html)를 같은 주소 아래에 올려서 쓴다. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Desktoto">
 <meta property="og:title" content="Desktoto">
 <meta property="og:description" content="AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.">
-<meta property="og:url" content="https://huniversal.github.io/ai-run-landing/">
-<meta property="og:image" content="https://huniversal.github.io/ai-run-landing/og.png">
+<meta property="og:url" content="https://desktoto.pages.dev/">
+<meta property="og:image" content="https://desktoto.pages.dev/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="claude:viewport-fit-sides" content="cover">
-<!-- 파비콘: 앱 아이콘과 같은 어두운 둥근 사각형 위의 흰색 캐릭터. 별도 파일 없이 SVG를 그대로 담았다. -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2326272e'/%3E%3Cpath fill='white' d='M7 8h18v12H7zM4 14h3v3H4zM25 14h3v3h-3zM8 20h2v4H8zM11 20h2v4h-2zM19 20h2v4h-2zM22 20h2v4h-2z'/%3E%3Cpath fill='%230d0d0d' d='M10 11h2v3h-2zM20 11h2v3h-2z'/%3E%3C/svg%3E">
+<!-- 파비콘: 앱 아이콘과 같은 어두운 둥근 사각형 위의 흰색 캐릭터. favicon.svg가 원본이고 ico와 apple-touch-icon.png는 같은 그림으로 만든다. -->
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@400;500;700&display=swap">
@@ -285,7 +293,8 @@
     [data-i18n], [data-st], .lang-thumb { transition: none; }
   }
 </style>
-
+</head>
+<body>
 <div id="top"></div>
 <nav>
   <div class="nav-inner">
@@ -762,7 +771,7 @@
 
   function getInitialLang() {
     try {
-      var saved = localStorage.getItem("airun-lang");
+      var saved = localStorage.getItem("desktoto-lang");
       if (saved === "ko" || saved === "en") return saved;
     } catch (error) { /* 저장소를 못 쓰는 환경이면 브라우저 언어만 본다. */ }
     return (navigator.language || "ko").toLowerCase().indexOf("ko") === 0 ? "ko" : "en";
@@ -788,7 +797,7 @@
     document.querySelectorAll("[data-st]").forEach(function (el) { el.textContent = STAGE_TEXT[next][el.getAttribute("data-st")]; });
     document.querySelectorAll("[data-st-label]").forEach(function (el) { el.setAttribute("aria-label", STAGE_TEXT[next][el.getAttribute("data-st-label")]); });
     setSwitch(next);
-    try { localStorage.setItem("airun-lang", next); } catch (error) { /* 저장하지 못해도 이번 방문에는 그대로 동작한다. */ }
+    try { localStorage.setItem("desktoto-lang", next); } catch (error) { /* 저장하지 못해도 이번 방문에는 그대로 동작한다. */ }
   }
 
   var langTimer = null;
@@ -820,3 +829,5 @@
   requestAnimationFrame(function () { requestAnimationFrame(function () { document.querySelector(".lang").classList.add("ready"); }); });
 })();
 </script>
+</body>
+</html>
