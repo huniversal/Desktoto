@@ -7,11 +7,11 @@ public actor UsageMonitor {
     private let files: any FileSystem
     private let time: any TimeSource
     private let live: CodexRateLimitReader
-    private var entry: URL?
-    private var discovery: Task<URL?, Never>?
+    private var entries: [URL] = []
+    private var discovery: Task<[URL], Never>?
     private var discoveryGeneration = 0
     private var lastDiscovery = Date.distantPast
-    private var desktopCache: (modified: Date, usage: ToolUsage?)?
+    private var desktopCaches: [URL: (modified: Date, usage: ToolUsage?)] = [:]
     private var rolloutCache: [URL: (modified: Date, usage: ToolUsage?)] = [:]
 
     public init(fileSystem: any FileSystem = LiveFileSystem(), timeSource: any TimeSource = SystemTimeSource(), codexReader: CodexRateLimitReader? = nil) {
@@ -78,48 +78,48 @@ public actor UsageMonitor {
     }
 
     private func desktop(now: Date) -> ToolUsage? {
-        if let entry, files.modificationDate(of: entry) == nil {
-            self.entry = nil
-            desktopCache = nil
-        }
-        guard let entry else {
-            if discovery == nil, now.timeIntervalSince(lastDiscovery) >= 120 {
-                lastDiscovery = now
-                discoveryGeneration += 1
-                let current = discoveryGeneration
-                let files = files
-                let task = Task.detached { Self.findEntry(files: files) }
-                discovery = task
-                Task { [weak self] in
-                    let found = await task.value
-                    await self?.completeDiscovery(found, generation: current)
-                }
+        entries = entries.filter { files.modificationDate(of: $0) != nil }
+        desktopCaches = desktopCaches.filter { entries.contains($0.key) }
+        startDiscoveryIfDue(now: now)
+        for url in entries {
+            guard let modified = files.modificationDate(of: url) else { continue }
+            if desktopCaches[url]?.modified != modified {
+                let usage = files.readAll(of: url).flatMap { ClaudeCacheParser.parse($0, modifiedAt: modified) }
+                desktopCaches[url] = (modified, usage)
             }
-            return nil
         }
-        guard let modified = files.modificationDate(of: entry) else { return nil }
-        if desktopCache?.modified != modified {
-            let usage = files.readAll(of: entry).flatMap { ClaudeCacheParser.parse($0, modifiedAt: modified) }
-            desktopCache = (modified, usage)
-        }
-        return desktopCache?.usage
+        return newest(entries.map { desktopCaches[$0]?.usage })
     }
 
-    private func completeDiscovery(_ found: URL?, generation: Int) {
+    private func startDiscoveryIfDue(now: Date) {
+        guard discovery == nil, now.timeIntervalSince(lastDiscovery) >= 120 else { return }
+        lastDiscovery = now
+        discoveryGeneration += 1
+        let current = discoveryGeneration
+        let files = files
+        let task = Task.detached { Self.findEntries(files: files) }
+        discovery = task
+        Task { [weak self] in
+            let found = await task.value
+            await self?.completeDiscovery(found, generation: current)
+        }
+    }
+
+    private func completeDiscovery(_ found: [URL], generation: Int) {
         guard generation == discoveryGeneration, discovery != nil else { return }
-        entry = found
+        entries = found
         discovery = nil
     }
 
-    private nonisolated static func findEntry(files: any FileSystem) -> URL? {
+    private nonisolated static func findEntries(files: any FileSystem) -> [URL] {
         let directory = files.homeDirectory.appendingPathComponent("Library/Application Support/Claude/Cache/Cache_Data")
         let candidates = files.listDirectory(at: directory).filter {
             guard $0.url.lastPathComponent.hasSuffix("_0"), let size = files.fileSize(at: $0.url) else { return false }
             return (500...65_536).contains(size)
         }.sorted { $0.modifiedAt > $1.modifiedAt }.prefix(600)
-        return candidates.first {
+        return candidates.filter {
             guard let head = files.readHead(of: $0.url, maxBytes: 536), let key = ClaudeCacheParser.key(in: head) else { return false }
             return ClaudeCacheParser.isUsageKey(key)
-        }?.url
+        }.map(\.url)
     }
 }

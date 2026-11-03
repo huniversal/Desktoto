@@ -16,7 +16,7 @@ public enum ClaudeCacheParser {
     }
 
     public static func isUsageKey(_ key: String) -> Bool {
-        key.range(of: "/api/organizations/[0-9A-Fa-f-]+/usage$", options: .regularExpression) != nil
+        key.range(of: "/api/organizations/[0-9A-Fa-f-]+/usage(\\?.*)?$", options: .regularExpression) != nil
     }
 
     public static func parse(_ bytes: Data, modifiedAt: Date) -> ToolUsage? {
