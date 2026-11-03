@@ -16,6 +16,7 @@ public final class AppSettings {
         static let theme = "theme"
         static let connectsClaudeCode = "connectsClaudeCode"
         static let fetchesCodexUsage = "fetchesCodexUsage"
+        static let hasAppliedLoginItemDefault = "hasAppliedLoginItemDefault"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -35,8 +36,7 @@ public final class AppSettings {
     public var glassStyle: GlassStyle {
         didSet { defaults.set(glassStyle.rawValue, forKey: Key.glassStyle) }
     }
-    // Claude Code 설정에 연동을 자동으로 넣을지. 원본과 달리 저장된 값이 없으면 false라서 메뉴에서 직접 켠 뒤에만 시작할 때 연결한다.
-    // 원본 앱에서 이미 연동을 해제한 사용자의 설정 파일을 새 앱이 처음 켜질 때 다시 쓰지 않게 하기 위함이다(#11 D-1).
+    // Claude Code 설정에 연동을 자동으로 넣을지. 저장된 값이 없으면 true라서 설치 후 처음 실행할 때 연결한다(#23이 #11 D-1을 대체).
     // 사용자가 연동을 해제하면 false가 되어 다시 넣지 않는다.
     public var connectsClaudeCode: Bool {
         didSet { defaults.set(connectsClaudeCode, forKey: Key.connectsClaudeCode) }
@@ -50,7 +50,12 @@ public final class AppSettings {
         didSet { defaults.set(sendsNotifications, forKey: Key.sendsNotifications) }
     }
 
-    // 저장된 값이 없으면 두 패널을 모두 보여주고, 흰색, 시스템 테마, 보통 유리를 쓰고, 알림을 보내고, Codex 연동을 켠다. Claude 연동은 끈다.
+    // 로그인 항목의 첫 실행 기본값(켜기)을 이미 적용했는지. 적용한 뒤에는 사용자가 끈 값을 다시 켜지 않는다.
+    public var hasAppliedLoginItemDefault: Bool {
+        didSet { defaults.set(hasAppliedLoginItemDefault, forKey: Key.hasAppliedLoginItemDefault) }
+    }
+
+    // 저장된 값이 없으면 두 패널을 모두 보여주고, 흰색, 시스템 테마, 보통 유리를 쓰고, 알림을 보내고, Codex 연동과 Claude 연동을 켠다.
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         showsUsage = Self.readBool(defaults, forKey: Key.showsUsage) ?? true
@@ -59,8 +64,18 @@ public final class AppSettings {
         theme = defaults.string(forKey: Key.theme).flatMap(Theme.init(rawValue:)) ?? .system
         glassStyle = defaults.string(forKey: Key.glassStyle).flatMap(GlassStyle.init(rawValue:)) ?? .regular
         sendsNotifications = Self.readBool(defaults, forKey: Key.sendsNotifications) ?? true
-        connectsClaudeCode = Self.readBool(defaults, forKey: Key.connectsClaudeCode) ?? false
+        connectsClaudeCode = Self.readBool(defaults, forKey: Key.connectsClaudeCode) ?? true
         fetchesCodexUsage = Self.readBool(defaults, forKey: Key.fetchesCodexUsage) ?? true
+        // 표지가 없어도 저장된 설정이 하나라도 있으면 이전 버전 사용자라서 첫 실행으로 보지 않는다.
+        hasAppliedLoginItemDefault = Self.readBool(defaults, forKey: Key.hasAppliedLoginItemDefault)
+            ?? Self.hasStoredSettings(defaults)
+    }
+
+    private static func hasStoredSettings(_ defaults: UserDefaults) -> Bool {
+        [
+            Key.showsUsage, Key.showsContext, Key.colorMode, Key.sendsNotifications,
+            Key.glassStyle, Key.theme, Key.connectsClaudeCode, Key.fetchesCodexUsage
+        ].contains { defaults.object(forKey: $0) != nil }
     }
 
     // 숫자 0과 1은 `as? Bool`로 읽히므로, 실제로 Bool로 저장된 값만 받아들인다.

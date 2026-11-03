@@ -36,6 +36,21 @@ public struct LoginItem: Sendable {
         isRunningAsApp && service.status == .enabled
     }
 
+    // 설치 후 처음 실행할 때 한 번만 로그인 항목을 켠다. 이미 적용했다면 사용자가 끈 값을 존중해 아무것도 하지 않는다.
+    // 앱(.app)이 아니면 적용하지 않은 채로 둔다. 승인이 필요한 상태여도 시스템 설정 화면은 열지 않는다.
+    // 적용 여부(다음에 저장할 값)를 돌려준다.
+    public func enableOnFirstLaunch(hasApplied: Bool) -> Bool {
+        guard isRunningAsApp, !hasApplied else { return hasApplied }
+        if service.status == .notRegistered {
+            do {
+                try service.register()
+            } catch {
+                logFailure("로그인 항목 등록 실패: \(error.localizedDescription)")
+            }
+        }
+        return true
+    }
+
     // 켜져 있으면 끄고, 꺼져 있으면 켠다. 사용자 승인이 필요한 상태면 시스템 설정의 로그인 항목 화면을 연다.
     public func toggle() {
         guard isRunningAsApp else { return }

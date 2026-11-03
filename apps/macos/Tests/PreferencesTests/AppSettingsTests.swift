@@ -23,9 +23,36 @@ struct AppSettingsTests {
         #expect(settings.theme == .system)
         #expect(settings.glassStyle == .regular)
         #expect(settings.sendsNotifications)
-        // 원본은 true였다. 새 앱은 최초 실행에서 자동 연결하지 않는다(#11 D-1).
-        #expect(!settings.connectsClaudeCode)
+        // 설치 후 처음 실행에서 네 항목이 모두 켜진다(#23 AC-7). 로그인 항목은 LoginItem이 따로 다룬다.
+        #expect(settings.connectsClaudeCode)
         #expect(settings.fetchesCodexUsage)
+        #expect(!settings.hasAppliedLoginItemDefault)
+    }
+
+    // #23 AC-7
+    @Test func treatsExistingStoredSettingsAsNotFirstLaunch() {
+        let (defaults, suiteName) = makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set("dark", forKey: "theme")
+
+        #expect(AppSettings(defaults: defaults).hasAppliedLoginItemDefault)
+    }
+
+    // #23 AC-7
+    @Test func keepsUserChoicesAcrossRelaunch() {
+        let (defaults, suiteName) = makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let settings = AppSettings(defaults: defaults)
+        settings.connectsClaudeCode = false
+        settings.sendsNotifications = false
+        settings.fetchesCodexUsage = false
+        settings.hasAppliedLoginItemDefault = true
+
+        let reloaded = AppSettings(defaults: defaults)
+        #expect(!reloaded.connectsClaudeCode)
+        #expect(!reloaded.sendsNotifications)
+        #expect(!reloaded.fetchesCodexUsage)
+        #expect(reloaded.hasAppliedLoginItemDefault)
     }
 
     // AC-1
@@ -102,7 +129,7 @@ struct AppSettingsTests {
         #expect(settings.sendsNotifications)
         #expect(settings.showsUsage)
         #expect(settings.showsContext)
-        #expect(!settings.connectsClaudeCode)
+        #expect(settings.connectsClaudeCode)
         #expect(settings.fetchesCodexUsage)
     }
 

@@ -86,6 +86,66 @@ struct LoginItemTests {
         #expect(messages.withLock { $0 }.count == 1)
     }
 
+    // #23 AC-7
+    @Test func enablesOnFirstLaunchAndReportsApplied() {
+        let service = FakeLoginItemService(status: .notRegistered, nextStatusAfterRegister: .enabled)
+        let loginItem = LoginItem(isRunningAsApp: true, service: service, logFailure: { _ in })
+
+        let hasApplied = loginItem.enableOnFirstLaunch(hasApplied: false)
+
+        #expect(hasApplied)
+        #expect(service.calls == [.register])
+        #expect(loginItem.isEnabled)
+    }
+
+    // #23 AC-7
+    @Test func doesNotReEnableAfterDefaultWasApplied() {
+        let service = FakeLoginItemService(status: .notRegistered)
+        let loginItem = LoginItem(isRunningAsApp: true, service: service, logFailure: { _ in })
+
+        let hasApplied = loginItem.enableOnFirstLaunch(hasApplied: true)
+
+        #expect(hasApplied)
+        #expect(service.calls.isEmpty)
+    }
+
+    // #23 AC-7
+    @Test func firstLaunchLeavesAnEnabledItemAlone() {
+        let service = FakeLoginItemService(status: .enabled)
+        let loginItem = LoginItem(isRunningAsApp: true, service: service, logFailure: { _ in })
+
+        #expect(loginItem.enableOnFirstLaunch(hasApplied: false))
+        #expect(service.calls.isEmpty)
+    }
+
+    // #23 AC-7
+    @Test func firstLaunchDoesNotOpenSystemSettingsWhenApprovalIsRequired() {
+        let service = FakeLoginItemService(status: .notRegistered, nextStatusAfterRegister: .requiresApproval)
+        let loginItem = LoginItem(isRunningAsApp: true, service: service, logFailure: { _ in })
+
+        #expect(loginItem.enableOnFirstLaunch(hasApplied: false))
+        #expect(service.calls == [.register])
+    }
+
+    // #23 AC-7
+    @Test func firstLaunchLogsRegistrationFailureAndStillMarksApplied() {
+        let service = FakeLoginItemService(status: .notRegistered, shouldFail: true)
+        let messages = Mutex<[String]>([])
+        let loginItem = LoginItem(isRunningAsApp: true, service: service, logFailure: { message in messages.withLock { $0.append(message) } })
+
+        #expect(loginItem.enableOnFirstLaunch(hasApplied: false))
+        #expect(messages.withLock { $0 }.count == 1)
+    }
+
+    // #23 AC-7
+    @Test func firstLaunchDoesNothingOutsideAppBundleAndStaysUnapplied() {
+        let service = FakeLoginItemService(status: .notRegistered)
+        let loginItem = LoginItem(isRunningAsApp: false, service: service, logFailure: { _ in })
+
+        #expect(!loginItem.enableOnFirstLaunch(hasApplied: false))
+        #expect(service.calls.isEmpty)
+    }
+
     // AC-8
     @Test func doesNothingOutsideAppBundle() {
         let service = FakeLoginItemService(status: .enabled)
