@@ -69,6 +69,15 @@ jobs:
           shasum -a 256 "$zip_name" | tee "$zip_name.sha256"
           echo "name=$zip_name" >> "$GITHUB_OUTPUT"
           echo "sha256=$(shasum -a 256 "$zip_name" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      # 랜딩 페이지의 다운로드 버튼이 releases/latest/download/Desktoto.dmg로 항상 최신을 받도록 파일 이름에 버전을 넣지 않는다.
+      - name: Create dmg
+        working-directory: apps/macos/build
+        run: |
+          staging=$(mktemp -d)
+          ditto Desktoto.app "$staging/Desktoto.app"
+          ln -s /Applications "$staging/Applications"
+          hdiutil create -volname Desktoto -srcfolder "$staging" -ov -format UDZO Desktoto.dmg
+          shasum -a 256 Desktoto.dmg | tee Desktoto.dmg.sha256
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -83,6 +92,8 @@ jobs:
           gh release create "$TAG_NAME" \
             "apps/macos/build/$ZIP_NAME" \
             "apps/macos/build/$ZIP_NAME.sha256" \
+            "apps/macos/build/Desktoto.dmg" \
+            "apps/macos/build/Desktoto.dmg.sha256" \
             --title "$TAG_NAME" \
             --generate-notes \
             "${flags[@]}"

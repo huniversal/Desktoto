@@ -14,7 +14,7 @@ AI 코딩 도구(Claude Code, Codex)의 세션 상태와 사용량을 macOS 메�
 
 ## 요구 사항
 
-- macOS 26 이상
+- macOS 26 이상, Apple Silicon Mac(arm64). Intel Mac은 지원하지 않는다.
 - 소스에서 빌드할 때만: Xcode 26.6 이상(Swift 6, Swift Package Manager)
 - 이 앱이 읽는 위치: `~/.claude/projects`, `~/.codex/sessions`, `~/.codex/session_index.jsonl`, Claude 데스크탑 앱 캐시, 설치된 `codex`(사용량 조회).
 
@@ -32,9 +32,9 @@ brew install --cask huniversal/tap/desktoto
 
 설치 직후 다운로드 표시(격리 속성)를 제거하므로 처음 실행할 때 경고가 나오지 않는다. 갱신은 `brew upgrade`, 삭제는 `brew uninstall --cask desktoto`이다.
 
-### 릴리스 zip으로 직접 설치
+### dmg로 직접 설치
 
-1. [릴리스 페이지](https://github.com/huniversal/Desktoto/releases/latest)에서 `Desktoto-버전.zip`을 받아 압축을 풀고, 나온 `Desktoto.app`을 `응용 프로그램` 폴더로 옮긴다.
+1. [`Desktoto.dmg`](https://github.com/huniversal/Desktoto/releases/latest/download/Desktoto.dmg)를 받아 열고, `Desktoto`를 `응용 프로그램` 폴더로 끌어다 놓는다. 릴리스 페이지에는 압축 파일(`Desktoto-버전.zip`)도 있다. zip은 압축을 풀고 나온 `Desktoto.app`을 `응용 프로그램` 폴더로 옮기면 된다.
 2. 처음 열면 "확인할 수 없음" 같은 경고가 뜬다. 창을 닫고 시스템 설정, 개인정보 보호 및 보안 맨 아래에서 `그래도 열기`를 누른 뒤 암호를 입력한다.
 3. 다시 열면 메뉴바에 캐릭터가 나타난다.
 

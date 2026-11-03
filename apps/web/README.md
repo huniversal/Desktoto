@@ -23,7 +23,7 @@ http://localhost:5173 을 연다.
 
 ## 검사
 
-CI의 Web job과 같은 검사다. 필수 파일, 문서 틀, 파비콘 연결, 링크 미리보기 주소와 이미지 크기를 확인한다.
+CI의 Web job과 같은 검사다. 필수 파일, 문서 틀, 파비콘 연결, 링크 미리보기 주소와 이미지 크기, 설치 섹션과 dmg 다운로드 링크와 Homebrew 명령을 확인한다.
 
 ```bash
 bash .github/scripts/check-web.sh
