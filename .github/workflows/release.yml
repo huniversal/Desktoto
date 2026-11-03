@@ -22,6 +22,10 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
+    outputs:
+      version: ${{ steps.version.outputs.number }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      sha256: ${{ steps.zip.outputs.sha256 }}
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       TAG_NAME: ${{ github.ref_name }}
@@ -64,6 +68,7 @@ jobs:
           ditto -c -k --keepParent Desktoto.app "$zip_name"
           shasum -a 256 "$zip_name" | tee "$zip_name.sha256"
           echo "name=$zip_name" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(shasum -a 256 "$zip_name" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -81,3 +86,63 @@ jobs:
             --title "$TAG_NAME" \
             --generate-notes \
             "${flags[@]}"
+
+  # 정식 릴리스가 올라간 뒤 Homebrew tap의 cask 버전과 해시를 갱신한다.
+  # 릴리스와 따로 둔 job이라 이 job이 실패해도 이미 올라간 GitHub Release는 그대로 남는다.
+  # 프리릴리스는 brew upgrade로 사용자에게 가지 않도록 건너뛴다.
+  update-tap:
+    name: Update Homebrew tap
+    needs: release
+    if: needs.release.outputs.prerelease == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    concurrency:
+      group: update-homebrew-tap
+      cancel-in-progress: false
+    env:
+      VERSION: ${{ needs.release.outputs.version }}
+      ZIP_SHA256: ${{ needs.release.outputs.sha256 }}
+      RELEASE_REPO: ${{ github.repository }}
+    steps:
+      - name: Validate release values
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::버전 형식이 올바르지 않습니다: $VERSION"
+            exit 1
+          fi
+          if [[ ! "$ZIP_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::sha256 형식이 올바르지 않습니다."
+            exit 1
+          fi
+      - name: Verify published zip matches checksum
+        run: |
+          url="https://github.com/$RELEASE_REPO/releases/download/v$VERSION/Desktoto-$VERSION.zip"
+          actual=$(curl -fsSL --retry 5 --retry-delay 5 "$url" | sha256sum | cut -d' ' -f1)
+          if [ "$actual" != "$ZIP_SHA256" ]; then
+            echo "::error::공개된 zip의 sha256이 릴리스 단계의 값과 다릅니다: $url"
+            exit 1
+          fi
+      - name: Check out tap
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: huniversal/homebrew-tap
+          token: ${{ secrets.TAP_TOKEN }}
+          path: tap
+      - name: Update cask and push
+        working-directory: tap
+        run: |
+          cask="Casks/desktoto.rb"
+          sed -i -E "s/^(  version \")[^\"]*(\")/\1${VERSION}\2/" "$cask"
+          sed -i -E "s/^(  sha256 \")[^\"]*(\")/\1${ZIP_SHA256}\2/" "$cask"
+          grep -q "^  version \"${VERSION}\"$" "$cask"
+          grep -q "^  sha256 \"${ZIP_SHA256}\"$" "$cask"
+          if git diff --quiet; then
+            echo "tap이 이미 최신입니다."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: desktoto ${VERSION}으로 갱신"
+          git push
