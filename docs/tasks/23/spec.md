@@ -4,7 +4,7 @@
 
 - 이슈: #23 / https://github.com/huniversal/Desktoto/issues/23
 - 브랜치: feat/homebrew-cask/#23
-- specRevision: 3
+- specRevision: 4
 - 대상 ai-run 원본: N/A (배포 작업이며 제품 동작은 바꾸지 않는다)
 
 ## 목적
@@ -61,7 +61,7 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
     ```
 - tap 신뢰: Homebrew 6.0부터 비공식 tap은 신뢰가 필요하다. 전체 이름(`brew install --cask huniversal/tap/desktoto`)으로 설치하면 해당 cask만 자동 신뢰되므로 설치 명령은 한 줄로 유지된다. 짧은 이름으로 설치하려면 `brew trust`가 필요하므로 README에는 전체 이름만 쓴다.
 - 예외 처리:
-  - 프리릴리스 태그(`-rc.1` 등)를 tap에 반영할지는 미결정 사항이다.
+  - 프리릴리스 태그(`-rc.1` 등)는 tap에 반영하지 않는다. 사용자가 `brew upgrade`로 불안정한 버전을 받지 않게 하기 위함이다 (specRevision 4에서 확정).
   - tap 갱신이 실패해도 GitHub Release 자체는 유지되어야 하며, 실패는 워크플로 결과에 드러나야 한다.
 
 ## 완료 조건
@@ -72,7 +72,6 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
 - AC-4: `brew upgrade`로 새 버전이 설치되고, `brew uninstall --cask desktoto`로 삭제된다.
 - AC-5: README 설치 항목에 Homebrew 명령과 릴리스 zip 수동 설치 방법이 있다. zip 수동 설치 방법은 격리 속성 때문에 막힐 때의 해결 방법을 포함한다.
 - AC-6: `docs/ci.md` 릴리스 절이 tap 갱신 흐름을 반영한다. `install-app.sh` 병행 기간 보호 문구는 유지 또는 정리 중 하나로 판단하고 이유가 PR에 기록되어 있다.
-
 - AC-7: 저장된 설정이 없는 첫 실행에서 알림, Codex 연동, Claude 연동의 기본값이 켜짐이고, 앱으로 실행 중이면 로그인 항목이 한 번 등록된다. 사용자가 끈 항목은 다음 실행에서 다시 켜지지 않는다. Claude 연동은 `~/.claude`가 없으면 설정 파일을 쓰지 않는다.
 
 ## 검증 방법
@@ -91,9 +90,10 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
 
 - 격리 속성 제거의 한계: macOS 27.0.1, Homebrew 7.0.6에서 `localhost` 서버로 받은 zip으로 설치와 실행을 확인했다(격리 속성 0개, 앱 정상 실행).
   격리 속성이 붙은 채로 막히는지 대조 실험은 하지 않았고, 실제 GitHub Release 다운로드와 macOS 26에서의 확인은 첫 릴리스 후 AC-3에서 한다. 구현을 막지 않는다.
-- tap 쓰기 권한 방식: fine-grained PAT, GitHub App, deploy key 중 선택. tap 저장소 하나에만 contents 쓰기 권한을 주는 최소 권한을 기준으로 정한다. 구현을 막지 않지만 AC-2 전에 정한다.
-- 프리릴리스(`-rc.N`) 태그를 tap에 반영할지 여부. 반영하지 않는 쪽을 기본으로 제안하며 합의 전이다.
-- tap 저장소 공개 여부와 기본 브랜치 보호 설정. 합의 전이다.
+- tap 기본 브랜치 보호 설정. 현재 보호 없이 워크플로가 `main`에 직접 push한다. 막지 않는다.
+- 워크플로와 첫 릴리스 흐름은 GitHub Actions 환경에서만 확인할 수 있다. 로컬에서는 YAML 구조와 cask 갱신 `sed` 로직만 검증했다. 첫 정식 릴리스 후 AC-2에서 확인한다.
+- README의 zip 수동 설치 절차(`그래도 열기`)는 실제 Mac에서 따라 해 보지 않았다. macOS 버전에 따라 화면이 다를 수 있으며 AC-5에서 확인한다.
+- `install-app.sh`의 병행 기간 보호 문구는 원본 ai-run과 나란히 비교하는 동안 필요하므로 유지한다.
 - 자체 tap이 Homebrew 공식 설치 통계에 나오는지는 미확인이다. 다운로드 수는 GitHub Release의 `download_count`로 본다(brew와 zip 직접 설치가 합산되고 사람 수가 아닌 내려받은 횟수).
 
 ## 주요 설계 변경
@@ -103,3 +103,4 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
 | 1 | 최초 설계 | 이슈 #23의 Tasks와 범위를 그대로 옮김. 미결정 항목은 확정하지 않음 |
 | 2 | 격리 속성 제거를 `postflight_steps`와 `{{appdir}}` 토큰으로 확정, tap 신뢰는 전체 이름 설치로 해소 | Homebrew 7.0.6, macOS 27.0.1에서 로컬 확인. 영향받는 AC: AC-1, AC-3, AC-5 |
 | 3 | 첫 설치 기본값(네 항목 켜짐) 추가, #11 D-1과 AC-11 대체 | 사용자 요청. 새 AC: AC-7. Claude 연동이 켜진 채 시작하므로, 원본에서 연동을 해제한 사용자가 새 앱을 처음 켜면 설정 파일에 다시 연동이 들어갈 수 있다 |
+| 4 | tap 쓰기 권한은 fine-grained PAT(`TAP_TOKEN`)로, 프리릴리스는 tap에 반영하지 않기로 확정. tap 저장소는 개인 계정의 공개 저장소 `huniversal/homebrew-tap` | 사용자 합의와 구현. 영향받는 AC: AC-1, AC-2, AC-5, AC-6 |

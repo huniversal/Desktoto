@@ -102,6 +102,33 @@ sh scripts/install-app.sh
 산출물은 `Desktoto-버전.zip`과 `.sha256` 파일이다. 서명은 ad-hoc이라 다운로드한 앱은 처음 실행할 때
 Gatekeeper 경고가 나오며, 공증은 하지 않는다. 릴리스 job만 저장소 쓰기 권한(`contents: write`)을 쓴다.
 
+### Homebrew tap 갱신
+
+정식 릴리스가 올라가면 `update-tap` job이 [homebrew-tap](https://github.com/huniversal/homebrew-tap)의 `Casks/desktoto.rb`에서
+`version`과 `sha256` 두 줄만 새 값으로 바꿔 `main`에 커밋한다. 사용자는 아래 명령으로 설치하고 `brew upgrade`로 갱신한다.
+
+```bash
+brew install --cask huniversal/tap/desktoto
+```
+
+- 릴리스 job이 성공해야 실행하고, 별도 job이라 실패해도 이미 올라간 GitHub Release는 남는다. 실패는 Actions에서 확인하고 같은 태그의 워크플로를 다시 실행한다.
+- `-rc.1` 같은 프리릴리스는 건너뛴다. 사용자가 `brew upgrade`로 불안정한 버전을 받지 않게 하기 위함이다.
+- tap을 고치기 전에 공개된 zip을 다시 내려받아 릴리스 단계의 sha256과 같은지 확인한다. 다르면 tap을 바꾸지 않고 실패한다.
+- cask는 설치 직후 `postflight_steps`에서 `xattr -dr com.apple.quarantine`을 실행해 서명 없는 앱이 처음 실행할 때 막히지 않게 한다.
+  Homebrew 7에서 옛 `postflight`는 deprecated이고, 경로 치환 토큰은 `{{appdir}}`이다.
+- 전체 이름(`huniversal/tap/desktoto`)으로 설치하면 Homebrew의 tap 신뢰(trust)가 그 cask에만 자동으로 적용된다. 짧은 이름으로 설치하려면 `brew trust`가 필요하다.
+
+tap에 쓰는 권한은 Actions Secret `TAP_TOKEN`(fine-grained PAT)이다.
+
+| 항목 | 값 |
+|---|---|
+| 범위 | `huniversal/homebrew-tap` 한 저장소만, Contents 읽기와 쓰기 |
+| 만료일 | 2027-11-03 |
+| 교체 방법 | GitHub, Settings, Developer settings, Fine-grained tokens에서 같은 설정으로 새로 발급하고 Desktoto 저장소의 Actions Secret `TAP_TOKEN` 값을 바꾼다 |
+
+만료되면 `update-tap`만 실패하고 앱 릴리스와 이미 설치한 사용자는 영향받지 않는다. 만료 전에 교체한다.
+첫 정식 릴리스 전까지 cask의 `version`은 자리표시 값(`0.0.0`)이라 설치할 수 없다.
+
 ## 로컬 확인
 
 ```bash
@@ -126,3 +153,4 @@ NEEDS_JSON='{"changes":{"result":"success","outputs":{"macos":"true","web":"fals
 ## 후속 작업
 
 - 코드 서명 인증서와 공증, 자동 업데이트.
+- 새 버전 알림(#24), 랜딩 페이지의 설치 안내(#28).
