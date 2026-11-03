@@ -64,9 +64,23 @@ jobs:
       - name: Package app bundle
         run: sh scripts/build-app.sh
 
+  web:
+    name: Web
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out PR merge commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check static site
+        run: bash .github/scripts/check-web.sh
+
   ci-result:
     name: CI Result
-    needs: [changes, macos-build]
+    needs: [changes, macos-build, web]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5

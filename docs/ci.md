@@ -14,9 +14,10 @@
 | --- | --- | --- | --- |
 | `Changes` | Ubuntu 24.04 | PR 전체 변경을 분류해 검사 대상 결정 | 5분 |
 | `macOS Build` | macOS 26, Xcode 26.6 | `apps/macos`에서 `swift build`, `swift test`, 앱 번들 패키징 | 20분 |
+| `Web` | Ubuntu 24.04 | `check-web.sh`로 `apps/web`의 필수 파일, 문서 틀, 파비콘 연결, 링크 미리보기 주소와 이미지 크기 검사 | 5분 |
 | `CI Result` | Ubuntu 24.04 | 선택된 job의 결과를 하나로 취합 | 5분 |
 
-`Web` job은 랜딩 스택이 정해지는 #12에서 추가한다. 변경 감지는 이미 `web` 플래그를 출력한다.
+`Web` 검사는 빌드 없이 셸 스크립트만 쓴다. 배포 도메인을 바꾸면 [check-web.sh](../.github/scripts/check-web.sh)의 `SITE_ORIGIN`도 함께 바꾼다.
 
 ## 변경 감지
 
@@ -27,7 +28,7 @@ Git 실패나 입력 누락은 스크립트 실패이고, 그 결과 `CI Result`
 | 변경 경로 | 실행할 검사 |
 | --- | --- |
 | `apps/macos/*` | macOS Build |
-| `apps/web/*` | Web (job 추가 전에는 플래그만 출력) |
+| `apps/web/*` | Web |
 | `.github/workflows/*`, `.github/scripts/*` | 전체 |
 | `docs/*`, `.agents/*`, `.claude/*`, `.github` 아래의 나머지 파일, `AGENTS.md`, `CLAUDE.md`, `README.md`, `.gitignore` | 검사 생략 |
 | 위에 없는 모든 경로 | 전체 (생략하지 않고 안전하게 검사) |
@@ -107,7 +108,10 @@ Gatekeeper 경고가 나오며, 공증은 하지 않는다. 릴리스 job만 저
 # 빌드와 테스트 (서브셸에서 실행해 현재 위치를 바꾸지 않는다)
 (cd apps/macos && swift build && swift test)
 
-# 아래 두 명령은 저장소 루트에서 실행한다
+# 아래 명령은 저장소 루트에서 실행한다
+# 랜딩 페이지 검사
+bash .github/scripts/check-web.sh
+
 # 변경 감지 (base와 head 커밋을 지정)
 BASE_SHA=$(git merge-base origin/develop HEAD) HEAD_SHA=HEAD bash .github/scripts/detect-changes.sh
 
@@ -121,5 +125,4 @@ NEEDS_JSON='{"changes":{"result":"success","outputs":{"macos":"true","web":"fals
 
 ## 후속 작업
 
-- Web job: #12에서 랜딩 스택을 정한 뒤 추가하고 `check-result.sh`에 `check_job web web`을 더한다.
 - 코드 서명 인증서와 공증, 자동 업데이트.
