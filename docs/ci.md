@@ -99,7 +99,7 @@ sh scripts/install-app.sh
 2. 워크플로가 `swift test`, 앱 패키징, zip 생성, SHA-256 체크섬 생성을 하고 GitHub Release에 올린다.
 3. 릴리스 노트는 자동 생성한다.
 
-산출물은 `Desktoto-버전.zip`과 `.sha256` 파일이다. 서명은 ad-hoc이라 다운로드한 앱은 처음 실행할 때
+산출물은 `Desktoto-버전.zip`, `Desktoto.dmg`와 각각의 `.sha256` 파일이다. dmg는 `Desktoto.app`과 `응용 프로그램` 바로가기를 담고, 랜딩 페이지의 다운로드 버튼이 `releases/latest/download/Desktoto.dmg`로 항상 최신을 받도록 파일 이름에 버전을 넣지 않는다. Homebrew cask와 `update-tap`은 zip을 쓴다. 앱은 Apple Silicon(arm64) 전용이다. 서명은 ad-hoc이라 다운로드한 앱은 처음 실행할 때
 Gatekeeper 경고가 나오며, 공증은 하지 않는다. 릴리스 job만 저장소 쓰기 권한(`contents: write`)을 쓴다.
 
 ### Homebrew tap 갱신
