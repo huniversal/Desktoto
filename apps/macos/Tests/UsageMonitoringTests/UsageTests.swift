@@ -44,8 +44,8 @@ struct UsageTests {
         #expect(UsageParser.takeCompleteLines(from: &bytes) == [Data("한글".utf8)])
     }
 
-    func entry(body: Data) -> Data {
-        let key = Data("https://claude.ai/api/organizations/abcd-1234/usage".utf8)
+    func entry(body: Data, key keyText: String = "https://claude.ai/api/organizations/abcd-1234/usage") -> Data {
+        let key = Data(keyText.utf8)
         var bytes = Data(repeating: 0, count: 24)
         let magic: UInt64 = 0xfcfb6d1ba7725c30
         for index in 0..<8 { bytes[index] = UInt8(truncatingIfNeeded: magic >> (index * 8)) }
@@ -53,6 +53,17 @@ struct UsageTests {
         bytes.append(key)
         bytes.append(body)
         return bytes
+    }
+
+    @Test func usageKeyAcceptsQueryVariantsOnly() {
+        let base = "https://claude.ai/api/organizations/0b004cf6-ca71-4332-98cd-4d7bce2d1b2e/usage"
+        #expect(ClaudeCacheParser.isUsageKey(base))
+        #expect(ClaudeCacheParser.isUsageKey("\(base)?skip_spend=1"))
+        #expect(ClaudeCacheParser.isUsageKey("\(base)?cedar_ember=1&skip_spend=1"))
+        #expect(ClaudeCacheParser.isUsageKey("\(base)/other") == false)
+        #expect(ClaudeCacheParser.isUsageKey("\(base)s") == false)
+        #expect(ClaudeCacheParser.isUsageKey("https://claude.ai/api/organizations/not-hex-zz/usage?skip_spend=1") == false)
+        #expect(ClaudeCacheParser.isUsageKey("https://claude.ai/api/organizations/abcd-1234/overage?usage") == false)
     }
 
     @Test func cacheHeaderAndCompressedFrame() throws {

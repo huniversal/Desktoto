@@ -1,108 +1,336 @@
 <!doctype html>
-<!-- 링크 미리보기(Open Graph) 이미지의 원본. 1200x630으로 캡처해 og.png로 쓴다.
+<!-- 링크 미리보기(Open Graph) 이미지의 원본. 랜딩 페이지 히어로(제목과 무대)를 그대로 옮긴 정적 사본이며 1200x630으로 캡처해 og.png로 쓴다.
      캡처: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars --window-size=1200,630 --virtual-time-budget=8000 --screenshot=apps/web/og.png file://$PWD/apps/web/og-source.html -->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
+:root{color-scheme:light}body{margin:0}
+
+  /* Layout concept: 흰 캐릭터가 달리는 메뉴바와 유리 패널을 노을빛 바탕화면 위에 올린 무대(stage)를 중심으로, 나머지는 조용한 한 줄짜리 문장과 표로 구성한다. */
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --fg: #1d1d1f;
+    --muted: #5f5f66;
+    --line: rgba(29, 29, 31, 0.12);
+    --btn-bg: #1d1d1f;
+    --btn-fg: #ffffff;
+    --btn-ghost: rgba(29, 29, 31, 0.06);
+    --amber: #ffcc4d;
+    --amber-ink: #5c4300;
+    --bar-1: #73a6ff;
+    --bar-2: #ad80ff;
+    --glass-ink: #ffffff;
+    --glass-muted: rgba(255, 255, 255, 0.72);
+    --menubar-bg: rgba(28, 24, 26, 0.42);
+    --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    --font-pixel: "DotGothic16", "Apple SD Gothic Neo", "Noto Sans KR", monospace;
+    --strip: #2b2626;
+    --wallpaper:
+      radial-gradient(130% 55% at 52% 108%, #00229a 0%, rgba(0, 34, 154, 0) 62%),
+      radial-gradient(60% 55% at 6% 102%, #6fb0c9 0%, rgba(111, 176, 201, 0) 70%),
+      radial-gradient(52% 70% at 104% 88%, #a9cadb 0%, rgba(169, 202, 219, 0) 72%),
+      radial-gradient(85% 34% at 38% 50%, #58bdee 0%, rgba(88, 189, 238, 0) 72%),
+      radial-gradient(60% 40% at 82% 36%, #2f7ee2 0%, rgba(47, 126, 226, 0) 74%),
+      radial-gradient(34% 22% at 34% 30%, #1f86da 0%, rgba(31, 134, 218, 0) 74%),
+      radial-gradient(40% 40% at 0% 52%, #1ea0e0 0%, rgba(30, 160, 224, 0) 72%),
+      linear-gradient(180deg, #cfd0de 0%, #e8dfb4 20%, #dcdcd2 33%, #7db2ea 50%, #2f6fe0 76%, #1d4fc4 100%);
+  }
+  
+  :root[data-theme="dark"] {
+    --bg: #0b0b0d;
+    --surface: #161619;
+    --fg: #f5f5f7;
+    --muted: #a1a1a8;
+    --line: rgba(255, 255, 255, 0.13);
+    --btn-bg: #f5f5f7;
+    --btn-fg: #1d1d1f;
+    --btn-ghost: rgba(255, 255, 255, 0.09);
+    --strip: #1c1819;
+    color-scheme: dark;
+  }
+
   * { box-sizing: border-box; }
-  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
   body {
-    position: relative;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-    color: #fff;
-    background:
-      radial-gradient(90% 90% at 85% 0%, #c9ad93, transparent 60%),
-      linear-gradient(165deg, #c9ad93, #a98270 58%, #6f5a58);
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.65;
+    word-break: keep-all;
     -webkit-font-smoothing: antialiased;
+    padding-block: 0 48px;
   }
+  /* 좌우 여백은 본문 틀이 갖고, 헤더(nav)는 페이지 전체 너비를 쓴다. */
+  .wrap, .nav-inner { max-width: 1080px; margin-inline: auto; box-sizing: content-box; }
+  .wrap, nav { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  :root { --section-pad: clamp(144px, 19vw, 216px); }
+  /* 위 여백이 커서 섹션 맨 위가 아니라 제목이 헤더 바로 아래에 오도록, 이동 위치에서 여백만큼 뺀다. */
+  section { padding-block: var(--section-pad) 0; scroll-margin-top: calc(100px - var(--section-pad)); }
+  h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.03em; line-height: 1.15; }
+  h1 { font-size: clamp(2.2rem, 5.2vw, 3.8rem); font-weight: 700; }
+  h2 { font-size: clamp(1.7rem, 3.8vw, 2.6rem); font-weight: 700; }
+  h3 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+  p { margin: 0; }
+  .eyebrow { font-family: var(--font-pixel); font-size: 0.82rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .lead { color: var(--muted); font-size: 1.15rem; max-width: 36em; text-wrap: balance; }
+  p, li { text-wrap: pretty; }
+  .ln { display: block; text-wrap: balance; }
+  .lead:has(.ln) { max-width: none; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--bar-2); outline-offset: 3px; border-radius: 6px; }
+
+  /* 상단 */
+  html { scroll-behavior: smooth; }
+  /* 상단 안전 영역은 고정 띠로 칠해서, 스크롤된 내용이 시스템 막대 아래로 비쳐 보이지 않게 한다. */
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+  nav {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    padding-block: 16px;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { font-family: var(--font-pixel); font-size: 1.15rem; letter-spacing: 0.04em; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
+  .nav-links { display: flex; align-items: center; gap: 22px; font-size: 0.95rem; color: var(--muted); }
+  .nav-links a { text-decoration: none; }
+  .nav-links a.text { position: relative; padding-block: 4px; transition: color 0.2s; }
+  .nav-links a.text::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 2px; border-radius: 2px; background: var(--fg); transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease; }
+  .nav-links a.text:hover, .nav-links a.text[aria-current="true"] { color: var(--fg); }
+  .nav-links a.text[aria-current="true"]::after { transform: scaleX(1); }
+  /* 메뉴를 눌러 도착한 섹션의 제목이 살짝 떠오르며 도착을 알린다. */
+  section.arrived h2 { animation: arrive 0.7s ease both; }
+  section.arrived .eyebrow { color: var(--fg); transition: color 0.4s; }
+  @keyframes arrive { from { opacity: 0.3; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @media (max-width: 640px) { .nav-links a.text { display: none; } }
+
+  .btn { display: inline-flex; align-items: center; gap: 10px; font: inherit; font-size: 1rem; font-weight: 500; padding: 12px 22px; border-radius: 999px; border: 0; text-decoration: none; cursor: pointer; background: var(--btn-bg); color: var(--btn-fg); }
+  .btn { transition: background 0.2s, transform 0.12s; }
+  .btn:hover { background: color-mix(in srgb, var(--btn-bg) 80%, var(--bg)); }
+  .btn:active { transform: scale(0.97); }
+  .btn.ghost { background: var(--btn-ghost); color: var(--fg); }
+  .btn.small { padding: 8px 16px; font-size: 0.9rem; }
+
+  /* 언어 전환: 선택된 쪽 배경이 두 버튼 사이를 미끄러져 이동한다. */
+  .lang { position: relative; display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
+  .lang-thumb { position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc(50% - 2px); border-radius: 999px; background: var(--btn-bg); }
+  .lang.ready .lang-thumb { transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1); }
+  .lang[data-active="en"] .lang-thumb { transform: translateX(100%); }
+  .lang button { position: relative; z-index: 1; min-width: 44px; font: inherit; font-size: 0.78rem; letter-spacing: 0.04em; border: 0; background: transparent; color: var(--muted); padding: 4px 11px; border-radius: 999px; cursor: pointer; transition: color 0.25s, transform 0.12s; }
+  .lang button:active { transform: scale(0.92); }
+  .lang button[aria-pressed="true"] { color: var(--btn-fg); }
+  /* 언어가 바뀌는 순간 본문이 잠깐 옅어졌다가 새 언어로 나타난다. */
+  [data-i18n], [data-st] { transition: opacity 0.16s ease; }
+  body.lang-fade [data-i18n], body.lang-fade [data-st] { opacity: 0; }
+
+  /* 히어로 */
+  .hero { padding-block: 20px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; justify-items: start; }
+  .hero .lead { margin-top: 4px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
+  .cta-note { font-size: 0.9rem; color: var(--muted); }
+  .nav-icon { display: inline-flex; padding: 4px; border-radius: 8px; color: var(--muted); transition: color 0.2s; }
+  .nav-icon:hover { color: var(--fg); }
+
+  /* 설치: 개인정보 섹션과 같은 구성(왼쪽 제목, 오른쪽 구분선 목록)을 쓴다. */
+  .stack { display: grid; gap: 14px; }
+  .cmd { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 18px; border-radius: 12px; background: var(--strip); color: #ece8ea; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.9rem; line-height: 1.5; }
+  .cmd.small { font-size: 0.82rem; }
+  .cmd .prompt { flex: none; color: rgba(255, 255, 255, 0.45); user-select: none; }
+  .cmd code { flex: 1; min-width: 0; word-break: normal; overflow-wrap: break-word; background: none; padding: 0; color: inherit; font: inherit; }
+  .cmd .nw { white-space: nowrap; }
+  .privacy-list dd code { word-break: normal; overflow-wrap: break-word; }
+  .copy { flex: none; font: inherit; font-family: var(--font-body); font-size: 0.82rem; font-weight: 500; padding: 6px 14px; border-radius: 999px; border: 0; cursor: pointer; background: rgba(255, 255, 255, 0.14); color: #fff; transition: background 0.2s, transform 0.12s; }
+  .copy:hover { background: rgba(255, 255, 255, 0.24); }
+  .copy:active { transform: scale(0.94); }
+  .copy .done { display: none; }
+  .copy.copied { background: rgba(255, 255, 255, 0.9); color: #1d1d1f; }
+  .copy.copied .label { display: none; }
+  .copy.copied .done { display: inline; }
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: step; }
+  .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; counter-increment: step; }
+  .steps li::before { content: counter(step); font-family: var(--font-pixel); color: var(--fg); }
+  @media (max-width: 520px) {
+    .cmd { flex-wrap: wrap; }
+    .cmd code { flex-basis: 15em; }
+    .copy { margin-left: auto; }
+  }
+
+  /* 메뉴바 */
   .menubar {
-    position: absolute; inset: 0 0 auto 0; height: 64px;
-    display: flex; align-items: center; justify-content: space-between; padding-inline: 32px;
-    background: rgba(28, 24, 26, 0.42);
-    font-size: 20px; color: rgba(255, 255, 255, 0.72);
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-inline: 18px;
+    background: var(--menubar-bg);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    color: var(--glass-ink);
+    font-size: 13px;
   }
-  .menubar .left { display: flex; gap: 30px; }
-  .menubar .left b { color: #fff; }
-  .menubar .right { display: flex; align-items: center; gap: 22px; }
-  .menubar .pill { background: rgba(255, 255, 255, 0.85); color: #1d1d1f; border-radius: 7px; padding: 0 9px; font-size: 18px; line-height: 28px; }
+  .menubar .left { display: flex; gap: 18px; color: var(--glass-muted); white-space: nowrap; overflow: hidden; }
+  .menubar .left b { color: var(--glass-ink); font-weight: 700; }
+  .menubar .right { display: flex; align-items: center; gap: 14px; margin-left: auto; white-space: nowrap; }
+  .menubar .pill { background: rgba(255, 255, 255, 0.85); color: #1d1d1f; border-radius: 5px; padding: 0 6px; font-size: 12px; line-height: 18px; }
+  .menubar canvas { display: block; image-rendering: pixelated; }
+  @media (max-width: 560px) { .menubar .left span.extra { display: none; } }
 
-  .copy { position: absolute; left: 72px; top: 226px; width: 620px; }
-  .brand { display: flex; align-items: center; gap: 16px; font-family: "DotGothic16", monospace; font-size: 34px; letter-spacing: 0.04em; }
-  h1 { margin: 34px 0 0; font-size: 56px; line-height: 1.2; letter-spacing: -0.04em; font-weight: 700; word-break: keep-all; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.18); }
-  .sub { margin-top: 28px; font-size: 28px; line-height: 1.5; color: rgba(255, 255, 255, 0.84); font-weight: 500; }
+  /* 히어로 무대: 파란 물결 바탕화면 위에서 마우스가 패널의 카드를 눌러 해당 창으로 이동하는 장면이 반복된다. */
+  .tour {
+    position: relative; width: 100%; height: clamp(430px, 40vw, 460px);
+    border-radius: 28px; overflow: hidden; border: 1px solid var(--line); user-select: none;
+    background: var(--wallpaper);
+  }
+  .tour-line { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .tour .menubar { position: absolute; inset: 0 0 auto; z-index: 6; background: rgba(18, 26, 58, 0.5); }
+  .tour-win {
+    position: absolute; z-index: 2; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 10px 28px rgba(0, 20, 80, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.35);
+    outline: 2px solid transparent; outline-offset: -2px;
+    filter: brightness(0.88) saturate(0.9);
+    transition: filter 0.35s, outline-color 0.6s, transform 0.35s, box-shadow 0.35s;
+  }
+  .tour-win.front { z-index: 3; filter: none; transform: scale(1.008); box-shadow: 0 22px 50px rgba(0, 20, 80, 0.45), 0 0 0 0.5px rgba(0, 0, 0, 0.4); }
+  .tour-win.flash { outline-color: rgba(255, 255, 255, 0.9); }
+  .tour-bar { height: 32px; display: flex; align-items: center; justify-content: center; position: relative; font-size: 12px; }
+  .tour-lights { position: absolute; left: 12px; display: flex; gap: 8px; }
+  .tour-lights i { width: 12px; height: 12px; border-radius: 50%; background: #6e6e73; }
+  .tour-win.front .tour-lights i:nth-child(1) { background: #ff5f57; }
+  .tour-win.front .tour-lights i:nth-child(2) { background: #febc2e; }
+  .tour-win.front .tour-lights i:nth-child(3) { background: #28c840; }
+  .tour-term { left: 3%; top: 68px; width: clamp(250px, 44%, 470px); height: clamp(230px, 56%, 290px); background: rgba(26, 26, 30, 0.94); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  .tour-term .tour-bar { color: #a9a9b0; background: rgba(255, 255, 255, 0.05); }
+  .tour-term .tour-text { padding: 12px 16px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; line-height: 1.85; color: #d6d6dc; white-space: nowrap; overflow: hidden; }
+  .tour-term .c-b { color: #8fb4ff; } .tour-term .c-g { color: #7ee2a0; } .tour-term .c-y { color: #f2c46b; } .tour-term .c-d { color: #8a8a94; }
+  .tour-cur { display: inline-block; width: 7px; height: 13px; background: #d6d6dc; vertical-align: -2px; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .tour-app { left: 15%; top: 150px; width: clamp(250px, 44%, 470px); height: clamp(240px, 60%, 300px); background: #f7f6f8; display: flex; flex-direction: column; }
+  .tour-app .tour-bar { color: #55555c; background: #ecebef; border-bottom: 0.5px solid #d6d5da; }
+  .tour-main { display: flex; flex: 1; min-height: 0; }
+  .tour-side { width: 30%; background: #eceaf0; padding: 12px 8px; border-right: 0.5px solid #d6d5da; }
+  .tour-side p { margin: 0 0 6px; padding: 6px 8px; font-size: 12px; line-height: 1.4; color: #4a4a52; border-radius: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tour-side p.on { background: #dcd9e6; color: #222; }
+  .tour-chat { flex: 1; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.55; color: #25252b; }
+  .tour-me { align-self: flex-end; background: #e4e1ee; padding: 7px 12px; border-radius: 13px 13px 3px 13px; max-width: 82%; }
+  .tour-ai { max-width: 94%; }
+  .tour-input { margin-top: auto; border: 0.5px solid #cfcdd6; border-radius: 11px; background: #fff; padding: 8px 12px; font-size: 12px; color: #8b8b94; }
+  .tour-panel {
+    position: absolute; right: 14px; top: 54px; z-index: 7; width: min(300px, calc(100% - 28px));
+    display: flex; flex-direction: column; gap: 8px;
+    opacity: 0; transform: translateY(-6px) scale(0.97); transform-origin: top right; pointer-events: none;
+    transition: opacity 0.22s, transform 0.22s;
+  }
+  .tour-panel.open { opacity: 1; transform: none; }
+  .tour-glass {
+    border-radius: 22px; color: #fff; font-size: 14px; line-height: 1.35;
+    background: rgba(28, 28, 34, 0.58); border: 0.5px solid rgba(255, 255, 255, 0.16);
+    -webkit-backdrop-filter: blur(30px) saturate(1.5); backdrop-filter: blur(30px) saturate(1.5);
+    box-shadow: 0 14px 34px rgba(0, 20, 80, 0.35);
+  }
+  .tour-usage { padding: 14px 16px 12px; }
+  .tour-usage h4 { margin: 0 0 7px; font-size: 14px; font-weight: 600; letter-spacing: 0; }
+  .tour-usage .sec + .sec { margin-top: 9px; padding-top: 10px; border-top: 0.5px solid rgba(255, 255, 255, 0.12); }
+  .tour-use { display: grid; grid-template-columns: 38px 1fr 36px 66px; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: rgba(255, 255, 255, 0.55); font-variant-numeric: tabular-nums; }
+  .tour-use b { font-weight: 600; color: #fff; text-align: right; }
+  .tour-use em { font-style: normal; text-align: right; white-space: nowrap; }
+  .tour-track { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.18); }
+  .tour-track i { display: block; height: 100%; border-radius: 2px; background: #e9e9ee; }
+  .tour-sessions { padding: 6px; }
+  .tour-row { padding: 10px 12px; border-radius: 16px; transition: background 0.2s, transform 0.12s; }
+  .tour-row .head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-weight: 600; }
+  .tour-row .head span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tour-row .head span:last-child { flex: none; font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.6); }
+  .tour-row .tour-track i { background: rgba(255, 255, 255, 0.62); }
+  .tour-row .more { max-height: 0; opacity: 0; overflow: hidden; display: flex; justify-content: space-between; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-variant-numeric: tabular-nums; transition: max-height 0.25s, opacity 0.25s, margin 0.25s; }
+  .tour-row.hover { background: linear-gradient(100deg, rgba(150, 160, 230, 0.28), rgba(230, 140, 190, 0.3)); }
+  .tour-row.hover .more { max-height: 16px; opacity: 1; margin-top: 8px; }
+  .tour-row.press { transform: scale(0.97); }
+  .tour-cursor { position: absolute; left: 0; top: 0; z-index: 9; width: 24px; height: 29px; pointer-events: none; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.45)); }
+  .tour-ripple { position: absolute; left: 0; top: 0; z-index: 8; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; border: 2px solid #fff; opacity: 0; pointer-events: none; }
+  .tour-ripple.go { animation: ripple 0.5s ease-out; }
+  @keyframes ripple { from { opacity: 0.85; transform: scale(0.2); } to { opacity: 0; transform: scale(1.1); } }
+  @media (prefers-reduced-motion: reduce) {
+    .tour-win, .tour-panel, .tour-row, .tour-row .more { transition: none; }
+    .tour-cur { animation: none; }
+  }
 
-  .panel {
-    position: absolute; right: 56px; top: 116px; width: 440px;
-    border-radius: 30px; padding: 9px;
-    background: rgba(255, 255, 255, 0.16);
-    border: 1.5px solid rgba(255, 255, 255, 0.34);
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.26);
-    font-size: 22px; line-height: 1.35;
+  /* 문제 */
+  .problems { margin-top: 28px; display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .problems p { padding-block: 18px; border-bottom: 1px solid var(--line); font-size: 1.12rem; letter-spacing: -0.01em; }
+
+  /* 상태 */
+  .states { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px; }
+  .state { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 14px 14px 22px; display: grid; gap: 14px; align-content: start; }
+  .strip { background: var(--strip); border-radius: 12px; height: 92px; display: grid; place-items: center; }
+  .strip canvas { image-rendering: pixelated; display: block; }
+  .state h3 { padding-inline: 6px; }
+  .state p { padding-inline: 6px; color: var(--muted); font-size: 0.96rem; }
+
+  /* 기능: 상태 카드와 같은 카드에, 히어로 데모와 같은 배경과 유리 패널로 앱 화면을 작게 보여 준다. */
+  .fgrid { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+  .fv { aspect-ratio: 1 / 0.9; border-radius: 12px; background: var(--wallpaper); display: grid; place-items: center; padding: 18px; overflow: hidden; }
+  .fv .tour-glass, .fv-stack { width: 100%; }
+  .fv-stack { display: grid; gap: 10px; }
+  .fv-win { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border-radius: 12px; background: rgba(26, 26, 30, 0.94); color: #a9a9b0; font-size: 12px; }
+  .fv-win i { width: 10px; height: 10px; border-radius: 50%; }
+  .fv-win i:nth-child(1) { background: #ff5f57; }
+  .fv-win i:nth-child(2) { background: #febc2e; }
+  .fv-win i:nth-child(3) { background: #28c840; }
+  .fv-win span { margin-left: 6px; }
+  .fv-arrow { justify-self: center; color: #fff; opacity: 0.9; }
+  .fv-noti { display: grid; gap: 2px; padding: 10px 14px; border-radius: 16px; color: #fff; font-size: 12.5px; line-height: 1.4; background: rgba(28, 28, 34, 0.58); border: 0.5px solid rgba(255, 255, 255, 0.16); -webkit-backdrop-filter: blur(30px) saturate(1.5); backdrop-filter: blur(30px) saturate(1.5); box-shadow: 0 10px 24px rgba(0, 20, 80, 0.3); }
+  .fv-noti b { font-size: 11px; font-weight: 500; opacity: 0.7; letter-spacing: 0; }
+  .fv-noti span { font-weight: 600; }
+  .fv-noti small { font-size: 12px; opacity: 0.75; }
+  /* 꾸미기 카드: 실제 앱의 우클릭 설정 메뉴(색상 하위 메뉴가 열린 모습)를 그대로 본뜬다. */
+  .fv-menu-wrap { position: relative; width: 178px; margin-right: 74px; }
+  .fv-menu, .fv-sub { padding: 5px; border-radius: 12px; color: #1d1d1f; font-size: 11.5px; line-height: 20px; background: rgba(246, 246, 248, 0.88); border: 0.5px solid rgba(0, 0, 0, 0.14); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6); box-shadow: 0 12px 28px rgba(0, 20, 80, 0.32); }
+  .fv-sub { position: absolute; left: calc(100% - 10px); top: 114px; min-width: 84px; }
+  .fv-sub[hidden] { display: none; }
+  .mi { display: flex; align-items: center; height: 20px; padding: 0 8px 0 4px; border-radius: 6px; white-space: nowrap; cursor: pointer; user-select: none; }
+  .mi.checked > :first-child::before { content: "\2713"; }
+  .mi:hover { background: #0a7aff; color: #fff; }
+  .mi > :first-child { width: 14px; flex: none; text-align: center; font-size: 10px; }
+  .mi.sub::after { content: "\203A"; margin-left: auto; font-size: 14px; opacity: 0.7; }
+  .mi.on { background: #0a7aff; color: #fff; }
+  .mi.on::after { opacity: 1; }
+  .mi .key { margin-left: auto; opacity: 0.45; }
+  .fv .tour-row:hover { background: linear-gradient(100deg, rgba(150, 160, 230, 0.28), rgba(230, 140, 190, 0.3)); }
+  .fv .tour-row:hover .more { max-height: 16px; opacity: 1; margin-top: 8px; }
+  .msep { height: 1px; margin: 4px 6px; background: rgba(0, 0, 0, 0.12); }
+
+  /* 개인정보 */
+  .privacy { display: grid; gap: 26px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+  .privacy-list { display: grid; gap: 0; }
+  .privacy-list div { padding-block: 16px; border-top: 1px solid var(--line); display: grid; gap: 4px; }
+  .privacy-list dt { font-weight: 700; }
+  .privacy-list dd { margin: 0; color: var(--muted); font-size: 0.98rem; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.86em; background: var(--btn-ghost); padding: 1px 6px; border-radius: 6px; word-break: break-all; }
+
+  footer { margin-top: clamp(144px, 18vw, 208px); padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; display: grid; gap: 6px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    section.arrived h2 { animation: none; }
+    [data-i18n], [data-st], .lang-thumb { transition: none; }
   }
-  .row { position: relative; padding: 20px 22px; border-radius: 22px; overflow: hidden; }
-  .row + .row::before { content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px; background: rgba(255, 255, 255, 0.22); }
-  .flow {
-    position: absolute; inset: 4px 0; border-radius: 18px; opacity: 0.34;
-    background:
-      radial-gradient(60% 100% at 15% 25%, #ff9ec7, transparent 70%),
-      radial-gradient(60% 100% at 85% 75%, #9ed1ff, transparent 70%),
-      radial-gradient(55% 90% at 50% 10%, #bda9ff, transparent 70%),
-      radial-gradient(50% 90% at 60% 95%, #ffc79e, transparent 70%);
-  }
-  .inner { position: relative; display: grid; gap: 14px; }
-  .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  .title { font-weight: 700; white-space: nowrap; }
-  .pct { font-size: 18px; color: rgba(255, 255, 255, 0.72); }
-  .pill-need { font-size: 16px; font-weight: 700; padding: 3px 12px; border-radius: 999px; background: rgba(255, 204, 77, 0.45); }
-  .bar { height: 7px; border-radius: 99px; background: rgba(255, 255, 255, 0.22); overflow: hidden; }
-  .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #73a6ff, #ad80ff); }
+
+</style>
+<style>
+  html, body { margin: 0; padding: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { position: relative; background: var(--bg); }
+  .og-title { position: absolute; left: 36px; top: 34px; margin: 0; font-size: 50px; line-height: 1.15; letter-spacing: -0.04em; font-weight: 700; color: var(--fg); }
+  .og-stage { position: absolute; left: 36px; top: 118px; width: 1128px; }
 </style>
 </head>
 <body>
-  <div class="menubar">
-    <div class="left"><b>Finder</b><span>파일</span><span>편집</span><span>보기</span><span>이동</span></div>
-    <div class="right"><svg id="icon" height="60"></svg><span class="pill">한</span><span>오전 10:24</span></div>
-  </div>
-
-  <div class="copy">
-    <div class="brand"><svg id="logo" width="44" height="44" viewBox="0 0 24 24"><path fill="#fff" d="M3 5h18v10H3zM0 9h3v3H0zM21 9h3v3h-3zM4 15h2v4H4zM7 15h2v4H7zM15 15h2v4h-2zM18 15h2v4h-2z"/><path fill="#8a6a5a" d="M6 8h2v3H6zM16 8h2v3h-2z"/></svg>Desktoto</div>
-    <h1>AI가 일하는 동안,<br>메뉴바에서 지켜보세요.</h1>
-  </div>
-
-  <div class="panel">
-    <div class="row"><div class="flow"></div><div class="inner">
-      <div class="head"><span class="title">결제 모듈 리팩터링</span><span class="pct">37%</span></div>
-      <div class="bar"><i style="width:37%"></i></div>
-    </div></div>
-    <div class="row"><div class="inner">
-      <div class="head"><span class="title">로그인 버그 수정</span><span class="pill-need">필요</span></div>
-      <div class="bar"><i style="width:18%"></i></div>
-    </div></div>
-    <div class="row"><div class="inner">
-      <div class="head"><span class="title">문서 정리</span><span class="pct">8%</span></div>
-      <div class="bar"><i style="width:8%"></i></div>
-    </div></div>
-  </div>
-
-<script>
-  // 달리는 캐릭터(앱, 랜딩과 같은 격자). 한 칸 = 3px, 달리는 중간 자세로 멈춘 한 장면.
-  var U = 3, W = 41, H = 20, ox = 13, oy = 1;
-  var rects = [];
-  function fill(x, y, w, h, color, alpha) { rects.push('<rect x="' + x * U + '" y="' + y * U + '" width="' + w * U + '" height="' + h * U + '" fill="' + color + '"' + (alpha ? ' fill-opacity="' + alpha + '"' : '') + '/>'); }
-  [[2, 7, 3], [6, 4, 4], [10, 7, 3]].forEach(function (l) { var end = ox - l[2], start = Math.max(0, end - l[1]); fill(start, oy + l[0], end - start, 2, "#cccccc", 0.9); });
-  [4, 7, 15, 18].forEach(function (c, i) { fill(ox + c, oy + 12, 2, [5, 3, 5, 3][i], "#fff"); });
-  fill(ox, oy + 5, 3, 3, "#fff"); fill(ox + 21, oy + 7, 3, 3, "#fff");
-  fill(ox + 3, oy, 18, 12, "#fff");
-  fill(ox + 6, oy + 3, 2, 3, "#0d0d0d"); fill(ox + 16, oy + 3, 2, 3, "#0d0d0d");
-  var icon = document.getElementById("icon");
-  icon.setAttribute("viewBox", "0 0 " + W * U + " " + H * U);
-  icon.setAttribute("width", W * U);
-  icon.setAttribute("height", H * U);
-  icon.innerHTML = rects.join("");
-</script>
+  <h1 class="og-title">AI가 일하는 동안, 메뉴바에서 지켜보세요.</h1>
+  <div class="og-stage"><div class="tour" role="img" aria-label="마우스가 패널의 세션 카드를 누르면 해당 터미널이나 앱 창이 앞으로 나오는 장면의 예시" data-st-label="tourLabel"><svg class="tour-line" viewBox="0 0 680 410" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><filter id="tourBlur"><feGaussianBlur stdDeviation="0.7"></feGaussianBlur></filter></defs><path d="M-80 146 L0 164 C120 190 260 262 360 258 C480 252 600 150 680 42 C720 -12 760 -60 790 -95" fill="none" stroke="#fff" stroke-width="1.4" opacity="0.8" filter="url(#tourBlur)"></path></svg><div class="menubar" aria-hidden="true"><div class="left"><b>Finder</b><span data-st="file">파일</span><span data-st="edit">편집</span><span class="extra" data-st="view">보기</span><span class="extra" data-st="go">이동</span></div><div class="right"><canvas class="icon" width="82" height="40" style="width: 82px; height: 40px;"></canvas><span class="pill" data-st="input">한</span><span data-st="clock">오전 10:24</span></div></div><div class="tour-win tour-term" aria-hidden="true"><div class="tour-bar"><span class="tour-lights"><i></i><i></i><i></i></span><span>claude — payments</span></div><div class="tour-text"><div><span class="c-b">❯</span> claude</div><div><span class="c-g">●</span> <span data-st="tourT1">결제 모듈을 정리할게요.</span></div><div class="c-d">  Read(src/payments/charge.ts)</div><div class="c-d">  Edit(src/payments/refund.ts)</div><div><span class="c-g">✓</span> <span data-st="tourT2">테스트 12개 통과</span></div><div><span class="c-y">?</span> <span data-st="tourT3">이 변경을 적용할까요?</span> <span class="tour-cur"></span></div></div></div><div class="tour-win tour-app front" aria-hidden="true"><div class="tour-bar"><span class="tour-lights"><i></i><i></i><i></i></span><span data-st="title1">로그인 버그 수정</span></div><div class="tour-main"><div class="tour-side"><p class="on" data-st="title1">로그인 버그 수정</p><p data-st="title2">문서 정리</p><p data-st="title0">결제 모듈 리팩터링</p></div><div class="tour-chat"><div class="tour-me" data-st="tourMe">로그인이 가끔 실패하는 이유를 찾아줘</div><div class="tour-ai" data-st="tourAi">토큰이 만료될 때 갱신 요청이 두 번 나가고 있어요. 한 번만 보내도록 고칠게요.</div><div class="tour-input" data-st="tourInput">메시지를 입력하세요</div></div></div></div><div class="tour-panel open" aria-hidden="true"><div class="tour-glass tour-usage"><div class="sec"><h4>Claude</h4><div class="tour-use"><span data-st="tourH5">5시간</span><div class="tour-track"><i style="width:42%"></i></div><b>42%</b><em data-st="tourR1">3시간 12분</em></div><div class="tour-use"><span data-st="tourWk">주간</span><div class="tour-track"><i style="width:18%"></i></div><b>18%</b><em data-st="tourR2">4일 2시간</em></div></div><div class="sec"><h4>Codex</h4><div class="tour-use"><span data-st="tourH5">5시간</span><div class="tour-track"><i style="width:12%"></i></div><b>12%</b><em data-st="tourR3">4시간 40분</em></div><div class="tour-use"><span data-st="tourWk">주간</span><div class="tour-track"><i style="width:6%"></i></div><b>6%</b><em data-st="tourR4">6일 1시간</em></div></div></div><div class="tour-glass tour-sessions"><div class="tour-row hover"><div class="head"><span data-st="title0">결제 모듈 리팩터링</span><span>37%</span></div><div class="tour-track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title1">로그인 버그 수정</span><span>18%</span></div><div class="tour-track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title2">문서 정리</span><span>8%</span></div><div class="tour-track"><i style="width:8%"></i></div><div class="more"><span>claude-haiku-5-5</span><span>75K / 1M</span></div></div></div></div><div class="tour-ripple go" style="left: 899.75px; top: 25px;"></div><svg class="tour-cursor" viewBox="0 0 20 24" aria-hidden="true" style="transition: transform 900ms cubic-bezier(0.45, 0.05, 0.25, 1); transform: translate(931.6px, 277.977px);"><path d="M2 1 L2 18 L6.5 14 L9.5 21 L12.5 19.7 L9.6 13 L15.5 13 Z" fill="#111" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"></path></svg></div></div>
 </body>
 </html>

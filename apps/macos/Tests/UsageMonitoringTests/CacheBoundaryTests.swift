@@ -20,10 +20,47 @@ struct CacheBoundaryTests {
         files.homeDirectory.appendingPathComponent("Library/Application Support/Claude/Cache/Cache_Data/\(name)")
     }
 
-    private func validEntry() -> Data {
-        var bytes = UsageTests().entry(body: Data(#"{"five_hour":{"utilization":75}}"#.utf8))
+    private func validEntry(utilization: Int = 75, key: String = "https://claude.ai/api/organizations/abcd-1234/usage") -> Data {
+        var bytes = UsageTests().entry(body: Data(#"{"five_hour":{"utilization":\#(utilization)}}"#.utf8), key: key)
         bytes.append(Data(repeating: 32, count: 500 - bytes.count))
         return bytes
+    }
+
+    private let base = "https://claude.ai/api/organizations/abcd-1234/usage"
+
+    @Test func newestQueryVariantWinsAndFallsBackWhenCorrupted() async throws {
+        let files = InMemoryFileSystem()
+        let clock = FixedTimeSource(now: now)
+        let plain = cacheFile(files, name: "plain_0")
+        let variant = cacheFile(files, name: "variant_0")
+        files.addFile(at: plain, data: validEntry(utilization: 10, key: base), modifiedAt: now.addingTimeInterval(-3600))
+        files.addFile(at: variant, data: validEntry(utilization: 50, key: "\(base)?skip_spend=1"), modifiedAt: now.addingTimeInterval(-60))
+        let monitor = UsageMonitor(fileSystem: files, timeSource: clock)
+        _ = await monitor.getUsages()
+        try await waitFor { await monitor.getUsages().first?.fiveHour?.usedRatio == 0.5 }
+        // 더 최신 항목이 갱신되면 다음 조회에서 바뀐다.
+        files.addFile(at: variant, data: validEntry(utilization: 60, key: "\(base)?skip_spend=1"), modifiedAt: now.addingTimeInterval(-30))
+        #expect(await monitor.getUsages().first?.fiveHour?.usedRatio == 0.6)
+        // 오래된 항목이 더 최신이 되면 그 값을 쓴다.
+        files.addFile(at: plain, data: validEntry(utilization: 20, key: base), modifiedAt: now)
+        #expect(await monitor.getUsages().first?.fiveHour?.usedRatio == 0.2)
+        // 최신 항목이 손상되면 다음 항목으로 대체한다.
+        files.addFile(at: plain, data: Data(repeating: 0, count: 500), modifiedAt: now.addingTimeInterval(1))
+        #expect(await monitor.getUsages().first?.fiveHour?.usedRatio == 0.6)
+        await monitor.stop()
+    }
+
+    @Test func newVariantIsPickedUpOnRediscovery() async throws {
+        let files = InMemoryFileSystem()
+        let clock = FixedTimeSource(now: now)
+        files.addFile(at: cacheFile(files, name: "plain_0"), data: validEntry(utilization: 10, key: base), modifiedAt: now.addingTimeInterval(-3600))
+        let monitor = UsageMonitor(fileSystem: files, timeSource: clock)
+        _ = await monitor.getUsages()
+        try await waitFor { await monitor.getUsages().first?.fiveHour?.usedRatio == 0.1 }
+        files.addFile(at: cacheFile(files, name: "variant_0"), data: validEntry(utilization: 40, key: "\(base)?skip_spend=1"), modifiedAt: now)
+        clock.advance(by: 120)
+        try await waitFor { await monitor.getUsages().first?.fiveHour?.usedRatio == 0.4 }
+        await monitor.stop()
     }
 
     @Test func failedDiscoveryWaits120Seconds() async throws {

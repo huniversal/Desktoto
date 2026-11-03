@@ -1,0 +1,393 @@
+<!doctype html>
+<!-- README 이미지의 원본. 슬라이드 하나가 PNG 한 장이며, 주소 끝의 #이름으로 한 장씩 보여 준다.
+     캡처는 같은 폴더의 build.sh가 한다. 랜딩 페이지 화면을 옮긴 것이 아니라 README 전용으로 구성했다. -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --fg: #1d1d1f;
+    --muted: #5f5f66;
+    --line: rgba(29, 29, 31, 0.12);
+    --strip: #2b2626;
+    --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --font-pixel: "DotGothic16", "Apple SD Gothic Neo", "Noto Sans KR", monospace;
+    --wallpaper:
+      radial-gradient(130% 55% at 52% 108%, #00229a 0%, rgba(0, 34, 154, 0) 62%),
+      radial-gradient(60% 55% at 6% 102%, #6fb0c9 0%, rgba(111, 176, 201, 0) 70%),
+      radial-gradient(52% 70% at 104% 88%, #a9cadb 0%, rgba(169, 202, 219, 0) 72%),
+      radial-gradient(85% 34% at 38% 50%, #58bdee 0%, rgba(88, 189, 238, 0) 72%),
+      radial-gradient(60% 40% at 82% 36%, #2f7ee2 0%, rgba(47, 126, 226, 0) 74%),
+      radial-gradient(34% 22% at 34% 30%, #1f86da 0%, rgba(31, 134, 218, 0) 74%),
+      radial-gradient(40% 40% at 0% 52%, #1ea0e0 0%, rgba(30, 160, 224, 0) 72%),
+      linear-gradient(180deg, #cfd0de 0%, #e8dfb4 20%, #dcdcd2 33%, #7db2ea 50%, #2f6fe0 76%, #1d4fc4 100%);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; }
+  body { width: 1200px; color: var(--fg); font-family: var(--font-body); line-height: 1.6; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, h4, p { margin: 0; }
+  h1, h2, h3 { letter-spacing: -0.035em; line-height: 1.18; }
+  p { text-wrap: pretty; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.88em; background: rgba(29, 29, 31, 0.06); padding: 1px 7px; border-radius: 6px; }
+
+  /* 슬라이드 한 장이 이미지 한 장이다. 배경 밖은 투명해서 GitHub의 라이트와 다크 모두에서 둥근 카드로 보인다. */
+  .slide { display: none; position: relative; width: 1200px; background: var(--bg); border-radius: 0; overflow: hidden; padding: 56px 56px; }
+  .slide:target { display: block; }
+  #hero { height: 956px; border-radius: 32px 32px 0 0; }
+  #notice { border-radius: 0 0 32px 32px; }
+  #install { height: 660px; }
+  #problem { height: 376px; }
+  #states { height: 510px; }
+  #features { height: 1170px; }
+  #privacy { height: 680px; }
+  #notice { height: 250px; }
+  .eyebrow { font-family: var(--font-pixel); font-size: 15px; letter-spacing: 0.14em; color: var(--muted); }
+  .title { font-size: 46px; font-weight: 700; margin-top: 12px; }
+  .lead { margin-top: 16px; font-size: 20px; color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 16px 16px 24px; }
+  .card h3 { margin: 18px 8px 0; font-size: 20px; }
+  .card p { margin: 8px 8px 0; font-size: 16px; color: var(--muted); line-height: 1.65; }
+
+  /* 캐릭터 */
+  canvas.sp { display: block; image-rendering: pixelated; }
+  .strip { background: var(--strip); border-radius: 14px; height: 118px; display: grid; place-items: center; }
+
+  /* 히어로 */
+  .brand { display: flex; align-items: center; gap: 12px; font-family: var(--font-pixel); font-size: 22px; letter-spacing: 0.06em; }
+  .brand .logo { background: var(--strip); border-radius: 10px; padding: 4px 6px 2px; }
+  .hero-title { margin-top: 26px; font-size: 68px; font-weight: 700; letter-spacing: -0.045em; line-height: 1.1; }
+  .hero-lead { margin-top: 20px; font-size: 21px; color: var(--muted); }
+  .pills { margin-top: 24px; display: flex; gap: 10px; }
+  .pill { font-size: 15px; font-weight: 500; padding: 7px 16px; border-radius: 999px; background: rgba(29, 29, 31, 0.07); }
+  .pill.dark { background: var(--fg); color: #fff; }
+
+  /* 무대: 파란 물결 바탕화면 위의 메뉴바, 창, 유리 패널 */
+  .tour { position: absolute; left: 56px; right: 56px; bottom: 56px; height: 470px; border-radius: 28px; overflow: hidden; background: var(--wallpaper); }
+  .tour-line { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+  .menubar { position: absolute; inset: 0 0 auto; z-index: 6; height: 44px; display: flex; align-items: center; justify-content: space-between; padding-inline: 20px; background: rgba(18, 26, 58, 0.5); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); color: #fff; font-size: 13px; }
+  .menubar .left { display: flex; gap: 18px; color: rgba(255, 255, 255, 0.72); white-space: nowrap; }
+  .menubar .left b { color: #fff; font-weight: 700; }
+  .menubar .right { display: flex; align-items: center; gap: 14px; white-space: nowrap; }
+  .menubar .mpill { background: rgba(255, 255, 255, 0.85); color: #1d1d1f; border-radius: 5px; padding: 0 6px; font-size: 12px; line-height: 18px; }
+  .win { position: absolute; z-index: 2; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 28px rgba(0, 20, 80, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.35); filter: brightness(0.88) saturate(0.9); }
+  .win.front { z-index: 3; filter: none; box-shadow: 0 22px 50px rgba(0, 20, 80, 0.45), 0 0 0 0.5px rgba(0, 0, 0, 0.4); }
+  .bar { height: 32px; display: flex; align-items: center; justify-content: center; position: relative; font-size: 12px; }
+  .lights { position: absolute; left: 12px; display: flex; gap: 8px; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; background: #6e6e73; }
+  .win.front .lights i:nth-child(1) { background: #ff5f57; }
+  .win.front .lights i:nth-child(2) { background: #febc2e; }
+  .win.front .lights i:nth-child(3) { background: #28c840; }
+  .term { left: 4%; top: 72px; width: 44%; height: 290px; background: rgba(26, 26, 30, 0.94); }
+  .term .bar { color: #a9a9b0; background: rgba(255, 255, 255, 0.05); }
+  .term .tx { padding: 12px 16px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; line-height: 1.85; color: #d6d6dc; white-space: nowrap; overflow: hidden; }
+  .c-b { color: #8fb4ff; } .c-g { color: #7ee2a0; } .c-y { color: #f2c46b; } .c-d { color: #8a8a94; }
+  .app { left: 17%; top: 150px; width: 44%; height: 290px; background: #f7f6f8; display: flex; flex-direction: column; }
+  .app .bar { color: #55555c; background: #ecebef; border-bottom: 0.5px solid #d6d5da; }
+  .main { display: flex; flex: 1; min-height: 0; }
+  .side { width: 30%; background: #eceaf0; padding: 12px 8px; border-right: 0.5px solid #d6d5da; }
+  .side p { margin: 0 0 6px; padding: 6px 8px; font-size: 12px; line-height: 1.4; color: #4a4a52; border-radius: 7px; white-space: nowrap; overflow: hidden; }
+  .side p.on { background: #dcd9e6; color: #222; }
+  .chat { flex: 1; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.55; color: #25252b; }
+  .me { align-self: flex-end; background: #e4e1ee; padding: 7px 12px; border-radius: 13px 13px 3px 13px; max-width: 82%; }
+  .ai { max-width: 94%; }
+  .inp { margin-top: auto; border: 0.5px solid #cfcdd6; border-radius: 11px; background: #fff; padding: 8px 12px; font-size: 12px; color: #8b8b94; }
+  .panel { position: absolute; right: 18px; top: 58px; z-index: 7; width: 330px; display: flex; flex-direction: column; gap: 8px; }
+  .glass { border-radius: 22px; color: #fff; font-size: 14px; line-height: 1.35; background: rgba(28, 28, 34, 0.58); border: 0.5px solid rgba(255, 255, 255, 0.16); -webkit-backdrop-filter: blur(30px) saturate(1.5); backdrop-filter: blur(30px) saturate(1.5); box-shadow: 0 14px 34px rgba(0, 20, 80, 0.35); }
+  .usage { padding: 14px 16px 12px; }
+  .usage h4 { margin: 0 0 7px; font-size: 14px; font-weight: 600; }
+  .usage .sec + .sec { margin-top: 9px; padding-top: 10px; border-top: 0.5px solid rgba(255, 255, 255, 0.12); }
+  .use { display: grid; grid-template-columns: 38px 1fr 36px 70px; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: rgba(255, 255, 255, 0.55); font-variant-numeric: tabular-nums; }
+  .use b { font-weight: 600; color: #fff; text-align: right; }
+  .use em { font-style: normal; text-align: right; white-space: nowrap; }
+  .track { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.18); }
+  .track i { display: block; height: 100%; border-radius: 2px; background: #e9e9ee; }
+  .sessions { padding: 6px; }
+  .row { padding: 10px 12px; border-radius: 16px; }
+  .row .head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-weight: 600; }
+  .row .head span:last-child { flex: none; font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.6); }
+  .row .track i { background: rgba(255, 255, 255, 0.62); }
+  .row .more { display: none; justify-content: space-between; margin-top: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-variant-numeric: tabular-nums; }
+  .row.hover { background: linear-gradient(100deg, rgba(150, 160, 230, 0.28), rgba(230, 140, 190, 0.3)); }
+  .row.hover .more { display: flex; }
+  .cursor { position: absolute; z-index: 9; width: 24px; height: 29px; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.45)); }
+
+  /* 설치 */
+  .cols { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .cols .card { padding: 28px 28px 30px; display: flex; flex-direction: column; }
+  .cols .card h3 { margin: 0; font-size: 23px; }
+  .cols .card .sub { margin: 8px 0 0; font-size: 16px; }
+  .cmd { margin-top: 18px; display: flex; gap: 12px; padding: 14px 18px; border-radius: 12px; background: var(--strip); color: #ece8ea; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 15px; line-height: 1.55; }
+  .cmd .pr { color: rgba(255, 255, 255, 0.45); }
+  .cmd.small { font-size: 13.5px; }
+  .steps { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 11px; counter-reset: step; font-size: 16px; }
+  .steps li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; counter-increment: step; }
+  .steps li::before { content: counter(step); font-family: var(--font-pixel); font-size: 17px; }
+  .req { margin-top: auto; padding-top: 24px; display: flex; flex-wrap: wrap; gap: 10px; }
+
+  /* 문제와 상태 */
+  .three { margin-top: 34px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .quote { padding: 32px 30px 36px; }
+  .quote p { margin: 0; font-size: 22px; font-weight: 500; line-height: 1.55; color: var(--fg); letter-spacing: -0.02em; }
+  .five { margin-top: 34px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .five .card { padding: 12px 12px 22px; }
+  .five .card h3 { font-size: 18px; }
+  .five .card p { font-size: 14px; }
+  .mini { height: 118px; border-radius: 14px; background: var(--wallpaper); display: grid; place-items: center; padding: 0 16px; }
+  .mini .glass { width: 100%; }
+
+  /* 기능 */
+  .fgrid { margin-top: 34px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .fv { aspect-ratio: 1 / 0.86; border-radius: 14px; background: var(--wallpaper); display: grid; place-items: center; padding: 20px; overflow: hidden; }
+  .fv .glass, .fv-stack { width: 100%; }
+  .fv-stack { display: grid; gap: 10px; }
+  .fv-win { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border-radius: 12px; background: rgba(26, 26, 30, 0.94); color: #a9a9b0; font-size: 12px; }
+  .fv-win i { width: 10px; height: 10px; border-radius: 50%; }
+  .fv-win i:nth-child(1) { background: #ff5f57; }
+  .fv-win i:nth-child(2) { background: #febc2e; }
+  .fv-win i:nth-child(3) { background: #28c840; }
+  .fv-win span { margin-left: 6px; }
+  .fv-arrow { justify-self: center; color: #fff; }
+  .fv-noti { display: grid; gap: 2px; padding: 10px 14px; border-radius: 16px; color: #fff; font-size: 13px; line-height: 1.4; background: rgba(28, 28, 34, 0.58); border: 0.5px solid rgba(255, 255, 255, 0.16); -webkit-backdrop-filter: blur(30px) saturate(1.5); backdrop-filter: blur(30px) saturate(1.5); box-shadow: 0 10px 24px rgba(0, 20, 80, 0.3); }
+  .fv-noti b { font-size: 11px; font-weight: 500; opacity: 0.7; }
+  .fv-noti span { font-weight: 600; }
+  .fv-noti small { font-size: 12px; opacity: 0.75; }
+  .menu-wrap { position: relative; width: 178px; margin-right: 74px; }
+  .menu, .sub-menu { padding: 5px; border-radius: 12px; color: #1d1d1f; font-size: 11.5px; line-height: 20px; background: rgba(246, 246, 248, 0.88); border: 0.5px solid rgba(0, 0, 0, 0.14); box-shadow: 0 12px 28px rgba(0, 20, 80, 0.32); }
+  .sub-menu { position: absolute; left: calc(100% - 10px); top: 114px; min-width: 84px; }
+  .mi { display: flex; align-items: center; height: 20px; padding: 0 8px 0 4px; border-radius: 6px; white-space: nowrap; }
+  .mi.checked > :first-child::before { content: "\2713"; }
+  .mi > :first-child { width: 14px; flex: none; text-align: center; font-size: 10px; }
+  .mi.sub::after { content: "\203A"; margin-left: auto; font-size: 14px; opacity: 0.7; }
+  .mi.on { background: #0a7aff; color: #fff; }
+  .mi .key { margin-left: auto; opacity: 0.45; }
+  .msep { height: 1px; margin: 4px 6px; background: rgba(0, 0, 0, 0.12); }
+
+  /* 개인정보와 알아 두세요 */
+  .pgrid { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .pgrid .card { padding: 26px 28px 28px; }
+  .pgrid .card h3 { margin: 0; font-size: 21px; }
+  .pgrid .card p { margin: 10px 0 0; font-size: 16px; }
+  #notice { display: grid; align-content: center; gap: 12px; font-size: 17px; color: var(--muted); }
+  #notice p:first-child { font-size: 20px; font-weight: 700; color: var(--fg); }
+</style>
+</head>
+<body>
+
+<!-- 1. 히어로 -->
+<section class="slide" id="hero">
+  <div class="brand"><span class="logo"><canvas class="sp" data-unit="1" data-mode="stand" data-track="30"></canvas></span>Desktoto</div>
+  <h1 class="hero-title">AI가 일하는 동안,<br>메뉴바에서 지켜보세요.</h1>
+  <p class="hero-lead">AI Agent(Claude Code, Codex) 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.</p>
+  <div class="pills"><span class="pill dark">macOS 26 이상</span><span class="pill">Apple Silicon</span><span class="pill">무료</span></div>
+  <div class="tour">
+    <svg class="tour-line" viewBox="0 0 1088 410" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M-80 220 L0 236 C190 270 420 392 580 388 C780 380 960 220 1088 70 C1150 0 1210 -70 1260 -130" fill="none" stroke="#fff" stroke-width="1.6" opacity="0.8"/></svg>
+    <div class="menubar"><div class="left"><b>Finder</b><span>파일</span><span>편집</span><span>보기</span><span>이동</span></div><div class="right"><canvas class="sp" data-unit="2" data-mode="run" data-phase="5" data-track="41"></canvas><span class="mpill">한</span><span>오전 10:24</span></div></div>
+    <div class="win term"><div class="bar"><span class="lights"><i></i><i></i><i></i></span><span>claude — payments</span></div><div class="tx"><div><span class="c-b">❯</span> claude</div><div><span class="c-g">●</span> 결제 모듈을 정리할게요.</div><div class="c-d">  Read(src/payments/charge.ts)</div><div class="c-d">  Edit(src/payments/refund.ts)</div><div><span class="c-g">✓</span> 테스트 12개 통과</div><div><span class="c-y">?</span> 이 변경을 적용할까요?</div></div></div>
+    <div class="win app front"><div class="bar"><span class="lights"><i></i><i></i><i></i></span><span>로그인 버그 수정</span></div><div class="main"><div class="side"><p class="on">로그인 버그 수정</p><p>문서 정리</p><p>결제 모듈 리팩터링</p></div><div class="chat"><div class="me">로그인이 가끔 실패하는 이유를 찾아줘</div><div class="ai">토큰이 만료될 때 갱신 요청이 두 번 나가고 있어요. 한 번만 보내도록 고칠게요.</div><div class="inp">메시지를 입력하세요</div></div></div></div>
+    <div class="panel">
+      <div class="glass usage">
+        <div class="sec"><h4>Claude</h4><div class="use"><span>5시간</span><div class="track"><i style="width:42%"></i></div><b>42%</b><em>3시간 12분</em></div><div class="use"><span>주간</span><div class="track"><i style="width:18%"></i></div><b>18%</b><em>4일 2시간</em></div></div>
+        <div class="sec"><h4>Codex</h4><div class="use"><span>5시간</span><div class="track"><i style="width:12%"></i></div><b>12%</b><em>4시간 40분</em></div><div class="use"><span>주간</span><div class="track"><i style="width:6%"></i></div><b>6%</b><em>6일 1시간</em></div></div>
+      </div>
+      <div class="glass sessions">
+        <div class="row hover"><div class="head"><span>결제 모듈 리팩터링</span><span>37%</span></div><div class="track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div>
+        <div class="row"><div class="head"><span>로그인 버그 수정</span><span>18%</span></div><div class="track"><i style="width:18%"></i></div></div>
+        <div class="row"><div class="head"><span>문서 정리</span><span>8%</span></div><div class="track"><i style="width:8%"></i></div></div>
+      </div>
+    </div>
+    <svg class="cursor" style="left: 868px; top: 132px;" viewBox="0 0 20 24"><path d="M2 1 L2 18 L6.5 14 L9.5 21 L12.5 19.7 L9.6 13 L15.5 13 Z" fill="#111" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+  </div>
+</section>
+
+<!-- 2. 설치 -->
+<section class="slide" id="install">
+  <p class="eyebrow">설치</p>
+  <h2 class="title">한 줄로 설치하거나, 파일로 받으세요.</h2>
+  <div class="cols">
+    <div class="card">
+      <h3>Homebrew로 설치</h3>
+      <p class="sub">터미널을 쓴다면 가장 편해요. 설치하면서 다운로드 표시를 지워 주어서 처음 실행할 때 경고가 나오지 않아요.</p>
+      <div class="cmd"><span class="pr">$</span><span>brew install --cask huniversal/tap/desktoto</span></div>
+      <p class="sub" style="margin-top:22px">새 버전은 <code>brew upgrade --cask desktoto</code><br>지우려면 <code>brew uninstall --cask desktoto</code></p>
+      <div class="req"><span class="pill dark">macOS 26 이상</span><span class="pill">Apple Silicon</span><span class="pill">Intel Mac은 지원하지 않아요</span></div>
+    </div>
+    <div class="card">
+      <h3>dmg로 설치</h3>
+      <ol class="steps">
+        <li><span>Desktoto.dmg를 받아 열고, Desktoto를 응용 프로그램 폴더로 끌어다 놓아요.</span></li>
+        <li><span>처음 열면 개발자를 확인할 수 없다는 경고가 떠요. 창을 닫아요.</span></li>
+        <li><span>시스템 설정, 개인정보 보호 및 보안 맨 아래에서 &ldquo;그래도 열기&rdquo;를 누르고 암호를 입력해요.</span></li>
+        <li><span>다시 열면 메뉴바에 캐릭터가 나타나요.</span></li>
+      </ol>
+      <p class="sub" style="margin-top:18px; font-size:15px">터미널이 편하다면 이 명령으로 경고 없이 열 수도 있어요.</p>
+      <div class="cmd small" style="margin-top:10px"><span class="pr">$</span><span>xattr -dr com.apple.quarantine /Applications/Desktoto.app</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. 문제 -->
+<section class="slide" id="problem">
+  <p class="eyebrow">문제</p>
+  <h2 class="title">세션을 여러 개 돌리면, 놓치게 돼요.</h2>
+  <div class="three">
+    <div class="card quote"><p>다른 창에서 작업하다가, 끝난 지 한참 뒤에야 알게 돼요.</p></div>
+    <div class="card quote"><p>승인 창이 떠 있어서 AI가 멈춰 있는데, 그걸 모르고 기다려요.</p></div>
+    <div class="card quote"><p>컨텍스트가 얼마나 찼는지는 열어 보기 전에는 알 수 없어요.</p></div>
+  </div>
+</section>
+
+<!-- 4. 상태 -->
+<section class="slide" id="states">
+  <p class="eyebrow">상태</p>
+  <h2 class="title">캐릭터가 지금 상황을 알려 줘요.</h2>
+  <div class="five">
+    <div class="card"><div class="strip"><canvas class="sp" data-unit="2" data-mode="run" data-phase="8" data-track="41"></canvas></div><h3>달리는 중</h3><p>작업이 진행 중이에요. 여러 세션 중 하나라도 돌고 있으면 계속 달려요.</p></div>
+    <div class="card"><div class="strip"><canvas class="sp" data-unit="2" data-mode="stand" data-fw="9" data-track="41"></canvas></div><h3>폭죽</h3><p>작업이 끝났어요. 캐릭터 뒤에서 작은 폭죽이 터지고 macOS 알림이 와요.</p></div>
+    <div class="card"><div class="strip"><canvas class="sp" data-unit="2" data-mode="stand" data-wait="1" data-track="41"></canvas></div><h3>물음표</h3><p>승인이나 답변이 필요해요. 사람을 기다리는 세션이 있으면 물음표가 떠요.</p></div>
+    <div class="card"><div class="strip"><canvas class="sp" data-unit="2" data-mode="stand" data-dot="1" data-track="41"></canvas></div><h3>보라색 점</h3><p>확인하지 않은 완료가 있어요. 패널을 열어서 확인하면 사라져요.</p></div>
+    <div class="card"><div class="strip"><canvas class="sp" data-unit="2" data-mode="sleep" data-sleep="2" data-track="41"></canvas></div><h3>졸음</h3><p>10분 동안 아무 활동이 없으면 눈을 감고 졸아요. 새 작업이 시작되면 바로 깨요.</p></div>
+  </div>
+</section>
+
+<!-- 5. 기능 -->
+<section class="slide" id="features">
+  <p class="eyebrow">기능</p>
+  <h2 class="title">필요한 것만 보이게 했어요.</h2>
+  <div class="fgrid">
+    <div class="card">
+      <div class="fv"><div class="glass sessions"><div class="row"><div class="head"><span>결제 모듈 리팩터링</span><span>37%</span></div><div class="track"><i style="width:37%"></i></div></div><div class="row"><div class="head"><span>로그인 버그 수정</span><span>18%</span></div><div class="track"><i style="width:18%"></i></div></div><div class="row"><div class="head"><span>문서 정리</span><span>8%</span></div><div class="track"><i style="width:8%"></i></div></div></div></div>
+      <h3>한 패널에 모든 세션</h3><p>제목, 컨텍스트 사용률, 막대만 보여요. 모델과 토큰 수는 마우스를 올렸을 때만 펼쳐져요. 승인이나 답변이 필요한 세션은 맨 위로 올라와요.</p>
+    </div>
+    <div class="card">
+      <div class="fv"><div class="glass usage"><div class="sec"><h4>Claude</h4><div class="use"><span>5시간</span><div class="track"><i style="width:42%"></i></div><b>42%</b><em>3시간 12분</em></div><div class="use"><span>주간</span><div class="track"><i style="width:18%"></i></div><b>18%</b><em>4일 2시간</em></div></div><div class="sec"><h4>Codex</h4><div class="use"><span>5시간</span><div class="track"><i style="width:12%"></i></div><b>12%</b><em>4시간 40분</em></div><div class="use"><span>주간</span><div class="track"><i style="width:6%"></i></div><b>6%</b><em>6일 1시간</em></div></div></div></div>
+      <h3>AI 사용량도 한눈에</h3><p>Claude와 Codex의 5시간과 주간 한도를 패널 맨 위에 고정해서 보여줘요. 얼마나 썼는지와 초기화까지 남은 시간을 알 수 있어요.</p>
+    </div>
+    <div class="card">
+      <div class="fv"><div class="glass sessions"><div class="row hover"><div class="head"><span>결제 모듈 리팩터링</span><span>37%</span></div><div class="track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="row"><div class="head"><span>로그인 버그 수정</span><span>18%</span></div><div class="track"><i style="width:18%"></i></div></div><div class="row"><div class="head"><span>문서 정리</span><span>8%</span></div><div class="track"><i style="width:8%"></i></div></div></div></div>
+      <h3>컨텍스트 사용률</h3><p>모델마다 다른 컨텍스트 창 크기를 반영해서 사용률을 계산해요.</p>
+    </div>
+    <div class="card">
+      <div class="fv"><div class="fv-stack"><div class="glass sessions"><div class="row hover"><div class="head"><span>로그인 버그 수정</span><span>18%</span></div><div class="track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div></div><svg class="fv-arrow" width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v10M3.5 8.5L8 13l4.5-4.5"/></svg><div class="fv-win"><i></i><i></i><i></i><span>claude — payments</span></div></div></div>
+      <h3>카드를 누르면 그 세션으로</h3><p>Claude 데스크탑 앱의 대화는 앱에서 열고, 터미널 세션은 iTerm2나 Terminal의 해당 탭을 앞으로 가져와요.</p>
+    </div>
+    <div class="card">
+      <div class="fv"><div class="fv-stack"><div class="fv-noti"><b>Desktoto</b><span>작업이 끝났어요</span><small>결제 모듈 리팩터링</small></div><div class="fv-noti"><b>Desktoto</b><span>승인이 필요해요</span><small>로그인 버그 수정</small></div></div></div>
+      <h3>알림을 눌러도 이동해요</h3><p>macOS 알림으로 &ldquo;작업이 끝났어요&rdquo;, &ldquo;승인이 필요해요&rdquo;, &ldquo;답변이 필요해요&rdquo;를 알려요. 알림을 누르면 해당 세션으로 가요.</p>
+    </div>
+    <div class="card">
+      <div class="fv"><div class="menu-wrap">
+        <div class="menu">
+          <div class="mi checked"><span></span><span>로그인 시 자동 실행</span></div>
+          <div class="mi checked"><span></span><span>알림 보내기</span></div>
+          <div class="mi checked"><span></span><span>Codex 연동</span></div>
+          <div class="mi checked"><span></span><span>Claude 연동</span></div>
+          <div class="msep"></div>
+          <div class="mi sub"><span></span><span>표시할 패널</span></div>
+          <div class="mi sub on"><span></span><span>색상</span></div>
+          <div class="mi sub"><span></span><span>테마</span></div>
+          <div class="mi sub"><span></span><span>Liquid Glass</span></div>
+          <div class="msep"></div>
+          <div class="mi"><span></span><span>Desktoto 종료</span><span class="key">&#8984;Q</span></div>
+        </div>
+        <div class="sub-menu"><div class="mi checked"><span></span><span>흰색</span></div><div class="mi"><span></span><span>컬러</span></div></div>
+      </div></div>
+      <h3>내 취향대로 꾸밀 수 있어요</h3><p>색상은 흰색과 컬러, 테마는 라이트와 다크와 시스템 설정에 맞춤 중에서 고를 수 있어요. Liquid Glass는 투명에서 틴트까지 5단계예요.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6. 개인정보 -->
+<section class="slide" id="privacy">
+  <p class="eyebrow">개인정보</p>
+  <h2 class="title">내 대화는 컴퓨터 밖으로 나가지 않아요.</h2>
+  <p class="lead">Desktoto는 대화 내용을 인터넷에 보내지 않아요. 내 컴퓨터에 이미 있는 기록을 읽기만 하고, Codex 사용량만 Codex 프로그램에 물어봐요.</p>
+  <div class="pgrid">
+    <div class="card"><h3>읽는 것</h3><p><code>~/.claude/projects</code>와 <code>~/.codex/sessions</code>의 세션 기록과 Claude 데스크탑 앱의 세션 정보, 임시로 저장해 둔 사용량 응답에서 제목, 모델, 토큰 사용량, 한도 사용률, 응답이 끝났는지 같은 상태만 써요. 로그인 정보는 읽지 않아요.</p></div>
+    <div class="card"><h3>하지 않는 것</h3><p>대화 내용을 밖으로 보내거나 따로 저장하지 않아요. 계정 정보도 다루지 않아요.</p></div>
+    <div class="card"><h3>새 버전 확인</h3><p>새 버전이 나왔는지 GitHub의 최신 릴리스 정보를 읽어요. 대화나 계정 정보는 보내지 않아요. 다만 GitHub 연결에 IP 주소와 Desktoto <span style="white-space:nowrap">User-Agent</span>가 전달돼요. 우클릭 메뉴의 업데이트 확인에서 끌 수 있어요.</p></div>
+    <div class="card"><h3>설정 파일</h3><p>Claude Code를 쓰고 있으면 <code>~/.claude/settings.json</code>에 승인 대기 hook과 사용량 statusLine 두 항목을 추가해요. 바꾸기 전에 백업을 만들고, 우클릭 메뉴의 Claude 연동에서 언제든 해제할 수 있어요.</p></div>
+  </div>
+</section>
+
+<!-- 7. 알아 두세요 -->
+<section class="slide" id="notice">
+  <p>알아 두세요</p>
+  <p>Desktoto는 수익을 목적으로 하지 않는 무료 프로젝트예요. 광고도, 결제도 없어요.</p>
+  <p>캐릭터는 Claude Code의 마스코트에서 영감을 받은 팬 작품이에요. Claude는 Anthropic의, Codex는 OpenAI의 상표이고, Desktoto는 두 회사의 공식 제품이 아니에요.</p>
+</section>
+
+<script>
+/* 캐릭터 그리기: 앱(SpriteRenderer.swift)과 같은 격자와 도형이다. 한 칸이 화면 픽셀 정수 배가 되도록 맞춘다. */
+(function () {
+  var UNITS_WIDE = 41, CHAR_W = 24, TRACK = 36, TRAVEL = TRACK - CHAR_W;
+  var STAND_X = Math.floor((UNITS_WIDE - CHAR_W) / 2);
+  var RUN_FRAMES = 24, LEG_FRAMES = 3, FW_FRAMES = 24, MAX_BOB = 2;
+  var LEG_COLUMNS = [4, 7, 15, 18];
+  var Z_SMALL = ["1111", "0010", "0100", "1111"];
+  var Z_BIG = ["11111", "00010", "00100", "01000", "11111"];
+  var Z_STEPS = [[[0, 0, 11]], [[0, 0, 9]], [[0, 0, 9], [1, 2, 3]], [[0, 0, 9], [1, 2, 3]], [[1, 2, 2]], []];
+  var QUESTION = ["01110", "10001", "00001", "00110", "00100", "00000", "00100"];
+  var REACHES = [19, 15, 11];
+  var SPARK_COLORS = ["#ff9ec7", "#ffd973", "#9ed1ff", "#bda9ff", "#ffffff"];
+
+  function draw(canvas) {
+    var unit = +canvas.dataset.unit, wide = +canvas.dataset.track || UNITS_WIDE, dpr = 2;
+    var mode = canvas.dataset.mode, phase = +canvas.dataset.phase || 0;
+    var fwFrame = canvas.dataset.fw === undefined ? null : +canvas.dataset.fw;
+    canvas.width = wide * unit * dpr; canvas.height = 20 * unit * dpr;
+    canvas.style.width = wide * unit + "px"; canvas.style.height = 20 * unit + "px";
+    var ctx = canvas.getContext("2d"), scale = unit * dpr;
+    var fill = function (x, y, w, h, color, alpha) {
+      var l = Math.round(x * scale), t = Math.round(y * scale), r = Math.round((x + w) * scale), b = Math.round((y + h) * scale);
+      if (r <= l || b <= t) return;
+      ctx.globalAlpha = alpha === undefined ? 1 : alpha; ctx.fillStyle = color; ctx.fillRect(l, t, r - l, b - t); ctx.globalAlpha = 1;
+    };
+    var running = mode === "run", sleeping = mode === "sleep";
+    var legStep = phase / LEG_FRAMES, isLegA = Math.floor(legStep) % 2 === 0;
+    var ox = running ? phase / RUN_FRAMES * TRAVEL : STAND_X;
+    var oy = running ? MAX_BOB * (0.5 + 0.5 * Math.cos(Math.PI * legStep)) : (sleeping ? MAX_BOB + 1 : MAX_BOB);
+
+    if (fwFrame !== null) {
+      var p = fwFrame / (FW_FRAMES - 1), eased = 1 - Math.pow(1 - p, 2), alpha = Math.max(0, 1 - Math.pow(p, 2.4));
+      var size = p < 0.45 ? 3 : (p < 0.8 ? 2 : 1), cx = wide / 2;
+      for (var i = 0; i < 14; i++) {
+        var angle = 2 * Math.PI * i / 14 + 0.3, radius = 8 + (REACHES[i % 3] - 8) * eased;
+        fill(cx + Math.cos(angle) * radius - size / 2, 9 + Math.sin(angle) * radius * 0.5 + 4 * p * p - size / 2, size, size, SPARK_COLORS[i % 5], alpha);
+      }
+    }
+    if (running) {
+      [[2, 7, 3], [6, 4, 4], [10, 7, 3]].forEach(function (line) {
+        var end = ox - line[2], start = Math.max(0, end - line[1]);
+        if (end > start) fill(start, oy + line[0], end - start, 2, "#cccccc", 0.9);
+      });
+    }
+    var legs = sleeping ? [3, 3, 3, 3] : !running ? [4, 4, 4, 4] : (isLegA ? [5, 3, 5, 3] : [3, 5, 3, 5]);
+    var arms = !running ? [0, 0] : (isLegA ? [-1, 1] : [1, -1]);
+    LEG_COLUMNS.forEach(function (col, idx) { fill(ox + col, oy + 12, 2, legs[idx], "#ffffff"); });
+    fill(ox, oy + 6 + arms[0], 3, 3, "#ffffff");
+    fill(ox + 21, oy + 6 + arms[1], 3, 3, "#ffffff");
+    fill(ox + 3, oy, 18, 12, "#ffffff");
+    fill(ox + 6, oy + (sleeping ? 5 : 3), 2, sleeping ? 1 : 3, "#0d0d0d");
+    fill(ox + 16, oy + (sleeping ? 5 : 3), 2, sleeping ? 1 : 3, "#0d0d0d");
+
+    var bx = ox + CHAR_W + 1;
+    if (canvas.dataset.wait) {
+      QUESTION.forEach(function (line, r) { for (var c = 0; c < line.length; c++) if (line.charAt(c) === "1") fill(bx + c, r, 1, 1, "#ffcc59"); });
+    } else if (canvas.dataset.dot) {
+      fill(bx, 0, 4, 4, "#ad85ff");
+    } else if (sleeping) {
+      Z_STEPS[+canvas.dataset.sleep || 2].forEach(function (z) {
+        (z[0] ? Z_BIG : Z_SMALL).forEach(function (line, r) { for (var c = 0; c < line.length; c++) if (line.charAt(c) === "1") fill(bx + z[1] + c, z[2] + r, 1, 1, "#ffffff", 0.85); });
+      });
+    }
+  }
+  document.querySelectorAll("canvas.sp").forEach(draw);
+})();
+</script>
+</body>
+</html>
