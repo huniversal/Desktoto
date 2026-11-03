@@ -15,7 +15,7 @@
 | 최소 macOS | 26.0 |
 | zstd | 벤더링한 `CZstd` 유지 (v1.5.7, 해독부만) |
 | 패키지 위치 | `apps/macos` (모노레포) |
-| 모듈 구성 | 기능별 모듈 11개와 보조 타깃 2개 (3장) |
+| 모듈 구성 | 기능별 모듈 12개와 보조 타깃 2개 (3장) |
 | 외부 경계 | `Boundaries`의 프로토콜 6개와 기능 모듈 안의 단일 기능 서비스 (5장) |
 
 ### 이름과 호환성
@@ -28,7 +28,7 @@
   병행 중에는 새 앱의 "Claude 연동" 해제 메뉴를 누르지 않는다(두 앱이 공유하는 훅이 빠진다).
 - 번들 식별자가 다르면 `UserDefaults`도 별개라서 새 앱은 설정(색상, 테마, 유리 단계, 패널 표시, 알림, 연동 여부)이 기본값으로 시작한다.
   원본 코드는 `connectsClaudeCode`(기본값 true)가 켜져 있고 훅이나 statusLine이 빠져 있으면 시작할 때 연결하고, 이때 `~/.claude/settings.json`(백업 생성)과 `~/.ai-run/bin`에 쓴다.
-  그래서 사용자가 원본에서 연동을 해제한 상태라면 새 앱이 다시 연결할 수 있다. 이를 막으려고 #11에서 새 앱의 `connectsClaudeCode` 미설정 기본값을 false로 정했다. 새 앱은 처음에는 자동 연결하지 않고, 메뉴의 "Claude 연동"을 켠 뒤에만 시작할 때 연결한다.
+  그래서 사용자가 원본에서 연동을 해제한 상태라면 새 앱이 다시 연결할 수 있다. 이를 막으려고 #11에서 새 앱의 `connectsClaudeCode` 미설정 기본값을 false로 정했다. 이후 #23에서 사용자 요청으로 이 기본값을 true로 바꿨다. 새 앱은 설치 후 처음 실행에서 `~/.claude`가 있으면 자동 연결하고, 메뉴의 "Claude 연동"으로 끌 수 있다. 원본에서 연동을 해제한 사용자의 설정 파일에는 다시 들어갈 수 있다.
 
 ### 개발 중 지켜야 할 불변 조건
 
@@ -52,6 +52,7 @@ apps/macos/
 │   ├── ClaudeIntegration/
 │   ├── TerminalIntegration/
 │   ├── Preferences/
+│   ├── UpdateCheck/
 │   ├── MenuBarIcon/
 │   ├── SessionPanel/
 │   ├── CZstd/            C 라이브러리(벤더링), include/ 와 LICENSE 포함
@@ -79,6 +80,7 @@ apps/macos/
 | `ClaudeIntegration` | `settings.json`의 훅과 statusLine 연결과 해제, 백업, 스크립트 설치 | `Boundaries` | #7 | `ClaudeIntegration`, `scripts/*.sh` |
 | `TerminalIntegration` | CLI 프로세스 탐색, 세션과의 매칭, 터미널 생존 확인, Claude 데스크탑 앱 딥링크 매핑, iTerm2와 Terminal과 Orca 탭 이동, 세션 열기 | `Domain`, `Boundaries` | #5 | `TerminalJumper`, `SessionWatcher`의 생존 확인 |
 | `Preferences` | 설정 모델과 저장, 알림, 로그인 항목 | `DesignSystem`, `Boundaries` | #8 | `AppSettings`, `NotificationSender` |
+| `UpdateCheck` | 새 버전 확인: 최신 릴리스 조회(GitHub API), 버전 비교, 24시간 확인 주기, 설치 방식(Homebrew 여부) 판별, 안내 문구 | `Boundaries` | #24 | 없음(새 기능) |
 | `MenuBarIcon` | 캐릭터 격자, 프레임 계산, 상태에서 보여 줄 프레임 선택과 진행, 이미지 그리기와 비트맵 묶음 | `Domain`, `DesignSystem` | #9 | `SpriteRenderer`, `AppDelegate`의 아이콘 갱신 |
 | `SessionPanel` | 패널 View, 패널 모델, 투명 패널 창과 위치 계산 | `Domain`, `DesignSystem` | #10 | `SessionPanelView`, `AppDelegate`의 `GlassPanel` |
 | `Desktoto` | 진입점, 오케스트레이션(감시 타이머, 상태에서 UI로 전달, 알림 트리거, 세션 열기, 시작 시 연동), 우클릭 메뉴 | 위 모듈 중 `CZstd`, `TestSupport`를 제외한 모두 | #11 | `AppDelegate`, `main` |
@@ -93,7 +95,7 @@ apps/macos/
                         Desktoto (App)
    ┌────────────┬────────────┬────┴───────┬────────────┬──────────────┐
 SessionPanel MenuBarIcon Preferences SessionMonitoring UsageMonitoring
-     │            │          │        ClaudeIntegration  TerminalIntegration
+     │            │          │        ClaudeIntegration  TerminalIntegration  UpdateCheck
      │            │          │              │                 │
      └─────┬──────┘          │              └────────┬────────┘
       DesignSystem ◄─────────┤                       │
@@ -106,7 +108,7 @@ CZstd  ◄── UsageMonitoring
 
 컴파일러가 강제하도록 `Package.swift`의 타깃 의존으로 표현한다.
 
-1. 기능 모듈(`SessionMonitoring`, `UsageMonitoring`, `ClaudeIntegration`, `TerminalIntegration`, `Preferences`)끼리 서로 import하지 않는다. 조립은 `Desktoto` 앱만 한다.
+1. 기능 모듈(`SessionMonitoring`, `UsageMonitoring`, `ClaudeIntegration`, `TerminalIntegration`, `Preferences`, `UpdateCheck`)끼리 서로 import하지 않는다. 조립은 `Desktoto` 앱만 한다.
 2. UI 모듈(`SessionPanel`, `MenuBarIcon`)은 `Boundaries`를 import하지 않는다. 파일, 프로세스, 시간에 접근하지 못하고, 표시용 데이터는 모델로 전달받는다.
 3. `DesignSystem`은 `Domain`을 모른다. `Domain`은 의존이 없다.
 
@@ -163,6 +165,7 @@ CZstd  ◄── UsageMonitoring
 | 서비스 | 위치 |
 | --- | --- |
 | 알림 센터(`UserNotifications`), 로그인 항목(`SMAppService`) | `Preferences` |
+| 최신 릴리스 조회(`URLSession`, GitHub API) | `UpdateCheck` (네트워크 접근은 이 모듈에만 있고, 보내는 정보 없이 읽기만 한다) |
 | 소리(`NSSound`) | `Desktoto` |
 | `UserDefaults` | 이미 `init(defaults:)`로 주입 가능하므로 프로토콜을 만들지 않는다. 테스트는 `UserDefaults(suiteName:)`를 쓴다 |
 
@@ -203,7 +206,7 @@ Swift 6 모드이므로 컴파일러가 데이터 레이스를 검사한다. 세
 이식과 설치 로직은 #7의 `ClaudeIntegration`이 맡는다. 번들 구성은 `scripts/build-app.sh`의 `RESOURCES_DIR` 옵션을 쓰며 기본값은 `Resources`다.
 설정 쓰기는 `Boundaries/SettingsFileSystem.swift`의 별도 경계로 분리한다. 기존 읽기 전용 `FileSystem`은 유지한다.
 `ClaudeIntegrationTests`는 설정 변환, 백업과 쓰기 실패, 임시 HOME에서 스크립트 실행을 검증한다.
-자동 연결 허용 여부(`AppSettings.connectsClaudeCode`)의 영속 저장과 앱 조립은 #11에서 했다. 미설정 기본값은 false이고, false이면 시작 연결은 파일을 조회하거나 변경하지 않는다. 같은 번들 식별자의 이전 빌드가 true를 저장해 둔 경우에는 시작할 때 연결하므로, 병행 검증 전에 저장값을 확인한다.
+자동 연결 허용 여부(`AppSettings.connectsClaudeCode`)의 영속 저장과 앱 조립은 #11에서 했다. 미설정 기본값은 #11에서는 false였고 #23에서 true로 바꿨다. false이면 시작 연결은 파일을 조회하거나 변경하지 않는다. 같은 번들 식별자의 이전 빌드가 true를 저장해 둔 경우에는 시작할 때 연결하므로, 병행 검증 전에 저장값을 확인한다.
 
 ## 9. 이후 이슈로 넘기는 것
 
