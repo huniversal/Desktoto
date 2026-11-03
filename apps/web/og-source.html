@@ -1,0 +1,108 @@
+<!doctype html>
+<!-- 링크 미리보기(Open Graph) 이미지의 원본. 1200x630으로 캡처해 og.png로 쓴다.
+     캡처: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars --window-size=1200,630 --virtual-time-budget=8000 --screenshot=apps/web/og.png file://$PWD/apps/web/og-source.html -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@500;700&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    position: relative;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    color: #fff;
+    background:
+      radial-gradient(90% 90% at 85% 0%, #c9ad93, transparent 60%),
+      linear-gradient(165deg, #c9ad93, #a98270 58%, #6f5a58);
+    -webkit-font-smoothing: antialiased;
+  }
+  .menubar {
+    position: absolute; inset: 0 0 auto 0; height: 64px;
+    display: flex; align-items: center; justify-content: space-between; padding-inline: 32px;
+    background: rgba(28, 24, 26, 0.42);
+    font-size: 20px; color: rgba(255, 255, 255, 0.72);
+  }
+  .menubar .left { display: flex; gap: 30px; }
+  .menubar .left b { color: #fff; }
+  .menubar .right { display: flex; align-items: center; gap: 22px; }
+  .menubar .pill { background: rgba(255, 255, 255, 0.85); color: #1d1d1f; border-radius: 7px; padding: 0 9px; font-size: 18px; line-height: 28px; }
+
+  .copy { position: absolute; left: 72px; top: 226px; width: 620px; }
+  .brand { display: flex; align-items: center; gap: 16px; font-family: "DotGothic16", monospace; font-size: 34px; letter-spacing: 0.04em; }
+  h1 { margin: 34px 0 0; font-size: 56px; line-height: 1.2; letter-spacing: -0.04em; font-weight: 700; word-break: keep-all; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.18); }
+  .sub { margin-top: 28px; font-size: 28px; line-height: 1.5; color: rgba(255, 255, 255, 0.84); font-weight: 500; }
+
+  .panel {
+    position: absolute; right: 56px; top: 116px; width: 440px;
+    border-radius: 30px; padding: 9px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1.5px solid rgba(255, 255, 255, 0.34);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.26);
+    font-size: 22px; line-height: 1.35;
+  }
+  .row { position: relative; padding: 20px 22px; border-radius: 22px; overflow: hidden; }
+  .row + .row::before { content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px; background: rgba(255, 255, 255, 0.22); }
+  .flow {
+    position: absolute; inset: 4px 0; border-radius: 18px; opacity: 0.34;
+    background:
+      radial-gradient(60% 100% at 15% 25%, #ff9ec7, transparent 70%),
+      radial-gradient(60% 100% at 85% 75%, #9ed1ff, transparent 70%),
+      radial-gradient(55% 90% at 50% 10%, #bda9ff, transparent 70%),
+      radial-gradient(50% 90% at 60% 95%, #ffc79e, transparent 70%);
+  }
+  .inner { position: relative; display: grid; gap: 14px; }
+  .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .title { font-weight: 700; white-space: nowrap; }
+  .pct { font-size: 18px; color: rgba(255, 255, 255, 0.72); }
+  .pill-need { font-size: 16px; font-weight: 700; padding: 3px 12px; border-radius: 999px; background: rgba(255, 204, 77, 0.45); }
+  .bar { height: 7px; border-radius: 99px; background: rgba(255, 255, 255, 0.22); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #73a6ff, #ad80ff); }
+</style>
+</head>
+<body>
+  <div class="menubar">
+    <div class="left"><b>Finder</b><span>파일</span><span>편집</span><span>보기</span><span>이동</span></div>
+    <div class="right"><svg id="icon" height="60"></svg><span class="pill">한</span><span>오전 10:24</span></div>
+  </div>
+
+  <div class="copy">
+    <div class="brand"><svg id="logo" width="44" height="44" viewBox="0 0 24 24"><path fill="#fff" d="M3 5h18v10H3zM0 9h3v3H0zM21 9h3v3h-3zM4 15h2v4H4zM7 15h2v4H7zM15 15h2v4h-2zM18 15h2v4h-2z"/><path fill="#8a6a5a" d="M6 8h2v3H6zM16 8h2v3h-2z"/></svg>Desktoto</div>
+    <h1>AI가 일하는 동안,<br>메뉴바에서 지켜보세요.</h1>
+  </div>
+
+  <div class="panel">
+    <div class="row"><div class="flow"></div><div class="inner">
+      <div class="head"><span class="title">결제 모듈 리팩터링</span><span class="pct">37%</span></div>
+      <div class="bar"><i style="width:37%"></i></div>
+    </div></div>
+    <div class="row"><div class="inner">
+      <div class="head"><span class="title">로그인 버그 수정</span><span class="pill-need">필요</span></div>
+      <div class="bar"><i style="width:18%"></i></div>
+    </div></div>
+    <div class="row"><div class="inner">
+      <div class="head"><span class="title">문서 정리</span><span class="pct">8%</span></div>
+      <div class="bar"><i style="width:8%"></i></div>
+    </div></div>
+  </div>
+
+<script>
+  // 달리는 캐릭터(앱, 랜딩과 같은 격자). 한 칸 = 3px, 달리는 중간 자세로 멈춘 한 장면.
+  var U = 3, W = 41, H = 20, ox = 13, oy = 1;
+  var rects = [];
+  function fill(x, y, w, h, color, alpha) { rects.push('<rect x="' + x * U + '" y="' + y * U + '" width="' + w * U + '" height="' + h * U + '" fill="' + color + '"' + (alpha ? ' fill-opacity="' + alpha + '"' : '') + '/>'); }
+  [[2, 7, 3], [6, 4, 4], [10, 7, 3]].forEach(function (l) { var end = ox - l[2], start = Math.max(0, end - l[1]); fill(start, oy + l[0], end - start, 2, "#cccccc", 0.9); });
+  [4, 7, 15, 18].forEach(function (c, i) { fill(ox + c, oy + 12, 2, [5, 3, 5, 3][i], "#fff"); });
+  fill(ox, oy + 5, 3, 3, "#fff"); fill(ox + 21, oy + 7, 3, 3, "#fff");
+  fill(ox + 3, oy, 18, 12, "#fff");
+  fill(ox + 6, oy + 3, 2, 3, "#0d0d0d"); fill(ox + 16, oy + 3, 2, 3, "#0d0d0d");
+  var icon = document.getElementById("icon");
+  icon.setAttribute("viewBox", "0 0 " + W * U + " " + H * U);
+  icon.setAttribute("width", W * U);
+  icon.setAttribute("height", H * U);
+  icon.innerHTML = rects.join("");
+</script>
+</body>
+</html>

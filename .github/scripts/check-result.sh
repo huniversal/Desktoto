@@ -39,6 +39,6 @@ check_job() {
 }
 
 check_job macos-build macos
-# Web job을 추가할 때 `check_job web web`을 함께 추가한다.
+check_job web web
 
 echo "모든 선택된 검사가 통과했습니다."
