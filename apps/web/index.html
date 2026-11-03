@@ -160,7 +160,6 @@
   .hero { padding-block: 20px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; justify-items: start; }
   .hero .lead { margin-top: 4px; }
   .cta { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
-  .cta-note { font-size: 0.9rem; color: var(--muted); }
   .nav-icon { display: inline-flex; padding: 4px; border-radius: 8px; color: var(--muted); transition: color 0.2s; }
   .nav-icon:hover { color: var(--fg); }
 
@@ -375,8 +374,7 @@
     <h1 data-i18n="hero.title">AI가 일하는 동안,<br>메뉴바에서 지켜보세요.</h1>
     <p class="lead" data-i18n="hero.lead"><span class="ln">Desktoto는 AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.</span><span class="ln">작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.</span></p>
     <div class="cta">
-      <a class="btn" href="https://github.com/huniversal/Desktoto/releases/latest/download/Desktoto.dmg"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.25 1.5h1.5v7.19l2.47-2.47 1.06 1.06L8 11.31 3.72 7.28l1.06-1.06 2.47 2.47V1.5zM2 13h12v1.5H2V13z"/></svg><span data-i18n="hero.cta1">macOS용 다운로드</span></a>
-      <span class="cta-note" data-i18n="hero.note">macOS 26 이상, Apple Silicon</span>
+      <a class="btn" href="#install"><span data-i18n="hero.cta1">다운로드 바로 가기</span></a>
     </div>
     <div id="heroStage" style="width:100%"></div>
   </header>
@@ -516,6 +514,9 @@
         <p class="eyebrow" data-i18n="install.eyebrow">설치</p>
         <h2 style="margin-top:14px" data-i18n="install.title">한 줄로 설치하거나, 파일로 받으세요.</h2>
         <p class="lead" style="margin-top:14px" data-i18n="install.lead">터미널을 쓴다면 Homebrew가 가장 편해요. 아니라면 dmg 파일을 받아 설치하세요.</p>
+        <div class="cta" style="margin-top:22px">
+          <a class="btn" href="https://github.com/huniversal/Desktoto/releases/latest/download/Desktoto.dmg"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.25 1.5h1.5v7.19l2.47-2.47 1.06 1.06L8 11.31 3.72 7.28l1.06-1.06 2.47 2.47V1.5zM2 13h12v1.5H2V13z"/></svg><span data-i18n="install.cta">macOS용 다운로드</span></a>
+        </div>
       </div>
       <dl class="privacy-list" style="margin:0">
         <div>
@@ -886,7 +887,7 @@
     "nav.states": "States", "nav.features": "Features", "nav.privacy": "Privacy", "nav.install": "Install", "nav.github": "GitHub repository",
     "hero.title": "While AI works,<br>watch it from your menu bar.",
     "hero.lead": "<span class=\"ln\">Desktoto shows the status of your AI agent sessions as a small character in the menu bar.</span><span class=\"ln\">See when a task has finished, or when it's waiting for you, without opening a window.</span>",
-    "hero.cta1": "Download for macOS", "hero.note": "macOS 26 or later, Apple Silicon",
+    "hero.cta1": "Go to download",
     "problem.eyebrow": "The problem", "problem.title": "Run several sessions, and things slip by.",
     "problem.1": "You work in another window and only notice a task finished long after it did.",
     "problem.2": "An approval prompt is open and the AI is stuck, but you don't know and keep waiting.",
@@ -916,6 +917,7 @@
     "privacy.update.title": "Update check", "privacy.update.body": "It reads the latest release info from GitHub to see whether a new version is out. Nothing is sent, and you can turn it off with Check for updates in the right-click menu.",
     "privacy.opt.title": "Settings file", "privacy.opt.body": "If you use Claude Code, the first launch adds two entries to its settings file (<code>~/.claude/settings.json</code>): a hook that reports approval prompts and a statusLine that saves usage. A statusLine you already use keeps running. It makes a backup first, and you can turn it off anytime from Claude integration in the right-click menu.",
     "install.eyebrow": "Install", "install.title": "Install with one line, or download the file.",
+    "install.cta": "Download for macOS",
     "install.lead": "If you use the terminal, Homebrew is the easiest. Otherwise download the dmg and install it.",
     "install.req.title": "Requirements", "install.req.body": "It runs on Apple Silicon Macs with macOS 26 or later. Intel Macs aren't supported.",
     "install.brew.title": "Install with Homebrew", "install.copy": "Copy", "install.copied": "Copied", "install.copyAria": "Copy command",
