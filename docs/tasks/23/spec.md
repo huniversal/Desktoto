@@ -4,7 +4,7 @@
 
 - 이슈: #23 / https://github.com/huniversal/Desktoto/issues/23
 - 브랜치: feat/homebrew-cask/#23
-- specRevision: 2
+- specRevision: 3
 - 대상 ai-run 원본: N/A (배포 작업이며 제품 동작은 바꾸지 않는다)
 
 ## 목적
@@ -26,6 +26,10 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
 - 깨끗한 환경에서 설치, 실행, 업그레이드, 삭제 확인 (macOS 26에서 경고 없이 열리는지 포함)
 - [README.md](../../../README.md) 설치 항목에 Homebrew 명령과 릴리스 zip 수동 설치 방법 추가
 - [docs/ci.md](../../ci.md) 릴리스 절 갱신, [install-app.sh](../../../apps/macos/scripts/install-app.sh)의 병행 기간 보호 문구 정리 여부 판단
+
+- 첫 설치 기본값 (specRevision 3, 사용자 요청): 설치 후 처음 실행하면 메뉴의 네 항목(로그인 시 자동 실행, 알림 보내기, Codex 연동, Claude 연동)이 모두 켜진 상태가 되고, 사용자가 메뉴에서 끌 수 있다.
+  - Claude 연동 기본값을 `false`에서 `true`로 바꾼다. #11 D-1(최초 실행 자동 연결 안 함)과 AC-11을 사용자 요청으로 대체한다.
+  - 로그인 항목은 처음 실행 때 한 번만 등록하고, 이후 사용자가 끈 값은 다시 켜지 않는다.
 
 ### 제외
 
@@ -69,6 +73,8 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
 - AC-5: README 설치 항목에 Homebrew 명령과 릴리스 zip 수동 설치 방법이 있다. zip 수동 설치 방법은 격리 속성 때문에 막힐 때의 해결 방법을 포함한다.
 - AC-6: `docs/ci.md` 릴리스 절이 tap 갱신 흐름을 반영한다. `install-app.sh` 병행 기간 보호 문구는 유지 또는 정리 중 하나로 판단하고 이유가 PR에 기록되어 있다.
 
+- AC-7: 저장된 설정이 없는 첫 실행에서 알림, Codex 연동, Claude 연동의 기본값이 켜짐이고, 앱으로 실행 중이면 로그인 항목이 한 번 등록된다. 사용자가 끈 항목은 다음 실행에서 다시 켜지지 않는다. Claude 연동은 `~/.claude`가 없으면 설정 파일을 쓰지 않는다.
+
 ## 검증 방법
 
 | 완료 조건 | 확인 방법 | 기대 결과 |
@@ -79,6 +85,7 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
 | AC-4 | 낮은 버전 설치 후 새 버전을 릴리스하고 `brew update && brew upgrade --cask desktoto`, 이후 `brew uninstall --cask desktoto` | 버전이 바뀌고, 삭제 후 `/Applications/Desktoto.app`이 없다 |
 | AC-5 | README diff 검토, zip 수동 설치 절차를 그대로 따라 실행 | 문서대로 따라 하면 앱이 열린다 |
 | AC-6 | `docs/ci.md` diff 검토, 링크 점검 | 릴리스 절이 실제 워크플로와 일치한다 |
+| AC-7 | `swift test`의 `AppSettingsTests`, `LoginItemTests`. 실제 Mac에서 설정을 지운 상태로 첫 실행해 메뉴의 체크 상태와 시스템 설정의 로그인 항목을 확인하고, 끈 뒤 재실행해 유지되는지 확인 | 네 항목이 켜짐으로 시작하고, 끈 값은 재실행 후에도 꺼져 있다 |
 
 ## 미결정 사항
 
@@ -95,3 +102,4 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
 |---|---|---|
 | 1 | 최초 설계 | 이슈 #23의 Tasks와 범위를 그대로 옮김. 미결정 항목은 확정하지 않음 |
 | 2 | 격리 속성 제거를 `postflight_steps`와 `{{appdir}}` 토큰으로 확정, tap 신뢰는 전체 이름 설치로 해소 | Homebrew 7.0.6, macOS 27.0.1에서 로컬 확인. 영향받는 AC: AC-1, AC-3, AC-5 |
+| 3 | 첫 설치 기본값(네 항목 켜짐) 추가, #11 D-1과 AC-11 대체 | 사용자 요청. 새 AC: AC-7. Claude 연동이 켜진 채 시작하므로, 원본에서 연동을 해제한 사용자가 새 앱을 처음 켜면 설정 파일에 다시 연동이 들어갈 수 있다 |
