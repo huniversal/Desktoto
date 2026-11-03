@@ -5,8 +5,8 @@
 | 파일 | 역할 |
 | --- | --- |
 | `index.html` | 랜딩 페이지 본문 (스타일과 스크립트 포함) |
-| `og-source.html` | 링크 미리보기 이미지의 원본. 1200x630으로 캡처해 `og.png`로 쓴다 |
-| `og.png` | 링크 미리보기 이미지 |
+| `og-source.html` | 링크 미리보기 이미지의 원본. 1200x630으로 캡처해 `og-v2.png`로 쓴다 |
+| `og-v2.png` | 링크 미리보기 이미지 |
 | `favicon.svg` | 파비콘 원본. `favicon.ico`와 `apple-touch-icon.png`는 같은 그림으로 만든다 |
 | `favicon.ico` | 32x32 파비콘 |
 | `apple-touch-icon.png` | 180x180 iOS 홈 화면 아이콘 |
@@ -34,7 +34,7 @@ bash .github/scripts/check-web.sh
 `og-source.html`을 고친 뒤 저장소 루트에서 실행한다.
 
 ```bash
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars --window-size=1200,630 --virtual-time-budget=8000 --screenshot=apps/web/og.png "file://$PWD/apps/web/og-source.html"
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars --window-size=1200,630 --virtual-time-budget=8000 --screenshot=apps/web/og-v2.png "file://$PWD/apps/web/og-source.html"
 ```
 
 ## 배포
