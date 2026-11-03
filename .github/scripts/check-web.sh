@@ -51,7 +51,7 @@ read -r width height < <(od -An -tu1 -j16 -N8 "$WEB_DIR/og-v2.png" \
 DMG_URL='https://github.com/huniversal/Desktoto/releases/latest/download/Desktoto.dmg'
 require_pattern '<section id="install"' "설치 섹션(#install)이 없습니다"
 require_pattern '<a class="text" href="#install"' "헤더의 설치 링크(#install)가 없습니다"
-require_pattern '<a class="btn" href="#install"' "히어로의 설치 섹션 바로 가기(#install)가 없습니다"
+sed -n '/<header class="hero">/,/<\/header>/p' "$PAGE" | grep -Fq '<a class="btn" href="#install"' || fail "$PAGE: 히어로의 설치 섹션 바로 가기(#install)가 없습니다"
 sed -n '/<section id="install"/,/<\/section>/p' "$PAGE" | grep -Fq "href=\"$DMG_URL\"" || fail "$PAGE: 설치 섹션 안에 dmg 다운로드 링크가 없습니다: $DMG_URL"
 grep -Fq 'brew install --cask huniversal/tap/desktoto' "$PAGE" || fail "$PAGE: Homebrew 설치 명령이 없습니다"
 
