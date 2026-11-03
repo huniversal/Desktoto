@@ -298,14 +298,38 @@
   .state h3 { padding-inline: 6px; }
   .state p { padding-inline: 6px; color: var(--muted); font-size: 0.96rem; }
 
-  /* 기능 */
-  /* 항목이 4개라서 2x2로 놓는다. 자동 열 개수에 맡기면 넓은 화면에서 3개 + 1개로 나뉘어 마지막 하나가 혼자 아래에 남는다. */
-  .features { margin-top: 36px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; }
-  @media (max-width: 640px) { .features { grid-template-columns: minmax(0, 1fr); } }
-  /* 항목이 홀수 개일 때 마지막 하나가 한쪽에 비어 보이지 않도록 전체 너비를 쓴다. */
-  .feature:last-child:nth-child(odd) { grid-column: 1 / -1; }
-  .feature { padding-block: 22px; border-top: 1px solid var(--line); display: grid; align-content: start; gap: 6px; }
-  .feature p { color: var(--muted); font-size: 0.98rem; }
+  /* 기능: 상태 카드와 같은 카드에, 히어로 데모와 같은 배경과 유리 패널로 앱 화면을 작게 보여 준다. */
+  .fgrid { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+  .fv { aspect-ratio: 1 / 0.9; border-radius: 12px; background: var(--wallpaper); display: grid; place-items: center; padding: 18px; overflow: hidden; }
+  .fv .tour-glass, .fv-stack { width: 100%; }
+  .fv-stack { display: grid; gap: 10px; }
+  .fv-win { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border-radius: 12px; background: rgba(26, 26, 30, 0.94); color: #a9a9b0; font-size: 12px; }
+  .fv-win i { width: 10px; height: 10px; border-radius: 50%; }
+  .fv-win i:nth-child(1) { background: #ff5f57; }
+  .fv-win i:nth-child(2) { background: #febc2e; }
+  .fv-win i:nth-child(3) { background: #28c840; }
+  .fv-win span { margin-left: 6px; }
+  .fv-arrow { justify-self: center; color: #fff; opacity: 0.9; }
+  .fv-noti { display: grid; gap: 2px; padding: 10px 14px; border-radius: 16px; color: #fff; font-size: 12.5px; line-height: 1.4; background: rgba(28, 28, 34, 0.58); border: 0.5px solid rgba(255, 255, 255, 0.16); -webkit-backdrop-filter: blur(30px) saturate(1.5); backdrop-filter: blur(30px) saturate(1.5); box-shadow: 0 10px 24px rgba(0, 20, 80, 0.3); }
+  .fv-noti b { font-size: 11px; font-weight: 500; opacity: 0.7; letter-spacing: 0; }
+  .fv-noti span { font-weight: 600; }
+  .fv-noti small { font-size: 12px; opacity: 0.75; }
+  /* 꾸미기 카드: 실제 앱의 우클릭 설정 메뉴(색상 하위 메뉴가 열린 모습)를 그대로 본뜬다. */
+  .fv-menu-wrap { position: relative; width: 178px; margin-right: 74px; }
+  .fv-menu, .fv-sub { padding: 5px; border-radius: 12px; color: #1d1d1f; font-size: 11.5px; line-height: 20px; background: rgba(246, 246, 248, 0.88); border: 0.5px solid rgba(0, 0, 0, 0.14); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6); box-shadow: 0 12px 28px rgba(0, 20, 80, 0.32); }
+  .fv-sub { position: absolute; left: calc(100% - 10px); top: 114px; min-width: 84px; }
+  .fv-sub[hidden] { display: none; }
+  .mi { display: flex; align-items: center; height: 20px; padding: 0 8px 0 4px; border-radius: 6px; white-space: nowrap; cursor: pointer; user-select: none; }
+  .mi.checked > :first-child::before { content: "\2713"; }
+  .mi:hover { background: #0a7aff; color: #fff; }
+  .mi > :first-child { width: 14px; flex: none; text-align: center; font-size: 10px; }
+  .mi.sub::after { content: "\203A"; margin-left: auto; font-size: 14px; opacity: 0.7; }
+  .mi.on { background: #0a7aff; color: #fff; }
+  .mi.on::after { opacity: 1; }
+  .mi .key { margin-left: auto; opacity: 0.45; }
+  .fv .tour-row:hover { background: linear-gradient(100deg, rgba(150, 160, 230, 0.28), rgba(230, 140, 190, 0.3)); }
+  .fv .tour-row:hover .more { max-height: 16px; opacity: 1; margin-top: 8px; }
+  .msep { height: 1px; margin: 4px 6px; background: rgba(0, 0, 0, 0.12); }
 
   /* 개인정보 */
   .privacy { display: grid; gap: 26px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
@@ -399,27 +423,71 @@
   <section id="features">
     <p class="eyebrow" data-i18n="features.eyebrow">기능</p>
     <h2 style="margin-top:14px" data-i18n="features.title">필요한 것만 보이게 했어요.</h2>
-    <div class="features">
-      <div class="feature">
+    <div class="fgrid">
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="tour-glass tour-sessions"><div class="tour-row"><div class="head"><span data-st="title0"></span><span>37%</span></div><div class="tour-track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title1"></span><span>18%</span></div><div class="tour-track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title2"></span><span>8%</span></div><div class="tour-track"><i style="width:8%"></i></div><div class="more"><span>claude-haiku-5-5</span><span>75K / 1M</span></div></div></div></div>
         <h3 data-i18n="f1.title">한 패널에 모든 세션</h3>
         <p data-i18n="f1.body">제목, 컨텍스트 사용률, 막대만 보여요. 모델과 토큰 수는 마우스를 올렸을 때만 펼쳐져요. 승인이나 답변이 필요한 세션은 맨 위로 올라와요.</p>
-      </div>
-      <div class="feature">
+      </article>
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="tour-glass tour-usage"><div class="sec"><h4>Claude</h4><div class="tour-use"><span data-st="tourH5"></span><div class="tour-track"><i style="width:42%"></i></div><b>42%</b><em data-st="tourR1"></em></div><div class="tour-use"><span data-st="tourWk"></span><div class="tour-track"><i style="width:18%"></i></div><b>18%</b><em data-st="tourR2"></em></div></div><div class="sec"><h4>Codex</h4><div class="tour-use"><span data-st="tourH5"></span><div class="tour-track"><i style="width:12%"></i></div><b>12%</b><em data-st="tourR3"></em></div><div class="tour-use"><span data-st="tourWk"></span><div class="tour-track"><i style="width:6%"></i></div><b>6%</b><em data-st="tourR4"></em></div></div></div></div>
+        <h3 data-i18n="f5.title">AI 사용량도 한눈에</h3>
+        <p data-i18n="f5.body"><span class="ln">Claude와 Codex의 5시간과 주간 한도를 패널 맨 위에 고정해서 보여줘요.</span><span class="ln">얼마나 썼는지와 초기화까지 남은 시간을 알 수 있고, 한도에 가까워지면 막대 색이 바뀌어요.</span></p>
+      </article>
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="tour-glass tour-sessions"><div class="tour-row hover"><div class="head"><span data-st="title0"></span><span>37%</span></div><div class="tour-track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title1"></span><span>18%</span></div><div class="tour-track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title2"></span><span>8%</span></div><div class="tour-track"><i style="width:8%"></i></div><div class="more"><span>claude-haiku-5-5</span><span>75K / 1M</span></div></div></div></div>
+        <h3 data-i18n="f4.title">컨텍스트 사용률</h3>
+        <p data-i18n="f4.body">모델마다 다른 컨텍스트 창 크기를 반영해서 사용률을 계산해요.</p>
+      </article>
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="fv-stack"><div class="tour-glass tour-sessions"><div class="tour-row hover"><div class="head"><span data-st="title1"></span><span>18%</span></div><div class="tour-track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div></div><svg class="fv-arrow" width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v10M3.5 8.5L8 13l4.5-4.5"/></svg><div class="fv-win"><i></i><i></i><i></i><span>claude — payments</span></div></div></div>
         <h3 data-i18n="f2.title">카드를 누르면 그 세션으로</h3>
         <p data-i18n="f2.body">Claude 데스크탑 앱의 대화는 앱에서 열고, 터미널 세션은 iTerm2나 Terminal의 해당 탭을 앞으로 가져와요.</p>
-      </div>
-      <div class="feature">
+      </article>
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="fv-stack"><div class="fv-noti"><b>Desktoto</b><span data-i18n="fv.noti1">작업이 끝났어요</span><small data-st="title0"></small></div><div class="fv-noti"><b>Desktoto</b><span data-i18n="fv.noti2">승인이 필요해요</span><small data-st="title1"></small></div></div></div>
         <h3 data-i18n="f3.title">알림을 눌러도 이동해요</h3>
         <p data-i18n="f3.body">macOS 알림으로 “작업이 끝났어요”, “승인이 필요해요”, “답변이 필요해요”를 알려요. 알림을 누르면 해당 세션으로 가요.</p>
-      </div>
-      <div class="feature">
-        <h3 data-i18n="f4.title">컨텍스트 사용률</h3>
-        <p data-i18n="f4.body">모델마다 다른 컨텍스트 창 크기를 반영해서 사용률을 계산해요. 창 크기를 확정하지 못하면 숫자 앞에 ~를 붙여서 추정값이라고 알려요.</p>
-      </div>
-      <div class="feature">
-        <h3 data-i18n="f5.title">AI 사용량도 한눈에</h3>
-        <p data-i18n="f5.body"><span class="ln">Claude와 Codex의 5시간·주간 한도를 패널 맨 위에 고정해서 보여줘요.</span><span class="ln">얼마나 썼는지와 초기화까지 남은 시간을 알 수 있고, 한도에 가까워지면 막대 색이 바뀌어요.</span><span class="ln">Claude는 데스크탑 앱을 켜 두면 1분 안팎으로, Codex는 패널을 보는 동안 30초마다 갱신돼요. 오래된 값은 “52분 전 기준”처럼 알려요.</span></p>
-      </div>
+      </article>
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="fv-menu-wrap">
+          <div class="fv-menu">
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.m1">로그인 시 자동 실행</span></div>
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.m2">알림 보내기</span></div>
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.m3">Codex 연동</span></div>
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.m4">Claude 연동</span></div>
+            <div class="msep"></div>
+            <div class="mi sub" data-sub="panel"><span></span><span data-i18n="fv.m5">표시할 패널</span></div>
+            <div class="mi sub" data-sub="color"><span></span><span data-i18n="fv.m6">색상</span></div>
+            <div class="mi sub" data-sub="theme"><span></span><span data-i18n="fv.m7">테마</span></div>
+            <div class="mi sub" data-sub="glass"><span></span><span>Liquid Glass</span></div>
+            <div class="msep"></div>
+            <div class="mi"><span></span><span data-i18n="fv.m8">Desktoto 종료</span><span class="key">&#8984;Q</span></div>
+          </div>
+          <div class="fv-sub" data-for="panel" hidden>
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.p1">사용량</span></div>
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.p2">컨텍스트</span></div>
+          </div>
+          <div class="fv-sub" data-for="color" hidden>
+            <div class="mi checked" data-radio="color"><span></span><span data-i18n="fv.m9">흰색</span></div>
+            <div class="mi" data-radio="color"><span></span><span data-i18n="fv.m10">컬러</span></div>
+          </div>
+          <div class="fv-sub" data-for="theme" hidden>
+            <div class="mi" data-radio="theme"><span></span><span data-i18n="fv.t1">라이트</span></div>
+            <div class="mi" data-radio="theme"><span></span><span data-i18n="fv.t2">다크</span></div>
+            <div class="mi checked" data-radio="theme"><span></span><span data-i18n="fv.t3">시스템 설정에 맞춤</span></div>
+          </div>
+          <div class="fv-sub" data-for="glass" hidden>
+            <div class="mi" data-radio="glass"><span></span><span data-i18n="fv.g1">투명</span></div>
+            <div class="mi" data-radio="glass"><span></span><span data-i18n="fv.g2">조금 투명</span></div>
+            <div class="mi checked" data-radio="glass"><span></span><span data-i18n="fv.g3">보통</span></div>
+            <div class="mi" data-radio="glass"><span></span><span data-i18n="fv.g4">조금 진하게</span></div>
+            <div class="mi" data-radio="glass"><span></span><span data-i18n="fv.g5">틴트</span></div>
+          </div>
+        </div></div>
+        <h3 data-i18n="f6.title">내 취향대로 꾸밀 수 있어요</h3>
+        <p data-i18n="f6.body">색상은 흰색과 컬러, 테마는 라이트와 다크와 시스템 설정에 맞춤 중에서 고를 수 있어요. Liquid Glass는 투명에서 틴트까지 5단계이고, 패널에는 사용량과 컨텍스트 중 보고 싶은 것만 띄울 수도 있어요.</p>
+      </article>
     </div>
   </section>
 
@@ -431,7 +499,7 @@
         <p class="lead" style="margin-top:14px" data-i18n="privacy.lead"><span class="ln">Desktoto는 대화 내용을 인터넷에 보내지 않아요.</span><span class="ln">내 컴퓨터에 이미 있는 기록을 읽기만 하고, Codex 사용량만 Codex 프로그램에 물어봐요.</span></p>
       </div>
       <dl class="privacy-list" style="margin:0">
-        <div><dt data-i18n="privacy.reads.title">읽는 것</dt><dd data-i18n="privacy.reads.body"><code>~/.claude/projects</code>와 <code>~/.codex/sessions</code>의 세션 기록, Claude 데스크탑 앱의 세션 정보와, 앱이 내 컴퓨터에 임시로 저장해 둔 사용량 응답(5시간·주간 사용률 두 가지 값만). 제목, 모델, 토큰 사용량, 한도 사용률, 응답이 끝났는지 같은 상태만 써요. 로그인 정보는 읽지 않아요. Codex 사용량은 설치된 Codex 프로그램에 한도(사용률)만 물어봐요. 우클릭 메뉴에서 끌 수 있어요.</dd></div>
+        <div><dt data-i18n="privacy.reads.title">읽는 것</dt><dd data-i18n="privacy.reads.body"><code>~/.claude/projects</code>와 <code>~/.codex/sessions</code>의 세션 기록, Claude 데스크탑 앱의 세션 정보와, 앱이 내 컴퓨터에 임시로 저장해 둔 사용량 응답(5시간과 주간 사용률 두 가지 값만). 제목, 모델, 토큰 사용량, 한도 사용률, 응답이 끝났는지 같은 상태만 써요. 로그인 정보는 읽지 않아요. Codex 사용량은 설치된 Codex 프로그램에 한도(사용률)만 물어봐요. 우클릭 메뉴에서 끌 수 있어요.</dd></div>
         <div><dt data-i18n="privacy.not.title">하지 않는 것</dt><dd data-i18n="privacy.not.body">대화 내용을 밖으로 보내거나 따로 저장하지 않아요. 계정 정보도 다루지 않아요.</dd></div>
         <div><dt data-i18n="privacy.update.title">새 버전 확인</dt><dd data-i18n="privacy.update.body">새 버전이 나왔는지 GitHub의 최신 릴리스 정보를 읽어요. 보내는 정보는 없고, 우클릭 메뉴의 업데이트 확인에서 끌 수 있어요.</dd></div>
         <div><dt data-i18n="privacy.opt.title">설정 파일</dt><dd data-i18n="privacy.opt.body">Claude Code를 쓰고 있으면, 처음 켤 때 Claude Code의 설정 파일(<code>~/.claude/settings.json</code>)에 항목 두 개를 자동으로 추가해요. 승인 대기를 알리는 hook과 사용량을 저장하는 statusLine이에요. 이미 쓰는 statusLine은 그대로 실행돼요. 바꾸기 전에 백업을 만들고, 우클릭 메뉴의 Claude 연동에서 언제든 해제할 수 있어요.</dd></div>
@@ -828,8 +896,14 @@
     "f1.title": "Every session in one panel", "f1.body": "Shows the title, context usage and a bar. The model and token count appear only when you hover. Sessions that need approval or an answer rise to the top.",
     "f2.title": "Click a card to jump to that session", "f2.body": "Conversations in the Claude desktop app open in the app. Terminal sessions bring the matching iTerm2 or Terminal tab to the front.",
     "f3.title": "Notifications take you there too", "f3.body": "macOS notifications say “Task finished”, “Approval needed” or “Answer needed”. Click one to go straight to that session.",
-    "f4.title": "Context usage", "f4.body": "Usage reflects each model's own context window size. When the window size can't be confirmed, a ~ before the number marks it as an estimate.",
-    "f5.title": "AI usage at a glance", "f5.body": "<span class=\"ln\">The 5-hour and weekly limits for Claude and Codex stay pinned at the top of the panel.</span><span class=\"ln\">See how much you've used and how long until it resets; the bar changes color as you near a limit.</span><span class=\"ln\">Claude updates about once a minute while its desktop app is open, and Codex every 30 seconds while you have the panel open. An old value is labeled like “52 min ago”.</span>",
+    "f4.title": "Context usage", "f4.body": "Usage reflects each model's own context window size.",
+    "f5.title": "AI usage at a glance", "f5.body": "<span class=\"ln\">The 5-hour and weekly limits for Claude and Codex stay pinned at the top of the panel.</span><span class=\"ln\">See how much you've used and how long until it resets; the bar changes color as you near a limit.</span>",
+    "f6.title": "Make it yours", "f6.body": "Pick white or color, light, dark or your system theme, and one of five Liquid Glass levels from clear to tinted. You can also show only the usage panel, only the context panel, or both.",
+    "fv.m1": "Launch at login", "fv.m2": "Send notifications", "fv.m3": "Codex integration", "fv.m4": "Claude integration", "fv.m5": "Panels to show",
+    "fv.p1": "Usage", "fv.p2": "Context", "fv.t1": "Light", "fv.t2": "Dark", "fv.t3": "Match system",
+    "fv.g1": "Clear", "fv.g2": "Slightly clear", "fv.g3": "Regular", "fv.g4": "Slightly tinted", "fv.g5": "Tinted",
+    "fv.m6": "Color", "fv.m7": "Theme", "fv.m8": "Quit Desktoto", "fv.m9": "White", "fv.m10": "Color",
+    "fv.noti1": "Task finished", "fv.noti2": "Approval needed",
     "privacy.eyebrow": "Privacy", "privacy.title": "Your conversations never leave your computer.",
     "privacy.lead": "<span class=\"ln\">Desktoto never sends your conversations anywhere.</span><span class=\"ln\">It only reads records already on your computer, and asks the Codex app for its usage numbers.</span>",
     "privacy.reads.title": "What it reads", "privacy.reads.body": "Session records in <code>~/.claude/projects</code> and <code>~/.codex/sessions</code>, plus session info from the Claude desktop app and the usage response the app keeps temporarily on your computer (just the 5-hour and weekly usage values). It only uses status information: the title, model, token usage, limit usage, and whether a response has finished. It never reads your login credentials. For Codex usage, it asks the installed Codex app for the limit numbers only; you can turn this off in the right-click menu.",
@@ -879,6 +953,7 @@
     document.querySelectorAll("[data-st]").forEach(function (el) { el.textContent = STAGE_TEXT[next][el.getAttribute("data-st")]; });
     document.querySelectorAll("[data-st-label]").forEach(function (el) { el.setAttribute("aria-label", STAGE_TEXT[next][el.getAttribute("data-st-label")]); });
     setSwitch(next);
+    document.dispatchEvent(new Event("desktoto:lang"));
     try { localStorage.setItem("desktoto-lang", next); } catch (error) { /* 저장하지 못해도 이번 방문에는 그대로 동작한다. */ }
   }
 
@@ -898,6 +973,52 @@
       }, 170);
     });
   });
+
+  /* 꾸미기 카드: 실제 메뉴처럼 항목에 올리면 하위 메뉴가 열리고, 누르면 체크가 바뀐다. 꾸밈일 뿐 설정은 저장하지 않는다. */
+  (function () {
+    var wrap = document.querySelector(".fv-menu-wrap");
+    if (!wrap) return;
+    var rows = [].slice.call(wrap.querySelectorAll(".mi[data-sub]"));
+    var subs = [].slice.call(wrap.querySelectorAll(".fv-sub"));
+    var current = "color";
+    // 하위 메뉴는 연 항목의 높이에 맞추되, 카드 그림 밖으로 나가지 않게 안쪽으로 밀어 넣는다(실제 macOS 메뉴도 공간이 모자라면 그렇게 한다).
+    function placeSub(sub, row) {
+      var area = wrap.closest(".fv").getBoundingClientRect(), box = wrap.getBoundingClientRect();
+      var gap = 8, left = wrap.offsetWidth - 10, top = row.offsetTop - 5;
+      left = Math.min(left, area.right - gap - box.left - sub.offsetWidth);
+      top = Math.min(top, area.bottom - gap - box.top - sub.offsetHeight);
+      sub.style.left = left + "px";
+      sub.style.top = Math.max(top, area.top + gap - box.top) + "px";
+    }
+    function openSub(name) {
+      current = name;
+      var row = wrap.querySelector('.mi[data-sub="' + name + '"]');
+      rows.forEach(function (other) { other.classList.toggle("on", other === row); });
+      subs.forEach(function (sub) {
+        var isTarget = sub.getAttribute("data-for") === name;
+        sub.hidden = !isTarget;
+        if (isTarget) placeSub(sub, row);
+      });
+    }
+    // 언어나 화면 폭이 바뀌면 항목 폭이 달라지므로 열려 있는 하위 메뉴를 다시 놓는다.
+    document.addEventListener("desktoto:lang", function () { openSub(current); });
+    window.addEventListener("resize", function () { openSub(current); });
+    rows.forEach(function (row) {
+      var open = function () { openSub(row.getAttribute("data-sub")); };
+      row.addEventListener("mouseenter", open);
+      row.addEventListener("click", open);
+    });
+    [].slice.call(wrap.querySelectorAll("[data-toggle]")).forEach(function (item) {
+      item.addEventListener("click", function () { item.classList.toggle("checked"); });
+    });
+    [].slice.call(wrap.querySelectorAll("[data-radio]")).forEach(function (item) {
+      item.addEventListener("click", function () {
+        var group = item.getAttribute("data-radio");
+        [].slice.call(wrap.querySelectorAll('[data-radio="' + group + '"]')).forEach(function (other) { other.classList.toggle("checked", other === item); });
+      });
+    });
+    openSub("color");
+  })();
 
   /* 설치 명령 복사: 성공하면 잠시 "복사됨"을 보여 준다. 클립보드를 쓸 수 없으면 표시를 바꾸지 않는다(명령은 선택해서 복사할 수 있다). */
   document.querySelectorAll("[data-copy]").forEach(function (button) {
