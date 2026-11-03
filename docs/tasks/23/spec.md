@@ -4,7 +4,7 @@
 
 - 이슈: #23 / https://github.com/huniversal/Desktoto/issues/23
 - 브랜치: feat/homebrew-cask/#23
-- specRevision: 1
+- specRevision: 2
 - 대상 ai-run 원본: N/A (배포 작업이며 제품 동작은 바꾸지 않는다)
 
 ## 목적
@@ -43,6 +43,19 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
   - 해시는 릴리스 워크플로가 이미 만드는 `.sha256` 파일 값을 쓴다. 별도로 다시 내려받아 계산하지 않는 방식을 우선 검토한다.
 - 상태와 데이터 흐름: 태그 push, 릴리스 생성, tap의 `version`과 `sha256` 갱신 커밋, `brew upgrade`로 반영.
 - 선택한 방식과 이유: 공식 homebrew-cask가 아니라 자체 tap을 쓴다. 서명과 공증이 없는 앱은 공식 등록 대상이 아니며, 이슈에서 범위 밖으로 정했다.
+- 격리 속성 제거 (specRevision 2에서 확정): cask의 `postflight_steps`에서 `xattr -dr com.apple.quarantine`을 실행한다.
+  - Homebrew 7.0.6에서 옛 `postflight` 블록은 deprecated 경고가 나므로 쓰지 않는다.
+  - 경로 치환 토큰은 `{{appdir}}`이다. `#{appdir}`는 치환되지 않아 설치가 실패한다.
+  - 확인한 형태:
+
+    ```ruby
+    postflight_steps do
+      run "/usr/bin/xattr",
+          args:           ["-dr", "com.apple.quarantine", "{{appdir}}/Desktoto.app"],
+          writable_paths: ["{{appdir}}/Desktoto.app"]
+    end
+    ```
+- tap 신뢰: Homebrew 6.0부터 비공식 tap은 신뢰가 필요하다. 전체 이름(`brew install --cask huniversal/tap/desktoto`)으로 설치하면 해당 cask만 자동 신뢰되므로 설치 명령은 한 줄로 유지된다. 짧은 이름으로 설치하려면 `brew trust`가 필요하므로 README에는 전체 이름만 쓴다.
 - 예외 처리:
   - 프리릴리스 태그(`-rc.1` 등)를 tap에 반영할지는 미결정 사항이다.
   - tap 갱신이 실패해도 GitHub Release 자체는 유지되어야 하며, 실패는 워크플로 결과에 드러나야 한다.
@@ -69,7 +82,8 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
 
 ## 미결정 사항
 
-- 격리 속성 제거 방식: cask `postflight`에서 `xattr`로 제거하는 방식이 macOS 26과 현재 Homebrew에서 경고 없이 동작하는지 아직 확인하지 않았다. 구현 전에 먼저 확인하며, 막히면 대안과 함께 명세를 갱신한다. 구현을 막는다.
+- 격리 속성 제거의 한계: macOS 27.0.1, Homebrew 7.0.6에서 `localhost` 서버로 받은 zip으로 설치와 실행을 확인했다(격리 속성 0개, 앱 정상 실행).
+  격리 속성이 붙은 채로 막히는지 대조 실험은 하지 않았고, 실제 GitHub Release 다운로드와 macOS 26에서의 확인은 첫 릴리스 후 AC-3에서 한다. 구현을 막지 않는다.
 - tap 쓰기 권한 방식: fine-grained PAT, GitHub App, deploy key 중 선택. tap 저장소 하나에만 contents 쓰기 권한을 주는 최소 권한을 기준으로 정한다. 구현을 막지 않지만 AC-2 전에 정한다.
 - 프리릴리스(`-rc.N`) 태그를 tap에 반영할지 여부. 반영하지 않는 쪽을 기본으로 제안하며 합의 전이다.
 - tap 저장소 공개 여부와 기본 브랜치 보호 설정. 합의 전이다.
@@ -80,3 +94,4 @@ Apple Developer 서명과 공증 없이 배포하므로, 내려받은 앱이 처
 | specRevision | 변경한 결정 | 이유 |
 |---|---|---|
 | 1 | 최초 설계 | 이슈 #23의 Tasks와 범위를 그대로 옮김. 미결정 항목은 확정하지 않음 |
+| 2 | 격리 속성 제거를 `postflight_steps`와 `{{appdir}}` 토큰으로 확정, tap 신뢰는 전체 이름 설치로 해소 | Homebrew 7.0.6, macOS 27.0.1에서 로컬 확인. 영향받는 AC: AC-1, AC-3, AC-5 |
