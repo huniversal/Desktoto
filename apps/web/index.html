@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}</style>
+<title>Desktoto</title>
+<meta name="description" content="Desktoto는 AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요. 작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.">
+<!-- 링크 미리보기(카카오톡, 슬랙 등). 이미지는 apps/web/og.png(원본: og-source.html)를 같은 주소 아래에 올려서 쓴다. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Desktoto">
+<meta property="og:title" content="Desktoto">
+<meta property="og:description" content="AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.">
+<meta property="og:url" content="https://desktoto.pages.dev/">
+<meta property="og:image" content="https://desktoto.pages.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="claude:viewport-fit-sides" content="cover">
+<!-- 파비콘: 앱 아이콘과 같은 어두운 둥근 사각형 위의 흰색 캐릭터. favicon.svg가 원본이고 ico와 apple-touch-icon.png는 같은 그림으로 만든다. -->
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  /* Layout concept: 흰 캐릭터가 달리는 메뉴바와 유리 패널을 노을빛 바탕화면 위에 올린 무대(stage)를 중심으로, 나머지는 조용한 한 줄짜리 문장과 표로 구성한다. */
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --fg: #1d1d1f;
+    --muted: #5f5f66;
+    --line: rgba(29, 29, 31, 0.12);
+    --btn-bg: #1d1d1f;
+    --btn-fg: #ffffff;
+    --btn-ghost: rgba(29, 29, 31, 0.06);
+    --amber: #ffcc4d;
+    --amber-ink: #5c4300;
+    --bar-1: #73a6ff;
+    --bar-2: #ad80ff;
+    --glass-ink: #ffffff;
+    --glass-muted: rgba(255, 255, 255, 0.72);
+    --menubar-bg: rgba(28, 24, 26, 0.42);
+    --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    --font-pixel: "DotGothic16", "Apple SD Gothic Neo", "Noto Sans KR", monospace;
+    --strip: #2b2626;
+    --wallpaper:
+      radial-gradient(130% 55% at 52% 108%, #00229a 0%, rgba(0, 34, 154, 0) 62%),
+      radial-gradient(60% 55% at 6% 102%, #6fb0c9 0%, rgba(111, 176, 201, 0) 70%),
+      radial-gradient(52% 70% at 104% 88%, #a9cadb 0%, rgba(169, 202, 219, 0) 72%),
+      radial-gradient(85% 34% at 38% 50%, #58bdee 0%, rgba(88, 189, 238, 0) 72%),
+      radial-gradient(60% 40% at 82% 36%, #2f7ee2 0%, rgba(47, 126, 226, 0) 74%),
+      radial-gradient(34% 22% at 34% 30%, #1f86da 0%, rgba(31, 134, 218, 0) 74%),
+      radial-gradient(40% 40% at 0% 52%, #1ea0e0 0%, rgba(30, 160, 224, 0) 72%),
+      linear-gradient(180deg, #cfd0de 0%, #e8dfb4 20%, #dcdcd2 33%, #7db2ea 50%, #2f6fe0 76%, #1d4fc4 100%);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0b0d;
+      --surface: #161619;
+      --fg: #f5f5f7;
+      --muted: #a1a1a8;
+      --line: rgba(255, 255, 255, 0.13);
+      --btn-bg: #f5f5f7;
+      --btn-fg: #1d1d1f;
+      --btn-ghost: rgba(255, 255, 255, 0.09);
+      --strip: #1c1819;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0b0d;
+    --surface: #161619;
+    --fg: #f5f5f7;
+    --muted: #a1a1a8;
+    --line: rgba(255, 255, 255, 0.13);
+    --btn-bg: #f5f5f7;
+    --btn-fg: #1d1d1f;
+    --btn-ghost: rgba(255, 255, 255, 0.09);
+    --strip: #1c1819;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.65;
+    word-break: keep-all;
+    -webkit-font-smoothing: antialiased;
+    padding-block: 0 48px;
+  }
+  /* 좌우 여백은 본문 틀이 갖고, 헤더(nav)는 페이지 전체 너비를 쓴다. */
+  .wrap, .nav-inner { max-width: 1080px; margin-inline: auto; box-sizing: content-box; }
+  .wrap, nav { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  :root { --section-pad: clamp(144px, 19vw, 216px); }
+  /* 위 여백이 커서 섹션 맨 위가 아니라 제목이 헤더 바로 아래에 오도록, 이동 위치에서 여백만큼 뺀다. */
+  section { padding-block: var(--section-pad) 0; scroll-margin-top: calc(100px - var(--section-pad)); }
+  h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.03em; line-height: 1.15; }
+  h1 { font-size: clamp(2.2rem, 5.2vw, 3.8rem); font-weight: 700; }
+  h2 { font-size: clamp(1.7rem, 3.8vw, 2.6rem); font-weight: 700; }
+  h3 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+  p { margin: 0; }
+  .eyebrow { font-family: var(--font-pixel); font-size: 0.82rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .lead { color: var(--muted); font-size: 1.15rem; max-width: 36em; text-wrap: balance; }
+  p, li { text-wrap: pretty; }
+  .ln { display: block; text-wrap: balance; }
+  .lead:has(.ln) { max-width: none; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--bar-2); outline-offset: 3px; border-radius: 6px; }
+
+  /* 상단 */
+  html { scroll-behavior: smooth; }
+  /* 상단 안전 영역은 고정 띠로 칠해서, 스크롤된 내용이 시스템 막대 아래로 비쳐 보이지 않게 한다. */
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+  nav {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    padding-block: 16px;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { font-family: var(--font-pixel); font-size: 1.15rem; letter-spacing: 0.04em; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
+  .nav-links { display: flex; align-items: center; gap: 22px; font-size: 0.95rem; color: var(--muted); }
+  .nav-links a { text-decoration: none; }
+  .nav-links a.text { position: relative; padding-block: 4px; transition: color 0.2s; }
+  .nav-links a.text::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 2px; border-radius: 2px; background: var(--fg); transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease; }
+  .nav-links a.text:hover, .nav-links a.text[aria-current="true"] { color: var(--fg); }
+  .nav-links a.text[aria-current="true"]::after { transform: scaleX(1); }
+  /* 메뉴를 눌러 도착한 섹션의 제목이 살짝 떠오르며 도착을 알린다. */
+  section.arrived h2 { animation: arrive 0.7s ease both; }
+  section.arrived .eyebrow { color: var(--fg); transition: color 0.4s; }
+  @keyframes arrive { from { opacity: 0.3; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @media (max-width: 640px) { .nav-links a.text { display: none; } }
+
+  .btn { display: inline-flex; align-items: center; gap: 10px; font: inherit; font-size: 1rem; font-weight: 500; padding: 12px 22px; border-radius: 999px; border: 0; text-decoration: none; cursor: pointer; background: var(--btn-bg); color: var(--btn-fg); }
+  .btn { transition: background 0.2s, transform 0.12s; }
+  .btn:hover { background: color-mix(in srgb, var(--btn-bg) 80%, var(--bg)); }
+  .btn:active { transform: scale(0.97); }
+  .btn.ghost { background: var(--btn-ghost); color: var(--fg); }
+  .btn.small { padding: 8px 16px; font-size: 0.9rem; }
+
+  /* 언어 전환: 선택된 쪽 배경이 두 버튼 사이를 미끄러져 이동한다. */
+  .lang { position: relative; display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
+  .lang-thumb { position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc(50% - 2px); border-radius: 999px; background: var(--btn-bg); }
+  .lang.ready .lang-thumb { transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1); }
+  .lang[data-active="en"] .lang-thumb { transform: translateX(100%); }
+  .lang button { position: relative; z-index: 1; min-width: 44px; font: inherit; font-size: 0.78rem; letter-spacing: 0.04em; border: 0; background: transparent; color: var(--muted); padding: 4px 11px; border-radius: 999px; cursor: pointer; transition: color 0.25s, transform 0.12s; }
+  .lang button:active { transform: scale(0.92); }
+  .lang button[aria-pressed="true"] { color: var(--btn-fg); }
+  /* 언어가 바뀌는 순간 본문이 잠깐 옅어졌다가 새 언어로 나타난다. */
+  [data-i18n], [data-st] { transition: opacity 0.16s ease; }
+  body.lang-fade [data-i18n], body.lang-fade [data-st] { opacity: 0; }
+
+  /* 히어로 */
+  .hero { padding-block: 20px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; justify-items: start; }
+  .hero .lead { margin-top: 4px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
+  .cta-note { font-size: 0.9rem; color: var(--muted); }
+  .nav-icon { display: inline-flex; padding: 4px; border-radius: 8px; color: var(--muted); transition: color 0.2s; }
+  .nav-icon:hover { color: var(--fg); }
+
+  /* 설치: 개인정보 섹션과 같은 구성(왼쪽 제목, 오른쪽 구분선 목록)을 쓴다. */
+  .stack { display: grid; gap: 14px; }
+  .cmd { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 18px; border-radius: 12px; background: var(--strip); color: #ece8ea; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.9rem; line-height: 1.5; }
+  .cmd.small { font-size: 0.82rem; }
+  .cmd .prompt { flex: none; color: rgba(255, 255, 255, 0.45); user-select: none; }
+  .cmd code { flex: 1; min-width: 0; word-break: normal; overflow-wrap: break-word; background: none; padding: 0; color: inherit; font: inherit; }
+  .cmd .nw { white-space: nowrap; }
+  .privacy-list dd code { word-break: normal; overflow-wrap: break-word; }
+  .copy { flex: none; font: inherit; font-family: var(--font-body); font-size: 0.82rem; font-weight: 500; padding: 6px 14px; border-radius: 999px; border: 0; cursor: pointer; background: rgba(255, 255, 255, 0.14); color: #fff; transition: background 0.2s, transform 0.12s; }
+  .copy:hover { background: rgba(255, 255, 255, 0.24); }
+  .copy:active { transform: scale(0.94); }
+  .copy .done { display: none; }
+  .copy.copied { background: rgba(255, 255, 255, 0.9); color: #1d1d1f; }
+  .copy.copied .label { display: none; }
+  .copy.copied .done { display: inline; }
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: step; }
+  .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; counter-increment: step; }
+  .steps li::before { content: counter(step); font-family: var(--font-pixel); color: var(--fg); }
+  @media (max-width: 520px) {
+    .cmd { flex-wrap: wrap; }
+    .cmd code { flex-basis: 15em; }
+    .copy { margin-left: auto; }
+  }
+
+  /* 메뉴바 */
+  .menubar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-inline: 18px;
+    background: var(--menubar-bg);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    color: var(--glass-ink);
+    font-size: 13px;
+  }
+  .menubar .left { display: flex; gap: 18px; color: var(--glass-muted); white-space: nowrap; overflow: hidden; }
+  .menubar .left b { color: var(--glass-ink); font-weight: 700; }
+  .menubar .right { display: flex; align-items: center; gap: 14px; margin-left: auto; white-space: nowrap; }
+  .menubar .pill { background: rgba(255, 255, 255, 0.85); color: #1d1d1f; border-radius: 5px; padding: 0 6px; font-size: 12px; line-height: 18px; }
+  .menubar canvas { display: block; image-rendering: pixelated; }
+  @media (max-width: 560px) { .menubar .left span.extra { display: none; } }
+
+  /* 히어로 무대: 파란 물결 바탕화면 위에서 마우스가 패널의 카드를 눌러 해당 창으로 이동하는 장면이 반복된다. */
+  .tour {
+    position: relative; width: 100%; height: clamp(430px, 40vw, 460px);
+    border-radius: 28px; overflow: hidden; border: 1px solid var(--line); user-select: none;
+    background: var(--wallpaper);
+  }
+  .tour-line { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .tour .menubar { position: absolute; inset: 0 0 auto; z-index: 6; background: rgba(18, 26, 58, 0.5); }
+  .tour-win {
+    position: absolute; z-index: 2; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 10px 28px rgba(0, 20, 80, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.35);
+    outline: 2px solid transparent; outline-offset: -2px;
+    filter: brightness(0.88) saturate(0.9);
+    transition: filter 0.35s, outline-color 0.6s, transform 0.35s, box-shadow 0.35s;
+  }
+  .tour-win.front { z-index: 3; filter: none; transform: scale(1.008); box-shadow: 0 22px 50px rgba(0, 20, 80, 0.45), 0 0 0 0.5px rgba(0, 0, 0, 0.4); }
+  .tour-win.flash { outline-color: rgba(255, 255, 255, 0.9); }
+  .tour-bar { height: 32px; display: flex; align-items: center; justify-content: center; position: relative; font-size: 12px; }
+  .tour-lights { position: absolute; left: 12px; display: flex; gap: 8px; }
+  .tour-lights i { width: 12px; height: 12px; border-radius: 50%; background: #6e6e73; }
+  .tour-win.front .tour-lights i:nth-child(1) { background: #ff5f57; }
+  .tour-win.front .tour-lights i:nth-child(2) { background: #febc2e; }
+  .tour-win.front .tour-lights i:nth-child(3) { background: #28c840; }
+  .tour-term { left: 3%; top: 68px; width: clamp(250px, 44%, 470px); height: clamp(230px, 56%, 290px); background: rgba(26, 26, 30, 0.94); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  .tour-term .tour-bar { color: #a9a9b0; background: rgba(255, 255, 255, 0.05); }
+  .tour-term .tour-text { padding: 12px 16px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; line-height: 1.85; color: #d6d6dc; white-space: nowrap; overflow: hidden; }
+  .tour-term .c-b { color: #8fb4ff; } .tour-term .c-g { color: #7ee2a0; } .tour-term .c-y { color: #f2c46b; } .tour-term .c-d { color: #8a8a94; }
+  .tour-cur { display: inline-block; width: 7px; height: 13px; background: #d6d6dc; vertical-align: -2px; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .tour-app { left: 15%; top: 150px; width: clamp(250px, 44%, 470px); height: clamp(240px, 60%, 300px); background: #f7f6f8; display: flex; flex-direction: column; }
+  .tour-app .tour-bar { color: #55555c; background: #ecebef; border-bottom: 0.5px solid #d6d5da; }
+  .tour-main { display: flex; flex: 1; min-height: 0; }
+  .tour-side { width: 30%; background: #eceaf0; padding: 12px 8px; border-right: 0.5px solid #d6d5da; }
+  .tour-side p { margin: 0 0 6px; padding: 6px 8px; font-size: 12px; line-height: 1.4; color: #4a4a52; border-radius: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tour-side p.on { background: #dcd9e6; color: #222; }
+  .tour-chat { flex: 1; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.55; color: #25252b; }
+  .tour-me { align-self: flex-end; background: #e4e1ee; padding: 7px 12px; border-radius: 13px 13px 3px 13px; max-width: 82%; }
+  .tour-ai { max-width: 94%; }
+  .tour-input { margin-top: auto; border: 0.5px solid #cfcdd6; border-radius: 11px; background: #fff; padding: 8px 12px; font-size: 12px; color: #8b8b94; }
+  .tour-panel {
+    position: absolute; right: 14px; top: 54px; z-index: 7; width: min(300px, calc(100% - 28px));
+    display: flex; flex-direction: column; gap: 8px;
+    opacity: 0; transform: translateY(-6px) scale(0.97); transform-origin: top right; pointer-events: none;
+    transition: opacity 0.22s, transform 0.22s;
+  }
+  .tour-panel.open { opacity: 1; transform: none; }
+  .tour-glass {
+    border-radius: 22px; color: #fff; font-size: 14px; line-height: 1.35;
+    background: rgba(28, 28, 34, 0.58); border: 0.5px solid rgba(255, 255, 255, 0.16);
+    -webkit-backdrop-filter: blur(30px) saturate(1.5); backdrop-filter: blur(30px) saturate(1.5);
+    box-shadow: 0 14px 34px rgba(0, 20, 80, 0.35);
+  }
+  .tour-usage { padding: 14px 16px 12px; }
+  .tour-usage h4 { margin: 0 0 7px; font-size: 14px; font-weight: 600; letter-spacing: 0; }
+  .tour-usage .sec + .sec { margin-top: 9px; padding-top: 10px; border-top: 0.5px solid rgba(255, 255, 255, 0.12); }
+  .tour-use { display: grid; grid-template-columns: 38px 1fr 36px 66px; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: rgba(255, 255, 255, 0.55); font-variant-numeric: tabular-nums; }
+  .tour-use b { font-weight: 600; color: #fff; text-align: right; }
+  .tour-use em { font-style: normal; text-align: right; white-space: nowrap; }
+  .tour-track { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.18); }
+  .tour-track i { display: block; height: 100%; border-radius: 2px; background: #e9e9ee; }
+  .tour-sessions { padding: 6px; }
+  .tour-row { padding: 10px 12px; border-radius: 16px; transition: background 0.2s, transform 0.12s; }
+  .tour-row .head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-weight: 600; }
+  .tour-row .head span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tour-row .head span:last-child { flex: none; font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.6); }
+  .tour-row .tour-track i { background: rgba(255, 255, 255, 0.62); }
+  .tour-row .more { max-height: 0; opacity: 0; overflow: hidden; display: flex; justify-content: space-between; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-variant-numeric: tabular-nums; transition: max-height 0.25s, opacity 0.25s, margin 0.25s; }
+  .tour-row.hover { background: linear-gradient(100deg, rgba(150, 160, 230, 0.28), rgba(230, 140, 190, 0.3)); }
+  .tour-row.hover .more { max-height: 16px; opacity: 1; margin-top: 8px; }
+  .tour-row.press { transform: scale(0.97); }
+  .tour-cursor { position: absolute; left: 0; top: 0; z-index: 9; width: 24px; height: 29px; pointer-events: none; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.45)); }
+  .tour-ripple { position: absolute; left: 0; top: 0; z-index: 8; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; border: 2px solid #fff; opacity: 0; pointer-events: none; }
+  .tour-ripple.go { animation: ripple 0.5s ease-out; }
+  @keyframes ripple { from { opacity: 0.85; transform: scale(0.2); } to { opacity: 0; transform: scale(1.1); } }
+  @media (prefers-reduced-motion: reduce) {
+    .tour-win, .tour-panel, .tour-row, .tour-row .more { transition: none; }
+    .tour-cur { animation: none; }
+  }
+
+  /* 문제 */
+  .problems { margin-top: 28px; display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .problems p { padding-block: 18px; border-bottom: 1px solid var(--line); font-size: 1.12rem; letter-spacing: -0.01em; }
+
+  /* 상태 */
+  .states { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px; }
+  .state { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 14px 14px 22px; display: grid; gap: 14px; align-content: start; }
+  .strip { background: var(--strip); border-radius: 12px; height: 92px; display: grid; place-items: center; }
+  .strip canvas { image-rendering: pixelated; display: block; }
+  .state h3 { padding-inline: 6px; }
+  .state p { padding-inline: 6px; color: var(--muted); font-size: 0.96rem; }
+
+  /* 기능: 상태 카드와 같은 카드에, 히어로 데모와 같은 배경과 유리 패널로 앱 화면을 작게 보여 준다. */
+  .fgrid { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+  .fv { aspect-ratio: 1 / 0.9; border-radius: 12px; background: var(--wallpaper); display: grid; place-items: center; padding: 18px; overflow: hidden; }
+  .fv .tour-glass, .fv-stack { width: 100%; }
+  .fv-stack { display: grid; gap: 10px; }
+  .fv-win { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border-radius: 12px; background: rgba(26, 26, 30, 0.94); color: #a9a9b0; font-size: 12px; }
+  .fv-win i { width: 10px; height: 10px; border-radius: 50%; }
+  .fv-win i:nth-child(1) { background: #ff5f57; }
+  .fv-win i:nth-child(2) { background: #febc2e; }
+  .fv-win i:nth-child(3) { background: #28c840; }
+  .fv-win span { margin-left: 6px; }
+  .fv-arrow { justify-self: center; color: #fff; opacity: 0.9; }
+  .fv-noti { display: grid; gap: 2px; padding: 10px 14px; border-radius: 16px; color: #fff; font-size: 12.5px; line-height: 1.4; background: rgba(28, 28, 34, 0.58); border: 0.5px solid rgba(255, 255, 255, 0.16); -webkit-backdrop-filter: blur(30px) saturate(1.5); backdrop-filter: blur(30px) saturate(1.5); box-shadow: 0 10px 24px rgba(0, 20, 80, 0.3); }
+  .fv-noti b { font-size: 11px; font-weight: 500; opacity: 0.7; letter-spacing: 0; }
+  .fv-noti span { font-weight: 600; }
+  .fv-noti small { font-size: 12px; opacity: 0.75; }
+  /* 꾸미기 카드: 실제 앱의 우클릭 설정 메뉴(색상 하위 메뉴가 열린 모습)를 그대로 본뜬다. */
+  .fv-menu-wrap { position: relative; width: 178px; margin-right: 74px; }
+  .fv-menu, .fv-sub { padding: 5px; border-radius: 12px; color: #1d1d1f; font-size: 11.5px; line-height: 20px; background: rgba(246, 246, 248, 0.88); border: 0.5px solid rgba(0, 0, 0, 0.14); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6); box-shadow: 0 12px 28px rgba(0, 20, 80, 0.32); }
+  .fv-sub { position: absolute; left: calc(100% - 10px); top: 114px; min-width: 84px; }
+  .fv-sub[hidden] { display: none; }
+  .mi { display: flex; align-items: center; height: 20px; padding: 0 8px 0 4px; border-radius: 6px; white-space: nowrap; cursor: pointer; user-select: none; }
+  .mi.checked > :first-child::before { content: "\2713"; }
+  .mi:hover { background: #0a7aff; color: #fff; }
+  .mi > :first-child { width: 14px; flex: none; text-align: center; font-size: 10px; }
+  .mi.sub::after { content: "\203A"; margin-left: auto; font-size: 14px; opacity: 0.7; }
+  .mi.on { background: #0a7aff; color: #fff; }
+  .mi.on::after { opacity: 1; }
+  .mi .key { margin-left: auto; opacity: 0.45; }
+  .fv .tour-row:hover { background: linear-gradient(100deg, rgba(150, 160, 230, 0.28), rgba(230, 140, 190, 0.3)); }
+  .fv .tour-row:hover .more { max-height: 16px; opacity: 1; margin-top: 8px; }
+  .msep { height: 1px; margin: 4px 6px; background: rgba(0, 0, 0, 0.12); }
+
+  /* 개인정보 */
+  .privacy { display: grid; gap: 26px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+  .privacy-list { display: grid; gap: 0; }
+  .privacy-list div { padding-block: 16px; border-top: 1px solid var(--line); display: grid; gap: 4px; }
+  .privacy-list dt { font-weight: 700; }
+  .privacy-list dd { margin: 0; color: var(--muted); font-size: 0.98rem; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.86em; background: var(--btn-ghost); padding: 1px 6px; border-radius: 6px; word-break: break-all; }
+
+  footer { margin-top: clamp(144px, 18vw, 208px); padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; display: grid; gap: 6px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    section.arrived h2 { animation: none; }
+    [data-i18n], [data-st], .lang-thumb { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="top"></div>
+<nav>
+  <div class="nav-inner">
+    <a class="brand" href="#top">Desktoto</a>
+    <div class="nav-links">
+      <a class="text" href="#states" data-i18n="nav.states">상태</a>
+      <a class="text" href="#features" data-i18n="nav.features">기능</a>
+      <a class="text" href="#privacy" data-i18n="nav.privacy">개인정보</a>
+      <a class="text" href="#install" data-i18n="nav.install">설치</a>
+      <a class="nav-icon" href="https://github.com/huniversal/Desktoto" target="_blank" rel="noopener noreferrer" aria-label="GitHub 저장소" data-i18n-aria="nav.github"><svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
+      <div class="lang" role="group" aria-label="Language" data-active="ko">
+        <span class="lang-thumb" aria-hidden="true"></span>
+        <button type="button" data-lang="ko" aria-pressed="true">KO</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <h1 data-i18n="hero.title">AI가 일하는 동안,<br>메뉴바에서 지켜보세요.</h1>
+    <p class="lead" data-i18n="hero.lead"><span class="ln">Desktoto는 AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.</span><span class="ln">작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.</span></p>
+    <div class="cta">
+      <a class="btn" href="https://github.com/huniversal/Desktoto/releases/latest/download/Desktoto.dmg"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.25 1.5h1.5v7.19l2.47-2.47 1.06 1.06L8 11.31 3.72 7.28l1.06-1.06 2.47 2.47V1.5zM2 13h12v1.5H2V13z"/></svg><span data-i18n="hero.cta1">macOS용 다운로드</span></a>
+      <span class="cta-note" data-i18n="hero.note">macOS 26 이상, Apple Silicon</span>
+    </div>
+    <div id="heroStage" style="width:100%"></div>
+  </header>
+
+  <section id="problem">
+    <p class="eyebrow" data-i18n="problem.eyebrow">문제</p>
+    <h2 style="margin-top:14px" data-i18n="problem.title">세션을 여러 개 돌리면, 놓치게 돼요.</h2>
+    <div class="problems">
+      <p data-i18n="problem.1">다른 창에서 작업하다가, 끝난 지 한참 뒤에야 알게 돼요.</p>
+      <p data-i18n="problem.2">승인 창이 떠 있어서 AI가 멈춰 있는데, 그걸 모르고 기다려요.</p>
+      <p data-i18n="problem.3">컨텍스트가 얼마나 찼는지는 열어 보기 전에는 알 수 없어요.</p>
+    </div>
+  </section>
+
+  <section id="states">
+    <p class="eyebrow" data-i18n="states.eyebrow">상태</p>
+    <h2 style="margin-top:14px" data-i18n="states.title">캐릭터가 지금 상황을 알려 줘요.</h2>
+    <div class="states">
+      <article class="state">
+        <div class="strip"><canvas id="sRun"></canvas></div>
+        <h3 data-i18n="states.run.title">달리는 중</h3>
+        <p data-i18n="states.run.body">작업이 진행 중이에요. 여러 세션 중 하나라도 돌고 있으면 계속 달려요.</p>
+      </article>
+      <article class="state">
+        <div class="strip"><canvas id="sDone"></canvas></div>
+        <h3 data-i18n="states.done.title">폭죽</h3>
+        <p data-i18n="states.done.body">작업이 끝났어요. 캐릭터 뒤에서 작은 폭죽이 터지고 macOS 알림이 와요.</p>
+      </article>
+      <article class="state">
+        <div class="strip"><canvas id="sWait"></canvas></div>
+        <h3 data-i18n="states.wait.title">물음표</h3>
+        <p data-i18n="states.wait.body">승인이나 답변이 필요해요. 사람을 기다리는 세션이 있으면 물음표가 떠요.</p>
+      </article>
+      <article class="state">
+        <div class="strip"><canvas id="sDot"></canvas></div>
+        <h3 data-i18n="states.dot.title">보라색 점</h3>
+        <p data-i18n="states.dot.body">확인하지 않은 완료가 있어요. 패널을 열어서 확인하면 사라져요.</p>
+      </article>
+      <article class="state">
+        <div class="strip"><canvas id="sSleep"></canvas></div>
+        <h3 data-i18n="states.sleep.title">졸음</h3>
+        <p data-i18n="states.sleep.body">10분 동안 아무 활동이 없으면 캐릭터가 눈을 감고 졸아요. 새 작업이 시작되면 바로 깨요.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="features">
+    <p class="eyebrow" data-i18n="features.eyebrow">기능</p>
+    <h2 style="margin-top:14px" data-i18n="features.title">필요한 것만 보이게 했어요.</h2>
+    <div class="fgrid">
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="tour-glass tour-sessions"><div class="tour-row"><div class="head"><span data-st="title0"></span><span>37%</span></div><div class="tour-track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title1"></span><span>18%</span></div><div class="tour-track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title2"></span><span>8%</span></div><div class="tour-track"><i style="width:8%"></i></div><div class="more"><span>claude-haiku-5-5</span><span>75K / 1M</span></div></div></div></div>
+        <h3 data-i18n="f1.title">한 패널에 모든 세션</h3>
+        <p data-i18n="f1.body">제목, 컨텍스트 사용률, 막대만 보여요. 모델과 토큰 수는 마우스를 올렸을 때만 펼쳐져요. 승인이나 답변이 필요한 세션은 맨 위로 올라와요.</p>
+      </article>
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="tour-glass tour-usage"><div class="sec"><h4>Claude</h4><div class="tour-use"><span data-st="tourH5"></span><div class="tour-track"><i style="width:42%"></i></div><b>42%</b><em data-st="tourR1"></em></div><div class="tour-use"><span data-st="tourWk"></span><div class="tour-track"><i style="width:18%"></i></div><b>18%</b><em data-st="tourR2"></em></div></div><div class="sec"><h4>Codex</h4><div class="tour-use"><span data-st="tourH5"></span><div class="tour-track"><i style="width:12%"></i></div><b>12%</b><em data-st="tourR3"></em></div><div class="tour-use"><span data-st="tourWk"></span><div class="tour-track"><i style="width:6%"></i></div><b>6%</b><em data-st="tourR4"></em></div></div></div></div>
+        <h3 data-i18n="f5.title">AI 사용량도 한눈에</h3>
+        <p data-i18n="f5.body"><span class="ln">Claude와 Codex의 5시간과 주간 한도를 패널 맨 위에 고정해서 보여줘요.</span><span class="ln">얼마나 썼는지와 초기화까지 남은 시간을 알 수 있고, 한도에 가까워지면 막대 색이 바뀌어요.</span></p>
+      </article>
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="tour-glass tour-sessions"><div class="tour-row hover"><div class="head"><span data-st="title0"></span><span>37%</span></div><div class="tour-track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title1"></span><span>18%</span></div><div class="tour-track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title2"></span><span>8%</span></div><div class="tour-track"><i style="width:8%"></i></div><div class="more"><span>claude-haiku-5-5</span><span>75K / 1M</span></div></div></div></div>
+        <h3 data-i18n="f4.title">컨텍스트 사용률</h3>
+        <p data-i18n="f4.body">모델마다 다른 컨텍스트 창 크기를 반영해서 사용률을 계산해요.</p>
+      </article>
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="fv-stack"><div class="tour-glass tour-sessions"><div class="tour-row hover"><div class="head"><span data-st="title1"></span><span>18%</span></div><div class="tour-track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div></div><svg class="fv-arrow" width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v10M3.5 8.5L8 13l4.5-4.5"/></svg><div class="fv-win"><i></i><i></i><i></i><span>claude — payments</span></div></div></div>
+        <h3 data-i18n="f2.title">카드를 누르면 그 세션으로</h3>
+        <p data-i18n="f2.body">Claude 데스크탑 앱의 대화는 앱에서 열고, 터미널 세션은 iTerm2나 Terminal의 해당 탭을 앞으로 가져와요.</p>
+      </article>
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="fv-stack"><div class="fv-noti"><b>Desktoto</b><span data-i18n="fv.noti1">작업이 끝났어요</span><small data-st="title0"></small></div><div class="fv-noti"><b>Desktoto</b><span data-i18n="fv.noti2">승인이 필요해요</span><small data-st="title1"></small></div></div></div>
+        <h3 data-i18n="f3.title">알림을 눌러도 이동해요</h3>
+        <p data-i18n="f3.body">macOS 알림으로 “작업이 끝났어요”, “승인이 필요해요”, “답변이 필요해요”를 알려요. 알림을 누르면 해당 세션으로 가요.</p>
+      </article>
+      <article class="state">
+        <div class="fv" aria-hidden="true"><div class="fv-menu-wrap">
+          <div class="fv-menu">
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.m1">로그인 시 자동 실행</span></div>
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.m2">알림 보내기</span></div>
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.m3">Codex 연동</span></div>
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.m4">Claude 연동</span></div>
+            <div class="msep"></div>
+            <div class="mi sub" data-sub="panel"><span></span><span data-i18n="fv.m5">표시할 패널</span></div>
+            <div class="mi sub" data-sub="color"><span></span><span data-i18n="fv.m6">색상</span></div>
+            <div class="mi sub" data-sub="theme"><span></span><span data-i18n="fv.m7">테마</span></div>
+            <div class="mi sub" data-sub="glass"><span></span><span>Liquid Glass</span></div>
+            <div class="msep"></div>
+            <div class="mi"><span></span><span data-i18n="fv.m8">Desktoto 종료</span><span class="key">&#8984;Q</span></div>
+          </div>
+          <div class="fv-sub" data-for="panel" hidden>
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.p1">사용량</span></div>
+            <div class="mi checked" data-toggle><span></span><span data-i18n="fv.p2">컨텍스트</span></div>
+          </div>
+          <div class="fv-sub" data-for="color" hidden>
+            <div class="mi checked" data-radio="color"><span></span><span data-i18n="fv.m9">흰색</span></div>
+            <div class="mi" data-radio="color"><span></span><span data-i18n="fv.m10">컬러</span></div>
+          </div>
+          <div class="fv-sub" data-for="theme" hidden>
+            <div class="mi" data-radio="theme"><span></span><span data-i18n="fv.t1">라이트</span></div>
+            <div class="mi" data-radio="theme"><span></span><span data-i18n="fv.t2">다크</span></div>
+            <div class="mi checked" data-radio="theme"><span></span><span data-i18n="fv.t3">시스템 설정에 맞춤</span></div>
+          </div>
+          <div class="fv-sub" data-for="glass" hidden>
+            <div class="mi" data-radio="glass"><span></span><span data-i18n="fv.g1">투명</span></div>
+            <div class="mi" data-radio="glass"><span></span><span data-i18n="fv.g2">조금 투명</span></div>
+            <div class="mi checked" data-radio="glass"><span></span><span data-i18n="fv.g3">보통</span></div>
+            <div class="mi" data-radio="glass"><span></span><span data-i18n="fv.g4">조금 진하게</span></div>
+            <div class="mi" data-radio="glass"><span></span><span data-i18n="fv.g5">틴트</span></div>
+          </div>
+        </div></div>
+        <h3 data-i18n="f6.title">내 취향대로 꾸밀 수 있어요</h3>
+        <p data-i18n="f6.body">색상은 흰색과 컬러, 테마는 라이트와 다크와 시스템 설정에 맞춤 중에서 고를 수 있어요. Liquid Glass는 투명에서 틴트까지 5단계이고, 패널에는 사용량과 컨텍스트 중 보고 싶은 것만 띄울 수도 있어요.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="privacy">
+      <div>
+        <p class="eyebrow" data-i18n="privacy.eyebrow">개인정보</p>
+        <h2 style="margin-top:14px" data-i18n="privacy.title">내 대화는 컴퓨터 밖으로 나가지 않아요.</h2>
+        <p class="lead" style="margin-top:14px" data-i18n="privacy.lead"><span class="ln">Desktoto는 대화 내용을 인터넷에 보내지 않아요.</span><span class="ln">내 컴퓨터에 이미 있는 기록을 읽기만 하고, Codex 사용량만 Codex 프로그램에 물어봐요.</span></p>
+      </div>
+      <dl class="privacy-list" style="margin:0">
+        <div><dt data-i18n="privacy.reads.title">읽는 것</dt><dd data-i18n="privacy.reads.body"><code>~/.claude/projects</code>와 <code>~/.codex/sessions</code>의 세션 기록, Claude 데스크탑 앱의 세션 정보와, 앱이 내 컴퓨터에 임시로 저장해 둔 사용량 응답(5시간과 주간 사용률 두 가지 값만). 제목, 모델, 토큰 사용량, 한도 사용률, 응답이 끝났는지 같은 상태만 써요. 로그인 정보는 읽지 않아요. Codex 사용량은 설치된 Codex 프로그램에 한도(사용률)만 물어봐요. 우클릭 메뉴에서 끌 수 있어요.</dd></div>
+        <div><dt data-i18n="privacy.not.title">하지 않는 것</dt><dd data-i18n="privacy.not.body">대화 내용을 밖으로 보내거나 따로 저장하지 않아요. 계정 정보도 다루지 않아요.</dd></div>
+        <div><dt data-i18n="privacy.update.title">새 버전 확인</dt><dd data-i18n="privacy.update.body">새 버전이 나왔는지 GitHub의 최신 릴리스 정보를 읽어요. 보내는 정보는 없고, 우클릭 메뉴의 업데이트 확인에서 끌 수 있어요.</dd></div>
+        <div><dt data-i18n="privacy.opt.title">설정 파일</dt><dd data-i18n="privacy.opt.body">Claude Code를 쓰고 있으면, 처음 켤 때 Claude Code의 설정 파일(<code>~/.claude/settings.json</code>)에 항목 두 개를 자동으로 추가해요. 승인 대기를 알리는 hook과 사용량을 저장하는 statusLine이에요. 이미 쓰는 statusLine은 그대로 실행돼요. 바꾸기 전에 백업을 만들고, 우클릭 메뉴의 Claude 연동에서 언제든 해제할 수 있어요.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="privacy">
+      <div>
+        <p class="eyebrow" data-i18n="install.eyebrow">설치</p>
+        <h2 style="margin-top:14px" data-i18n="install.title">한 줄로 설치하거나, 파일로 받으세요.</h2>
+        <p class="lead" style="margin-top:14px" data-i18n="install.lead">터미널을 쓴다면 Homebrew가 가장 편해요. 아니라면 dmg 파일을 받아 설치하세요.</p>
+      </div>
+      <dl class="privacy-list" style="margin:0">
+        <div>
+          <dt data-i18n="install.brew.title">Homebrew로 설치</dt>
+          <dd class="stack">
+            <span class="cmd"><span class="prompt" aria-hidden="true">$</span><code>brew install <span class="nw">--cask</span> <span class="nw">huniversal/tap/desktoto</span></code><button type="button" class="copy" data-copy="brew install --cask huniversal/tap/desktoto" data-i18n-aria="install.copyAria" aria-label="명령 복사" aria-live="polite"><span class="label" data-i18n="install.copy">복사</span><span class="done" data-i18n="install.copied">복사됨</span></button></span>
+            <span data-i18n="install.brew.body">설치하면서 다운로드 표시를 지워 주어서 처음 실행할 때 경고가 나오지 않아요. 새 버전은 <code>brew upgrade --cask desktoto</code>로 받고, 지우려면 <code>brew uninstall --cask desktoto</code>를 실행해요.</span>
+          </dd>
+        </div>
+        <div>
+          <dt data-i18n="install.dmg.title">dmg로 설치</dt>
+          <dd class="stack">
+            <ol class="steps">
+              <li><span data-i18n="install.step1">Desktoto.dmg를 받아 열고, Desktoto를 응용 프로그램 폴더로 끌어다 놓아요.</span></li>
+              <li><span data-i18n="install.step2">처음 열면 개발자를 확인할 수 없다는 경고가 떠요. 창을 닫아요.</span></li>
+              <li><span data-i18n="install.step3">시스템 설정, 개인정보 보호 및 보안 맨 아래에서 &ldquo;그래도 열기&rdquo;를 누르고 암호를 입력해요.</span></li>
+              <li><span data-i18n="install.step4">다시 열면 메뉴바에 캐릭터가 나타나요.</span></li>
+            </ol>
+            <span data-i18n="install.term.lead">터미널이 편하다면 이 명령으로 경고 없이 열 수도 있어요.</span>
+            <span class="cmd small"><span class="prompt" aria-hidden="true">$</span><code>xattr -dr <span class="nw">com.apple.quarantine</span> <span class="nw">/Applications/Desktoto.app</span></code><button type="button" class="copy" data-copy="xattr -dr com.apple.quarantine /Applications/Desktoto.app" data-i18n-aria="install.copyAria" aria-label="명령 복사" aria-live="polite"><span class="label" data-i18n="install.copy">복사</span><span class="done" data-i18n="install.copied">복사됨</span></button></span>
+          </dd>
+        </div>
+        <div>
+          <dt data-i18n="install.req.title">요구 사항</dt>
+          <dd data-i18n="install.req.body">macOS 26 이상의 Apple Silicon Mac에서 쓸 수 있어요. Intel Mac은 지원하지 않아요.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <footer>
+    <p data-i18n="footer.1">Desktoto는 수익을 목적으로 하지 않는 무료 프로젝트예요. 광고도, 결제도 없어요.</p>
+    <p data-i18n="footer.2">캐릭터는 Claude Code의 마스코트에서 영감을 받은 팬 작품이에요. Claude는 Anthropic의, Codex는 OpenAI의 상표이고, Desktoto는 두 회사의 공식 제품이 아니에요.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* 캐릭터 엔진: 앱(SpriteRenderer.swift)과 같은 격자(칸)와 같은 도형으로 그린다. 한 칸이 화면 픽셀 정수 배가 되도록 맞춘다. */
+  var UNITS_WIDE = 41, CHAR_W = 24, TRACK = 36, TRAVEL = TRACK - CHAR_W;
+  var STAND_X = Math.floor((UNITS_WIDE - CHAR_W) / 2);
+  var RUN_FRAMES = 24, LEG_FRAMES = 3, FW_FRAMES = 24, MAX_BOB = 2, STEP_MS = 1000 / 24;
+  var LEG_COLUMNS = [4, 7, 15, 18];
+  var SLEEP_FRAMES = 6, SLEEP_FRAME_TICKS = 14; // 약 0.6초마다 z가 한 단계 떠오른다(앱과 같다).
+  var Z_SMALL = ["1111", "0010", "0100", "1111"];
+  var Z_BIG = ["11111", "00010", "00100", "01000", "11111"];
+  // [큰 z인지, 배지 자리 왼쪽 기준 칸, 위쪽 기준 칸]
+  var Z_STEPS = [[[0, 0, 11]], [[0, 0, 9]], [[0, 0, 9], [1, 2, 3]], [[0, 0, 9], [1, 2, 3]], [[1, 2, 2]], []];
+  var QUESTION = ["01110", "10001", "00001", "00110", "00100", "00000", "00100"];
+  var REACHES = [19, 15, 11];
+  var SPARK_COLORS = ["#ff9ec7", "#ffd973", "#9ed1ff", "#bda9ff", "#ffffff"];
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var sprites = [];
+
+  function Sprite(canvas, unit, options) {
+    this.canvas = canvas;
+    this.mode = options.mode || "stand";
+    this.waiting = !!options.waiting;
+    this.dot = !!options.dot;
+    this.fw = null;
+    this.loopFireworks = !!options.loopFireworks;
+    this.phase = options.phase || 0;
+    this.tick = 0;
+    this.dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+    this.ctx = canvas.getContext("2d");
+    this.resize(unit, options.trackUnits || UNITS_WIDE);
+    sprites.push(this);
+  }
+
+  Sprite.prototype.resize = function (unit, trackUnits) {
+    this.unit = unit;
+    this.trackUnits = trackUnits;
+    this.canvas.width = trackUnits * unit * this.dpr;
+    this.canvas.height = 20 * unit * this.dpr;
+    this.canvas.style.width = trackUnits * unit + "px";
+    this.canvas.style.height = 20 * unit + "px";
+    this.render();
+  };
+
+  Sprite.prototype.fireFirework = function () { this.fw = reduceMotion ? null : 0; this.render(); };
+
+  Sprite.prototype.advance = function () {
+    this.tick++;
+    if (this.mode === "run" && !reduceMotion) this.phase = (this.phase + 1) % RUN_FRAMES;
+    if (this.fw !== null) { this.fw++; if (this.fw >= FW_FRAMES) this.fw = null; }
+    if (this.loopFireworks && !reduceMotion && this.tick % 96 === 40) this.fw = 0;
+  };
+
+  Sprite.prototype.render = function () {
+    var ctx = this.ctx, scale = this.unit * this.dpr, self = this;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    var fill = function (x, y, w, h, color, alpha) {
+      var l = Math.round(x * scale), t = Math.round(y * scale), r = Math.round((x + w) * scale), b = Math.round((y + h) * scale);
+      if (r <= l || b <= t) return;
+      ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+      ctx.fillStyle = color;
+      ctx.fillRect(l, t, r - l, b - t);
+      ctx.globalAlpha = 1;
+    };
+    var running = this.mode === "run";
+    var legStep = this.phase / LEG_FRAMES;
+    var isLegA = Math.floor(legStep) % 2 === 0;
+    var wide = this.trackUnits;
+    var ox = running ? this.phase / RUN_FRAMES * TRAVEL : STAND_X;
+    var sleeping = this.mode === "sleep";
+    var oy = running ? MAX_BOB * (0.5 + 0.5 * Math.cos(Math.PI * legStep)) : (sleeping ? MAX_BOB + 1 : MAX_BOB);
+
+    if (this.fw !== null) {
+      var p = this.fw / (FW_FRAMES - 1), eased = 1 - Math.pow(1 - p, 2);
+      var alpha = Math.max(0, 1 - Math.pow(p, 2.4));
+      var size = p < 0.45 ? 3 : (p < 0.8 ? 2 : 1);
+      var cx = wide / 2;
+      for (var i = 0; i < 14; i++) {
+        var angle = 2 * Math.PI * i / 14 + 0.3;
+        var radius = 8 + (REACHES[i % 3] - 8) * eased;
+        var sx = cx + Math.cos(angle) * radius;
+        var sy = 9 + Math.sin(angle) * radius * 0.5 + 4 * p * p;
+        fill(sx - size / 2, sy - size / 2, size, size, SPARK_COLORS[i % 5], alpha);
+      }
+      if (p < 0.2) fill(cx - 2, 7, 4, 4, "#ffffff", 1 - p / 0.2);
+    }
+
+    if (running) {
+      var lines = [[2, 7, 3], [6, 4, 4], [10, 7, 3]];
+      lines.forEach(function (line) {
+        var end = ox - line[2], start = Math.max(0, end - line[1]);
+        if (end > start) fill(start, oy + line[0], end - start, 2, "#cccccc", 0.9);
+      });
+    }
+
+    var legs = sleeping ? [3, 3, 3, 3] : !running ? [4, 4, 4, 4] : (isLegA ? [5, 3, 5, 3] : [3, 5, 3, 5]);
+    var arms = !running ? [0, 0] : (isLegA ? [-1, 1] : [1, -1]);
+    LEG_COLUMNS.forEach(function (col, idx) { fill(ox + col, oy + 12, 2, legs[idx], "#ffffff"); });
+    fill(ox + 0, oy + 6 + arms[0], 3, 3, "#ffffff");
+    fill(ox + 21, oy + 6 + arms[1], 3, 3, "#ffffff");
+    fill(ox + 3, oy, 18, 12, "#ffffff");
+    // 잠든 눈은 뜬 눈의 맨 아래 한 줄만 남긴다.
+    fill(ox + 6, oy + (sleeping ? 5 : 3), 2, sleeping ? 1 : 3, "#0d0d0d");
+    fill(ox + 16, oy + (sleeping ? 5 : 3), 2, sleeping ? 1 : 3, "#0d0d0d");
+
+    var bx = ox + CHAR_W + 1;
+    if (this.waiting) {
+      QUESTION.forEach(function (line, r) {
+        for (var c = 0; c < line.length; c++) if (line.charAt(c) === "1") fill(bx + c, r, 1, 1, "#ffcc59");
+      });
+    } else if (this.dot) {
+      fill(bx, 0, 4, 4, "#ad85ff");
+    } else if (sleeping) {
+      // 움직임을 줄인 설정에서는 z가 가장 잘 보이는 한 장면에 멈춰 둔다.
+      var step = reduceMotion ? 2 : Math.floor(this.tick / SLEEP_FRAME_TICKS) % SLEEP_FRAMES;
+      Z_STEPS[step].forEach(function (z) {
+        (z[0] ? Z_BIG : Z_SMALL).forEach(function (line, r) {
+          for (var c = 0; c < line.length; c++) if (line.charAt(c) === "1") fill(bx + z[1] + c, z[2] + r, 1, 1, "#ffffff", 0.85);
+        });
+      });
+    }
+  };
+
+  var lastTime = 0, acc = 0;
+  function loop(ts) {
+    if (!lastTime) lastTime = ts;
+    acc += ts - lastTime;
+    lastTime = ts;
+    if (document.hidden) { acc = 0; }
+    var steps = 0;
+    while (acc >= STEP_MS && steps < 3) { acc -= STEP_MS; steps++; sprites.forEach(function (s) { s.advance(); }); }
+    if (acc > STEP_MS * 3) acc = 0;
+    if (steps) sprites.forEach(function (s) { s.render(); });
+    requestAnimationFrame(loop);
+  }
+  if (!reduceMotion) requestAnimationFrame(loop);
+
+  /* 언어: 데모 화면(메뉴바, 세션 제목, 알약)은 스크립트가 만들어서 따로 사전을 둔다. */
+  var lang = "ko";
+  var STAGE_TEXT = {
+    ko: { file: "파일", edit: "편집", view: "보기", go: "이동", input: "한", clock: "오전 10:24", title0: "결제 모듈 리팩터링", title1: "로그인 버그 수정", title2: "문서 정리",
+      tourLabel: "마우스가 패널의 세션 카드를 누르면 해당 터미널이나 앱 창이 앞으로 나오는 장면의 예시",
+      tourT1: "결제 모듈을 정리할게요.", tourT2: "테스트 12개 통과", tourT3: "이 변경을 적용할까요?",
+      tourMe: "로그인이 가끔 실패하는 이유를 찾아줘", tourAi: "토큰이 만료될 때 갱신 요청이 두 번 나가고 있어요. 한 번만 보내도록 고칠게요.", tourInput: "메시지를 입력하세요",
+      tourH5: "5시간", tourWk: "주간", tourR1: "3시간 12분", tourR2: "4일 2시간", tourR3: "4시간 40분", tourR4: "6일 1시간" },
+    en: { file: "File", edit: "Edit", view: "View", go: "Go", input: "A", clock: "10:24 AM", title0: "Refactor payments module", title1: "Fix login bug", title2: "Tidy up docs",
+      tourLabel: "Example of a mouse clicking a session card in the panel and the matching terminal or app window coming to the front",
+      tourT1: "I'll tidy up the payments module.", tourT2: "12 tests passed", tourT3: "Apply this change?",
+      tourMe: "Find out why login sometimes fails", tourAi: "The refresh request goes out twice when the token expires. I'll make it send only once.", tourInput: "Type a message",
+      tourH5: "5h", tourWk: "Weekly", tourR1: "3h 12m", tourR2: "4d 2h", tourR3: "4h 40m", tourR4: "6d 1h" }
+  };
+
+  /* 히어로 무대에서 쓰는 세션 목록과 메뉴바 */
+  var SESSIONS = [
+    { title: "결제 모듈 리팩터링", model: "claude-sonnet-5-5", used: 372000, windowSize: 1000000 },
+    { title: "로그인 버그 수정", model: "claude-opus-4-8", used: 181000, windowSize: 1000000 },
+    { title: "문서 정리", model: "claude-haiku-5-5", used: 75000, windowSize: 1000000 }
+  ];
+  function formatTokens(n) { return n >= 1000000 ? (n / 1000000) + "M" : Math.round(n / 1000) + "K"; }
+
+  var MENUBAR =
+    '<div class="menubar" aria-hidden="true">' +
+      '<div class="left"><b>Finder</b><span data-st="file">파일</span><span data-st="edit">편집</span><span class="extra" data-st="view">보기</span><span class="extra" data-st="go">이동</span></div>' +
+      '<div class="right"><canvas class="icon"></canvas><span class="pill" data-st="input">한</span><span data-st="clock">오전 10:24</span></div>' +
+    '</div>';
+
+  /* 히어로: 마우스가 메뉴바의 캐릭터를 눌러 패널을 열고, 카드를 누르면 그 세션의 창(터미널 또는 앱)이 앞으로 나오는 장면을 번갈아 반복한다. */
+  function buildHeroTour(root) {
+    var USAGE = [
+      { name: "Claude", rows: [["tourH5", 42, "tourR1"], ["tourWk", 18, "tourR2"]] },
+      { name: "Codex", rows: [["tourH5", 12, "tourR3"], ["tourWk", 6, "tourR4"]] }
+    ];
+    var LIGHTS = '<span class="tour-lights"><i></i><i></i><i></i></span>';
+    root.innerHTML =
+      '<div class="tour" role="img" aria-label="" data-st-label="tourLabel">' +
+        '<svg class="tour-line" viewBox="0 0 680 410" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><filter id="tourBlur"><feGaussianBlur stdDeviation="0.7"/></filter></defs>' +
+          '<path d="M-80 146 L0 164 C120 190 260 262 360 258 C480 252 600 150 680 42 C720 -12 760 -60 790 -95" fill="none" stroke="#fff" stroke-width="1.4" opacity="0.8" filter="url(#tourBlur)"/></svg>' +
+        MENUBAR +
+        '<div class="tour-win tour-term" aria-hidden="true"><div class="tour-bar">' + LIGHTS + '<span>claude — payments</span></div><div class="tour-text">' +
+          '<div><span class="c-b">❯</span> claude</div>' +
+          '<div><span class="c-g">●</span> <span data-st="tourT1"></span></div>' +
+          '<div class="c-d">  Read(src/payments/charge.ts)</div><div class="c-d">  Edit(src/payments/refund.ts)</div>' +
+          '<div><span class="c-g">✓</span> <span data-st="tourT2"></span></div>' +
+          '<div><span class="c-y">?</span> <span data-st="tourT3"></span> <span class="tour-cur"></span></div>' +
+        '</div></div>' +
+        '<div class="tour-win tour-app" aria-hidden="true"><div class="tour-bar">' + LIGHTS + '<span data-st="title1"></span></div><div class="tour-main">' +
+          '<div class="tour-side"><p class="on" data-st="title1"></p><p data-st="title2"></p><p data-st="title0"></p></div>' +
+          '<div class="tour-chat"><div class="tour-me" data-st="tourMe"></div><div class="tour-ai" data-st="tourAi"></div><div class="tour-input" data-st="tourInput"></div></div>' +
+        '</div></div>' +
+        '<div class="tour-panel" aria-hidden="true">' +
+          '<div class="tour-glass tour-usage">' +
+            USAGE.map(function (group) {
+              return '<div class="sec"><h4>' + group.name + '</h4>' + group.rows.map(function (r) {
+                return '<div class="tour-use"><span data-st="' + r[0] + '"></span><div class="tour-track"><i style="width:' + r[1] + '%"></i></div><b>' + r[1] + '%</b><em data-st="' + r[2] + '"></em></div>';
+              }).join("") + '</div>';
+            }).join("") +
+          '</div>' +
+          '<div class="tour-glass tour-sessions">' +
+            SESSIONS.map(function (s, i) {
+              var pct = Math.round(s.used / s.windowSize * 100);
+              return '<div class="tour-row"><div class="head"><span data-st="title' + i + '"></span><span>' + pct + '%</span></div><div class="tour-track"><i style="width:' + pct + '%"></i></div>' +
+                '<div class="more"><span>' + s.model + '</span><span>' + formatTokens(s.used) + ' / ' + formatTokens(s.windowSize) + '</span></div></div>';
+            }).join("") +
+          '</div>' +
+        '</div>' +
+        '<div class="tour-ripple"></div>' +
+        '<svg class="tour-cursor" viewBox="0 0 20 24" aria-hidden="true"><path d="M2 1 L2 18 L6.5 14 L9.5 21 L12.5 19.7 L9.6 13 L15.5 13 Z" fill="#111" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>' +
+      '</div>';
+
+    var stage = root.querySelector(".tour");
+    var panel = root.querySelector(".tour-panel");
+    var cursor = root.querySelector(".tour-cursor");
+    var ripple = root.querySelector(".tour-ripple");
+    var wins = [].slice.call(root.querySelectorAll(".tour-win"));
+    var rows = [].slice.call(root.querySelectorAll(".tour-row"));
+    var icon = new Sprite(root.querySelector("canvas.icon"), 2, { mode: "run" });
+
+    // 움직임을 줄인 설정에서는 패널이 열린 정지 장면만 보여 준다.
+    if (reduceMotion) {
+      panel.classList.add("open");
+      wins[0].classList.add("front");
+      cursor.style.display = "none";
+      return;
+    }
+
+    var isVisible = true;
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) { isVisible = entries[0].isIntersecting; }).observe(stage);
+    }
+    // 화면에서 벗어났거나 탭이 가려져 있으면 다음 동작으로 넘어가지 않고 기다린다.
+    function wait(ms) {
+      return new Promise(function (resolve) { setTimeout(resolve, ms); }).then(function () {
+        return new Promise(function (resolve) { (function check() { if (isVisible && !document.hidden) resolve(); else setTimeout(check, 200); })(); });
+      });
+    }
+    function pointOf(el, fx, fy) {
+      var s = stage.getBoundingClientRect(), r = el.getBoundingClientRect();
+      return [r.left - s.left + r.width * fx, r.top - s.top + r.height * fy];
+    }
+    var at = [0, 0];
+    function jump(x, y) { at = [x, y]; cursor.style.transition = "none"; cursor.style.transform = "translate(" + x + "px," + y + "px)"; }
+    function glide(x, y, ms) {
+      at = [x, y];
+      cursor.style.transition = "transform " + ms + "ms cubic-bezier(0.45, 0.05, 0.25, 1)";
+      cursor.style.transform = "translate(" + x + "px," + y + "px)";
+      return wait(ms);
+    }
+    function click() {
+      ripple.style.left = (at[0] + 2) + "px"; ripple.style.top = (at[1] + 2) + "px";
+      ripple.classList.remove("go"); void ripple.offsetWidth; ripple.classList.add("go");
+    }
+    function bringToFront(index) {
+      wins.forEach(function (w, n) { w.classList.toggle("front", n === index); w.classList.remove("flash"); });
+    }
+
+    async function playOnce(index) {
+      var restX = stage.clientWidth * 0.45, restY = stage.clientHeight - 70;
+      bringToFront(1 - index);
+      panel.classList.remove("open");
+      jump(restX, restY);
+      await wait(600);
+      var iconPoint = pointOf(icon.canvas, 0.5, 0.5);
+      await glide(iconPoint[0], iconPoint[1], 1000);
+      click(); await wait(180);
+      panel.classList.add("open"); await wait(500);
+      var rowPoint = pointOf(rows[index], 0.6, 0.5);
+      await glide(rowPoint[0], rowPoint[1], 900);
+      rows[index].classList.add("hover"); await wait(500);
+      click(); rows[index].classList.add("press"); await wait(220);
+      panel.classList.remove("open");
+      rows[index].classList.remove("hover", "press");
+      bringToFront(index);
+      wins[index].classList.add("flash");
+      await glide(restX, restY, 900);
+      await wait(900);
+      wins[index].classList.remove("flash");
+      await wait(1300);
+    }
+    (async function loop() {
+      var turn = 0;
+      while (true) { await playOnce(turn % wins.length); turn++; }
+    })();
+  }
+  buildHeroTour(document.getElementById("heroStage"));
+
+  /* 헤더 메뉴: 누르면 해당 섹션으로 부드럽게 이동하고, 지금 보고 있는 섹션을 표시한다. */
+  (function () {
+    var links = [].slice.call(document.querySelectorAll(".nav-links a.text"));
+    var targets = links.map(function (a) { return document.querySelector(a.getAttribute("href")); });
+    function setActive(index) {
+      links.forEach(function (a, n) {
+        if (n === index) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current");
+      });
+    }
+    function updateSpy() {
+      var line = window.innerHeight * 0.35, current = -1;
+      targets.forEach(function (t, i) {
+        if (t && t.getBoundingClientRect().top + parseFloat(getComputedStyle(t).paddingTop) <= line) current = i;
+      });
+      setActive(current);
+    }
+    function flash(section) {
+      section.classList.remove("arrived");
+      void section.offsetWidth;
+      section.classList.add("arrived");
+      setTimeout(function () { section.classList.remove("arrived"); }, 1500);
+    }
+    links.forEach(function (a, i) {
+      a.addEventListener("click", function (event) {
+        var target = targets[i];
+        if (!target) return;
+        event.preventDefault();
+        target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+        setActive(i);
+        flash(target);
+      });
+    });
+    // 로고는 맨 위로 올라간다. 고정된 헤더 안의 요소로 이동하게 두면 누를 때마다 조금씩 더 내려가므로 직접 0으로 보낸다.
+    var brand = document.querySelector(".brand");
+    brand.addEventListener("click", function (event) {
+      event.preventDefault();
+      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    });
+    window.addEventListener("scroll", updateSpy, { passive: true });
+    updateSpy();
+  })();
+
+  /* 영어 문구. 한국어는 HTML에 들어 있는 원문을 그대로 쓰므로 사전에는 영어만 둔다. */
+  var EN = {
+    "nav.states": "States", "nav.features": "Features", "nav.privacy": "Privacy", "nav.install": "Install", "nav.github": "GitHub repository",
+    "hero.title": "While AI works,<br>watch it from your menu bar.",
+    "hero.lead": "<span class=\"ln\">Desktoto shows the status of your AI agent sessions as a small character in the menu bar.</span><span class=\"ln\">See when a task has finished, or when it's waiting for you, without opening a window.</span>",
+    "hero.cta1": "Download for macOS", "hero.note": "macOS 26 or later, Apple Silicon",
+    "problem.eyebrow": "The problem", "problem.title": "Run several sessions, and things slip by.",
+    "problem.1": "You work in another window and only notice a task finished long after it did.",
+    "problem.2": "An approval prompt is open and the AI is stuck, but you don't know and keep waiting.",
+    "problem.3": "You can't tell how full the context is until you open the session.",
+    "states.eyebrow": "States", "states.title": "The character tells you what's going on.",
+    "states.run.title": "Running", "states.run.body": "A task is in progress. The character keeps running as long as any session is working.",
+    "states.done.title": "Fireworks", "states.done.body": "A task has finished. Small fireworks go off behind the character and a macOS notification arrives.",
+    "states.wait.title": "Question mark", "states.wait.body": "A session needs your approval or an answer. A question mark appears while anything is waiting for you.",
+    "states.sleep.title": "Dozing off", "states.sleep.body": "After 10 minutes with no activity, the character closes its eyes and dozes off. It wakes up as soon as a new task starts.",
+    "states.dot.title": "Purple dot", "states.dot.body": "There's a finished task you haven't looked at yet. The dot goes away once you open the panel.",
+    "features.eyebrow": "Features", "features.title": "Only what you need to see.",
+    "f1.title": "Every session in one panel", "f1.body": "Shows the title, context usage and a bar. The model and token count appear only when you hover. Sessions that need approval or an answer rise to the top.",
+    "f2.title": "Click a card to jump to that session", "f2.body": "Conversations in the Claude desktop app open in the app. Terminal sessions bring the matching iTerm2 or Terminal tab to the front.",
+    "f3.title": "Notifications take you there too", "f3.body": "macOS notifications say “Task finished”, “Approval needed” or “Answer needed”. Click one to go straight to that session.",
+    "f4.title": "Context usage", "f4.body": "Usage reflects each model's own context window size.",
+    "f5.title": "AI usage at a glance", "f5.body": "<span class=\"ln\">The 5-hour and weekly limits for Claude and Codex stay pinned at the top of the panel.</span><span class=\"ln\">See how much you've used and how long until it resets; the bar changes color as you near a limit.</span>",
+    "f6.title": "Make it yours", "f6.body": "Pick white or color, light, dark or your system theme, and one of five Liquid Glass levels from clear to tinted. You can also show only the usage panel, only the context panel, or both.",
+    "fv.m1": "Launch at login", "fv.m2": "Send notifications", "fv.m3": "Codex integration", "fv.m4": "Claude integration", "fv.m5": "Panels to show",
+    "fv.p1": "Usage", "fv.p2": "Context", "fv.t1": "Light", "fv.t2": "Dark", "fv.t3": "Match system",
+    "fv.g1": "Clear", "fv.g2": "Slightly clear", "fv.g3": "Regular", "fv.g4": "Slightly tinted", "fv.g5": "Tinted",
+    "fv.m6": "Color", "fv.m7": "Theme", "fv.m8": "Quit Desktoto", "fv.m9": "White", "fv.m10": "Color",
+    "fv.noti1": "Task finished", "fv.noti2": "Approval needed",
+    "privacy.eyebrow": "Privacy", "privacy.title": "Your conversations never leave your computer.",
+    "privacy.lead": "<span class=\"ln\">Desktoto never sends your conversations anywhere.</span><span class=\"ln\">It only reads records already on your computer, and asks the Codex app for its usage numbers.</span>",
+    "privacy.reads.title": "What it reads", "privacy.reads.body": "Session records in <code>~/.claude/projects</code> and <code>~/.codex/sessions</code>, plus session info from the Claude desktop app and the usage response the app keeps temporarily on your computer (just the 5-hour and weekly usage values). It only uses status information: the title, model, token usage, limit usage, and whether a response has finished. It never reads your login credentials. For Codex usage, it asks the installed Codex app for the limit numbers only; you can turn this off in the right-click menu.",
+    "privacy.not.title": "What it doesn't do", "privacy.not.body": "It doesn't send your conversations anywhere or store them separately. It doesn't handle account information either.",
+    "privacy.update.title": "Update check", "privacy.update.body": "It reads the latest release info from GitHub to see whether a new version is out. Nothing is sent, and you can turn it off with Check for updates in the right-click menu.",
+    "privacy.opt.title": "Settings file", "privacy.opt.body": "If you use Claude Code, the first launch adds two entries to its settings file (<code>~/.claude/settings.json</code>): a hook that reports approval prompts and a statusLine that saves usage. A statusLine you already use keeps running. It makes a backup first, and you can turn it off anytime from Claude integration in the right-click menu.",
+    "install.eyebrow": "Install", "install.title": "Install with one line, or download the file.",
+    "install.lead": "If you use the terminal, Homebrew is the easiest. Otherwise download the dmg and install it.",
+    "install.req.title": "Requirements", "install.req.body": "It runs on Apple Silicon Macs with macOS 26 or later. Intel Macs aren't supported.",
+    "install.brew.title": "Install with Homebrew", "install.copy": "Copy", "install.copied": "Copied", "install.copyAria": "Copy command",
+    "install.brew.body": "It clears the download flag while installing, so no warning appears on first launch. Get new versions with <code>brew upgrade --cask desktoto</code>, and remove it with <code>brew uninstall --cask desktoto</code>.",
+    "install.dmg.title": "Install with the dmg",
+    "install.step1": "Download and open Desktoto.dmg, then drag Desktoto into the Applications folder.",
+    "install.step2": "On first launch a warning says the developer can't be verified. Close it.",
+    "install.step3": "In System Settings, Privacy &amp; Security, press &ldquo;Open Anyway&rdquo; at the bottom and enter your password.",
+    "install.step4": "Open it again and the character appears in your menu bar.",
+    "install.term.lead": "If you prefer the terminal, this command opens it without the warning.",
+    "footer.1": "Desktoto is a free, non-commercial project with no ads or payments.",
+    "footer.2": "The character is a fan creation inspired by the Claude Code mascot. Claude is a trademark of Anthropic and Codex is a trademark of OpenAI. Desktoto is not an official product of either company."
+  };
+
+  function getInitialLang() {
+    try {
+      var saved = localStorage.getItem("desktoto-lang");
+      if (saved === "ko" || saved === "en") return saved;
+    } catch (error) { /* 저장소를 못 쓰는 환경이면 브라우저 언어만 본다. */ }
+    return (navigator.language || "ko").toLowerCase().indexOf("ko") === 0 ? "ko" : "en";
+  }
+
+  // 전환 버튼의 선택 표시(미끄러지는 배경, 눌림 상태)를 바꾼다. 본문이 바뀌기를 기다리지 않고 누르는 즉시 반응한다.
+  function setSwitch(next) {
+    document.querySelector(".lang").setAttribute("data-active", next);
+    document.querySelectorAll(".lang button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-lang") === next ? "true" : "false"); });
+  }
+
+  function applyLang(next) {
+    lang = next;
+    document.documentElement.lang = next;
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      if (el.dataset.ko === undefined) el.dataset.ko = el.innerHTML; // 처음 한 번만 한국어 원문을 보관한다.
+      el.innerHTML = next === "en" ? EN[el.getAttribute("data-i18n")] : el.dataset.ko;
+    });
+    document.querySelectorAll("[data-i18n-aria]").forEach(function (el) {
+      if (el.dataset.koAria === undefined) el.dataset.koAria = el.getAttribute("aria-label");
+      el.setAttribute("aria-label", next === "en" ? EN[el.getAttribute("data-i18n-aria")] : el.dataset.koAria);
+    });
+    document.querySelectorAll("[data-st]").forEach(function (el) { el.textContent = STAGE_TEXT[next][el.getAttribute("data-st")]; });
+    document.querySelectorAll("[data-st-label]").forEach(function (el) { el.setAttribute("aria-label", STAGE_TEXT[next][el.getAttribute("data-st-label")]); });
+    setSwitch(next);
+    document.dispatchEvent(new Event("desktoto:lang"));
+    try { localStorage.setItem("desktoto-lang", next); } catch (error) { /* 저장하지 못해도 이번 방문에는 그대로 동작한다. */ }
+  }
+
+  var langTimer = null;
+  document.querySelectorAll(".lang button").forEach(function (b) {
+    b.addEventListener("click", function (event) {
+      var next = b.getAttribute("data-lang");
+      if (next === lang) return;
+      if (event.detail > 0) b.blur(); // 마우스로 누른 뒤에는 포커스 테두리를 남기지 않는다(키보드 조작은 그대로 유지).
+      setSwitch(next);
+      if (reduceMotion) { applyLang(next); return; }
+      document.body.classList.add("lang-fade");
+      clearTimeout(langTimer);
+      langTimer = setTimeout(function () {
+        applyLang(next);
+        requestAnimationFrame(function () { document.body.classList.remove("lang-fade"); });
+      }, 170);
+    });
+  });
+
+  /* 꾸미기 카드: 실제 메뉴처럼 항목에 올리면 하위 메뉴가 열리고, 누르면 체크가 바뀐다. 꾸밈일 뿐 설정은 저장하지 않는다. */
+  (function () {
+    var wrap = document.querySelector(".fv-menu-wrap");
+    if (!wrap) return;
+    var rows = [].slice.call(wrap.querySelectorAll(".mi[data-sub]"));
+    var subs = [].slice.call(wrap.querySelectorAll(".fv-sub"));
+    var current = "color";
+    // 하위 메뉴는 연 항목의 높이에 맞추되, 카드 그림 밖으로 나가지 않게 안쪽으로 밀어 넣는다(실제 macOS 메뉴도 공간이 모자라면 그렇게 한다).
+    function placeSub(sub, row) {
+      var area = wrap.closest(".fv").getBoundingClientRect(), box = wrap.getBoundingClientRect();
+      var gap = 8, left = wrap.offsetWidth - 10, top = row.offsetTop - 5;
+      left = Math.min(left, area.right - gap - box.left - sub.offsetWidth);
+      top = Math.min(top, area.bottom - gap - box.top - sub.offsetHeight);
+      sub.style.left = left + "px";
+      sub.style.top = Math.max(top, area.top + gap - box.top) + "px";
+    }
+    function openSub(name) {
+      current = name;
+      var row = wrap.querySelector('.mi[data-sub="' + name + '"]');
+      rows.forEach(function (other) { other.classList.toggle("on", other === row); });
+      subs.forEach(function (sub) {
+        var isTarget = sub.getAttribute("data-for") === name;
+        sub.hidden = !isTarget;
+        if (isTarget) placeSub(sub, row);
+      });
+    }
+    // 언어나 화면 폭이 바뀌면 항목 폭이 달라지므로 열려 있는 하위 메뉴를 다시 놓는다.
+    document.addEventListener("desktoto:lang", function () { openSub(current); });
+    window.addEventListener("resize", function () { openSub(current); });
+    rows.forEach(function (row) {
+      var open = function () { openSub(row.getAttribute("data-sub")); };
+      row.addEventListener("mouseenter", open);
+      row.addEventListener("click", open);
+    });
+    [].slice.call(wrap.querySelectorAll("[data-toggle]")).forEach(function (item) {
+      item.addEventListener("click", function () { item.classList.toggle("checked"); });
+    });
+    [].slice.call(wrap.querySelectorAll("[data-radio]")).forEach(function (item) {
+      item.addEventListener("click", function () {
+        var group = item.getAttribute("data-radio");
+        [].slice.call(wrap.querySelectorAll('[data-radio="' + group + '"]')).forEach(function (other) { other.classList.toggle("checked", other === item); });
+      });
+    });
+    openSub("color");
+  })();
+
+  /* 설치 명령 복사: 성공하면 잠시 "복사됨"을 보여 준다. 클립보드를 쓸 수 없으면 표시를 바꾸지 않는다(명령은 선택해서 복사할 수 있다). */
+  document.querySelectorAll("[data-copy]").forEach(function (button) {
+    var copiedTimer = null;
+    button.addEventListener("click", function () {
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(button.getAttribute("data-copy")).then(function () {
+        button.classList.add("copied");
+        clearTimeout(copiedTimer);
+        copiedTimer = setTimeout(function () { button.classList.remove("copied"); }, 1800);
+      }, function () { /* 권한이 없으면 아무것도 하지 않는다. */ });
+    });
+  });
+
+  /* 상태 소개 카드 */
+  new Sprite(document.getElementById("sRun"), 3, { mode: "run" });
+  new Sprite(document.getElementById("sDone"), 3, { mode: "stand", loopFireworks: true });
+  new Sprite(document.getElementById("sWait"), 3, { mode: "stand", waiting: true });
+  new Sprite(document.getElementById("sDot"), 3, { mode: "stand", dot: true });
+  new Sprite(document.getElementById("sSleep"), 3, { mode: "sleep" });
+
+  applyLang(getInitialLang());
+  // 처음 열 때 선택 표시가 한국어 위치에서 미끄러져 오지 않도록, 첫 적용이 끝난 뒤에 전환 효과를 켠다.
+  requestAnimationFrame(function () { requestAnimationFrame(function () { document.querySelector(".lang").classList.add("ready"); }); });
+})();
+</script>
+</body>
+</html>

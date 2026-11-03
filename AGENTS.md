@@ -65,15 +65,19 @@ Desktoto는 macOS 메뉴바 앱이다. 바이브 코딩으로 만든 프로토�
 Desktoto/
 ├── AGENTS.md          ← 이 파일 (라우터)
 ├── CLAUDE.md          ← Claude Code 진입점
+├── apps/
+│   ├── macos/         ← Desktoto 앱 (Swift Package)
+│   └── web/           ← 랜딩 페이지 (스택은 #12에서 결정)
 ├── docs/
 │   ├── rules/         ← 사람이 읽는 규칙 (원본)
-│   └── tasks/         ← 이슈별 작업 명세 (docs/tasks/이슈번호/spec.md)
+│   ├── tasks/         ← 이슈별 작업 명세 (docs/tasks/이슈번호/spec.md)
+│   └── ci.md          ← CI와 릴리스 운영
 ├── .agents/skills/    ← 스킬 원본
 ├── .claude/commands/  ← 스킬로 연결된 심볼릭 링크
-└── .github/           ← PR과 이슈 템플릿
+└── .github/           ← 워크플로, CI 스크립트, PR과 이슈 템플릿
 ```
 
-앱 소스 구조는 아키텍처 설계 단계에서 정하며 그 전에는 만들지 않는다.
+모노레포다. `apps/macos`의 모듈 구성과 의존 규칙은 [아키텍처](docs/architecture.md)를 따른다.
 
 ## 문서 동기화
 
