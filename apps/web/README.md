@@ -49,6 +49,17 @@ Cloudflare Pages의 Git 연동으로 배포한다. 설정은 Cloudflare 대시�
 | 빌드 출력 디렉터리 | `/` (루트 디렉터리 그대로) |
 | 기본 주소 | `https://desktoto.pages.dev` |
 
+2026-11-03에 프로젝트 `desktoto`를 만들어 위 값으로 배포했고, 실제 주소가 `https://desktoto.pages.dev`로 예상과 같았다.
+`main`에 병합되면 Cloudflare가 자동으로 다시 배포한다(Automatic deployments: Enabled).
+
 프로젝트 이름이 이미 쓰이고 있어 주소가 다르게 나오면, `index.html`의 `og:url`, `og:image`와
 [check-web.sh](../../.github/scripts/check-web.sh)의 `SITE_ORIGIN` 기본값을 실제 주소로 함께 바꾼다.
 커스텀 도메인을 붙일 때도 같은 세 곳을 바꾼다.
+
+## 방문자 집계
+
+Cloudflare Web Analytics로 방문자 수를 센다. 쿠키를 쓰지 않고 개인을 식별하지 않는다.
+`pages.dev` 주소는 Cloudflare 계정의 도메인이 아니라서 자동으로 켜지지 않으므로, 대시보드(Observability, Analytics, Web analytics)에서
+호스트 이름을 등록하고 받은 스크립트를 `index.html`의 `</body>` 앞에 직접 넣었다. 스크립트의 토큰은 페이지에 그대로 노출되는 공개 식별자라 비밀이 아니다.
+호스트 이름이 바뀌면(커스텀 도메인 등) 대시보드에서 새로 등록하고 스크립트를 교체한다.
+버튼 클릭 같은 이벤트는 집계하지 않는다. 실제 다운로드 수는 GitHub Release의 `download_count`로 본다.
