@@ -26,6 +26,7 @@ let package = Package(
         .target(name: "ClaudeIntegration", dependencies: ["Boundaries"]),
         .target(name: "TerminalIntegration", dependencies: ["Domain", "Boundaries"]),
         .target(name: "Preferences", dependencies: ["DesignSystem", "Boundaries"]),
+        .target(name: "UpdateCheck", dependencies: ["Boundaries"]),
 
         // UI 모듈은 Boundaries를 쓰지 않는다.
         .target(name: "MenuBarIcon", dependencies: ["Domain", "DesignSystem"]),
@@ -37,7 +38,7 @@ let package = Package(
             name: "Desktoto",
             dependencies: [
                 "Domain", "Boundaries", "DesignSystem",
-                "SessionMonitoring", "UsageMonitoring", "ClaudeIntegration", "TerminalIntegration", "Preferences",
+                "SessionMonitoring", "UsageMonitoring", "ClaudeIntegration", "TerminalIntegration", "Preferences", "UpdateCheck",
                 "MenuBarIcon", "SessionPanel"
             ]
         ),
@@ -50,6 +51,7 @@ let package = Package(
         .testTarget(name: "ClaudeIntegrationTests", dependencies: ["ClaudeIntegration", "Boundaries", "TestSupport"]),
         .testTarget(name: "SessionMonitoringTests", dependencies: ["SessionMonitoring", "Domain", "Boundaries", "TestSupport"]),
         .testTarget(name: "PreferencesTests", dependencies: ["Preferences", "DesignSystem", "Boundaries", "TestSupport"]),
+        .testTarget(name: "UpdateCheckTests", dependencies: ["UpdateCheck", "Boundaries", "TestSupport"]),
         .testTarget(name: "SessionPanelTests", dependencies: ["SessionPanel", "Domain", "DesignSystem"]),
         .testTarget(name: "TerminalIntegrationTests", dependencies: ["TerminalIntegration", "Domain", "Boundaries", "TestSupport"]),
         .testTarget(name: "MenuBarIconTests", dependencies: ["MenuBarIcon", "DesignSystem"])

@@ -16,6 +16,7 @@ public final class AppSettings {
         static let theme = "theme"
         static let connectsClaudeCode = "connectsClaudeCode"
         static let fetchesCodexUsage = "fetchesCodexUsage"
+        static let checksForUpdates = "checksForUpdates"
         static let hasAppliedLoginItemDefault = "hasAppliedLoginItemDefault"
     }
 
@@ -45,6 +46,10 @@ public final class AppSettings {
     public var fetchesCodexUsage: Bool {
         didSet { defaults.set(fetchesCodexUsage, forKey: Key.fetchesCodexUsage) }
     }
+    // 새 버전이 나왔는지 GitHub 릴리스를 확인할지. 보내는 정보는 없고 최신 릴리스를 읽기만 한다. 기본값은 켜짐이다.
+    public var checksForUpdates: Bool {
+        didSet { defaults.set(checksForUpdates, forKey: Key.checksForUpdates) }
+    }
     // macOS 알림(배너) 여부. 소리와 아이콘 표시는 이 설정과 무관하다.
     public var sendsNotifications: Bool {
         didSet { defaults.set(sendsNotifications, forKey: Key.sendsNotifications) }
@@ -55,7 +60,7 @@ public final class AppSettings {
         didSet { defaults.set(hasAppliedLoginItemDefault, forKey: Key.hasAppliedLoginItemDefault) }
     }
 
-    // 저장된 값이 없으면 두 패널을 모두 보여주고, 흰색, 시스템 테마, 보통 유리를 쓰고, 알림을 보내고, Codex 연동과 Claude 연동을 켠다.
+    // 저장된 값이 없으면 두 패널을 모두 보여주고, 흰색, 시스템 테마, 보통 유리를 쓰고, 알림을 보내고, Codex 연동, Claude 연동, 업데이트 확인을 켠다.
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         showsUsage = Self.readBool(defaults, forKey: Key.showsUsage) ?? true
@@ -66,6 +71,7 @@ public final class AppSettings {
         sendsNotifications = Self.readBool(defaults, forKey: Key.sendsNotifications) ?? true
         connectsClaudeCode = Self.readBool(defaults, forKey: Key.connectsClaudeCode) ?? true
         fetchesCodexUsage = Self.readBool(defaults, forKey: Key.fetchesCodexUsage) ?? true
+        checksForUpdates = Self.readBool(defaults, forKey: Key.checksForUpdates) ?? true
         // 표지가 없어도 저장된 설정이 하나라도 있으면 이전 버전 사용자라서 첫 실행으로 보지 않는다.
         hasAppliedLoginItemDefault = Self.readBool(defaults, forKey: Key.hasAppliedLoginItemDefault)
             ?? Self.hasStoredSettings(defaults)
@@ -74,7 +80,7 @@ public final class AppSettings {
     private static func hasStoredSettings(_ defaults: UserDefaults) -> Bool {
         [
             Key.showsUsage, Key.showsContext, Key.colorMode, Key.sendsNotifications,
-            Key.glassStyle, Key.theme, Key.connectsClaudeCode, Key.fetchesCodexUsage
+            Key.glassStyle, Key.theme, Key.connectsClaudeCode, Key.fetchesCodexUsage, Key.checksForUpdates
         ].contains { defaults.object(forKey: $0) != nil }
     }
 

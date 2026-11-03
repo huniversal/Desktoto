@@ -15,13 +15,15 @@ struct SettingsMenuTests {
         isRunningAsApp: Bool = true,
         isLoginItemEnabled: Bool = false,
         isClaudeCodeInstalled: Bool = true,
-        isClaudeConnected: Bool = false
+        isClaudeConnected: Bool = false,
+        updateNoticeTitle: String? = nil
     ) -> SettingsMenuEnvironment {
         SettingsMenuEnvironment(
             isRunningAsApp: isRunningAsApp,
             isLoginItemEnabled: isLoginItemEnabled,
             isClaudeCodeInstalled: isClaudeCodeInstalled,
-            isClaudeConnected: isClaudeConnected
+            isClaudeConnected: isClaudeConnected,
+            updateNoticeTitle: updateNoticeTitle
         )
     }
 
@@ -42,14 +44,14 @@ struct SettingsMenuTests {
         return []
     }
 
-    // AC-5
-    @Test func buildsOriginalOrderAndTitles() {
+    // AC-5, AC-6
+    @Test func buildsOriginalOrderAndTitlesPlusUpdateCheck() {
         let (settings, defaults, suiteName) = makeSettings()
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let entries = SettingsMenu.makeEntries(settings: settings, environment: makeEnvironment())
 
         #expect(titles(of: entries) == [
-            "로그인 시 자동 실행", "알림 보내기", "Codex 연동", "Claude 연동", "-",
+            "로그인 시 자동 실행", "알림 보내기", "Codex 연동", "Claude 연동", "업데이트 확인", "-",
             "표시할 패널", "색상", "테마", "Liquid Glass", "-", "Desktoto 종료"
         ])
         #expect(submenuItems("표시할 패널", in: entries).map(\.title) == ["사용량", "컨텍스트"])
@@ -124,5 +126,39 @@ struct SettingsMenuTests {
         }
         #expect(quit.action == .quit)
         #expect(quit.keyEquivalent == "q")
+    }
+    // #24 AC-5
+    @Test func showsUpdateNoticeAtTopOnlyWhenTitleIsGiven() {
+        let (settings, defaults, suiteName) = makeSettings()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let without = SettingsMenu.makeEntries(settings: settings, environment: makeEnvironment())
+        let with = SettingsMenu.makeEntries(settings: settings, environment: makeEnvironment(updateNoticeTitle: "새 버전이 있어요 (v1.2.3)"))
+
+        #expect(titles(of: without).first == "로그인 시 자동 실행")
+        #expect(titles(of: with).prefix(3) == ["새 버전이 있어요 (v1.2.3)", "-", "로그인 시 자동 실행"])
+        guard case .item(let notice) = with[0] else {
+            Issue.record("첫 항목이 안내 항목이 아니다")
+            return
+        }
+        #expect(notice.action == .openUpdatePage)
+    }
+
+    // #24 AC-6
+    @Test func updateCheckToggleReflectsSetting() {
+        let (settings, defaults, suiteName) = makeSettings()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        func toggle() -> SettingsMenuItem? {
+            for case .item(let item) in SettingsMenu.makeEntries(settings: settings, environment: makeEnvironment()) where item.action == .toggleUpdateCheck {
+                return item
+            }
+            return nil
+        }
+
+        #expect(toggle()?.title == "업데이트 확인")
+        #expect(toggle()?.isOn == true)
+        settings.checksForUpdates = false
+        #expect(toggle()?.isOn == false)
     }
 }

@@ -27,6 +27,8 @@ struct AppSettingsTests {
         #expect(settings.connectsClaudeCode)
         #expect(settings.fetchesCodexUsage)
         #expect(!settings.hasAppliedLoginItemDefault)
+        // #24: 업데이트 확인도 켜짐으로 시작한다.
+        #expect(settings.checksForUpdates)
     }
 
     // #23 AC-7
@@ -46,12 +48,14 @@ struct AppSettingsTests {
         settings.connectsClaudeCode = false
         settings.sendsNotifications = false
         settings.fetchesCodexUsage = false
+        settings.checksForUpdates = false
         settings.hasAppliedLoginItemDefault = true
 
         let reloaded = AppSettings(defaults: defaults)
         #expect(!reloaded.connectsClaudeCode)
         #expect(!reloaded.sendsNotifications)
         #expect(!reloaded.fetchesCodexUsage)
+        #expect(!reloaded.checksForUpdates)
         #expect(reloaded.hasAppliedLoginItemDefault)
     }
 
