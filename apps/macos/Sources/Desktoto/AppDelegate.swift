@@ -112,6 +112,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         setUpPanel()
         connectClaudeCodeIfAllowed()
+        applyLoginItemDefaultOnce()
         setUpUsageMonitoring()
         menuBuilder.onAction = { [weak self] action in self?.perform(action) }
 
@@ -158,6 +159,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let isEnabled = settings.fetchesCodexUsage
         Task { await usageMonitor.setCodexLiveEnabled(isEnabled) }
+    }
+
+    // 설치 후 처음 실행할 때만 로그인 항목을 켠다. 이후 사용자가 메뉴에서 끈 값은 그대로 둔다.
+    private func applyLoginItemDefaultOnce() {
+        let hasApplied = loginItem.enableOnFirstLaunch(hasApplied: settings.hasAppliedLoginItemDefault)
+        if hasApplied != settings.hasAppliedLoginItemDefault {
+            settings.hasAppliedLoginItemDefault = hasApplied
+        }
     }
 
     // MARK: - Claude Code 연동
