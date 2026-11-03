@@ -97,7 +97,7 @@
   /* 좌우 여백은 본문 틀이 갖고, 헤더(nav)는 페이지 전체 너비를 쓴다. */
   .wrap, .nav-inner { max-width: 1080px; margin-inline: auto; box-sizing: content-box; }
   .wrap, nav { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  section { padding-block: clamp(104px, 14vw, 152px) 0; scroll-margin-top: 76px; }
+  section { padding-block: clamp(144px, 19vw, 216px) 0; scroll-margin-top: 76px; }
   h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.03em; line-height: 1.15; }
   h1 { font-size: clamp(2.2rem, 5.2vw, 3.8rem); font-weight: 700; }
   h2 { font-size: clamp(1.7rem, 3.8vw, 2.6rem); font-weight: 700; }
@@ -136,6 +136,9 @@
   @media (max-width: 640px) { .nav-links a.text { display: none; } }
 
   .btn { display: inline-flex; align-items: center; gap: 10px; font: inherit; font-size: 1rem; font-weight: 500; padding: 12px 22px; border-radius: 999px; border: 0; text-decoration: none; cursor: pointer; background: var(--btn-bg); color: var(--btn-fg); }
+  .btn { transition: background 0.2s, transform 0.12s; }
+  .btn:hover { background: color-mix(in srgb, var(--btn-bg) 80%, var(--bg)); }
+  .btn:active { transform: scale(0.97); }
   .btn.ghost { background: var(--btn-ghost); color: var(--fg); }
   .btn.small { padding: 8px 16px; font-size: 0.9rem; }
 
@@ -154,7 +157,34 @@
   /* 히어로 */
   .hero { padding-block: 20px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; justify-items: start; }
   .hero .lead { margin-top: 4px; }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
+  .cta-note { font-size: 0.9rem; color: var(--muted); }
+  .nav-icon { display: inline-flex; padding: 4px; border-radius: 8px; color: var(--muted); transition: color 0.2s; }
+  .nav-icon:hover { color: var(--fg); }
+
+  /* 설치: 개인정보 섹션과 같은 구성(왼쪽 제목, 오른쪽 구분선 목록)을 쓴다. */
+  .stack { display: grid; gap: 14px; }
+  .cmd { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 18px; border-radius: 12px; background: var(--strip); color: #ece8ea; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.9rem; line-height: 1.5; }
+  .cmd.small { font-size: 0.82rem; }
+  .cmd .prompt { flex: none; color: rgba(255, 255, 255, 0.45); user-select: none; }
+  .cmd code { flex: 1; min-width: 0; word-break: normal; overflow-wrap: break-word; background: none; padding: 0; color: inherit; font: inherit; }
+  .cmd .nw { white-space: nowrap; }
+  .privacy-list dd code { word-break: normal; overflow-wrap: break-word; }
+  .copy { flex: none; font: inherit; font-family: var(--font-body); font-size: 0.82rem; font-weight: 500; padding: 6px 14px; border-radius: 999px; border: 0; cursor: pointer; background: rgba(255, 255, 255, 0.14); color: #fff; transition: background 0.2s, transform 0.12s; }
+  .copy:hover { background: rgba(255, 255, 255, 0.24); }
+  .copy:active { transform: scale(0.94); }
+  .copy .done { display: none; }
+  .copy.copied { background: rgba(255, 255, 255, 0.9); color: #1d1d1f; }
+  .copy.copied .label { display: none; }
+  .copy.copied .done { display: inline; }
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: step; }
+  .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; counter-increment: step; }
+  .steps li::before { content: counter(step); font-family: var(--font-pixel); color: var(--fg); }
+  @media (max-width: 520px) {
+    .cmd { flex-wrap: wrap; }
+    .cmd code { flex-basis: 15em; }
+    .copy { margin-left: auto; }
+  }
 
   /* 메뉴바 */
   .menubar {
@@ -285,7 +315,7 @@
   .privacy-list dd { margin: 0; color: var(--muted); font-size: 0.98rem; }
   code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.86em; background: var(--btn-ghost); padding: 1px 6px; border-radius: 6px; word-break: break-all; }
 
-  footer { margin-top: clamp(112px, 14vw, 160px); padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; display: grid; gap: 6px; }
+  footer { margin-top: clamp(144px, 18vw, 208px); padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; display: grid; gap: 6px; }
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -302,6 +332,8 @@
     <div class="nav-links">
       <a class="text" href="#states" data-i18n="nav.states">상태</a>
       <a class="text" href="#privacy" data-i18n="nav.privacy">개인정보</a>
+      <a class="text" href="#install" data-i18n="nav.install">설치</a>
+      <a class="nav-icon" href="https://github.com/huniversal/Desktoto" target="_blank" rel="noopener noreferrer" aria-label="GitHub 저장소" data-i18n-aria="nav.github"><svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
       <div class="lang" role="group" aria-label="Language" data-active="ko">
         <span class="lang-thumb" aria-hidden="true"></span>
         <button type="button" data-lang="ko" aria-pressed="true">KO</button>
@@ -316,7 +348,8 @@
     <h1 data-i18n="hero.title">AI가 일하는 동안,<br>메뉴바에서 지켜보세요.</h1>
     <p class="lead" data-i18n="hero.lead"><span class="ln">Desktoto는 AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.</span><span class="ln">작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.</span></p>
     <div class="cta">
-      <a class="btn" href="https://github.com/huniversal/Desktoto" target="_blank" rel="noopener noreferrer"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span data-i18n="hero.cta1">GitHub에서 보기</span></a>
+      <a class="btn" href="https://github.com/huniversal/Desktoto/releases/latest/download/Desktoto.dmg"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.25 1.5h1.5v7.19l2.47-2.47 1.06 1.06L8 11.31 3.72 7.28l1.06-1.06 2.47 2.47V1.5zM2 13h12v1.5H2V13z"/></svg><span data-i18n="hero.cta1">macOS용 다운로드</span></a>
+      <span class="cta-note" data-i18n="hero.note">macOS 26 이상, Apple Silicon</span>
     </div>
     <div id="heroStage" style="width:100%"></div>
   </header>
@@ -400,7 +433,44 @@
       <dl class="privacy-list" style="margin:0">
         <div><dt data-i18n="privacy.reads.title">읽는 것</dt><dd data-i18n="privacy.reads.body"><code>~/.claude/projects</code>와 <code>~/.codex/sessions</code>의 세션 기록, Claude 데스크탑 앱의 세션 정보와, 앱이 내 컴퓨터에 임시로 저장해 둔 사용량 응답(5시간·주간 사용률 두 가지 값만). 제목, 모델, 토큰 사용량, 한도 사용률, 응답이 끝났는지 같은 상태만 써요. 로그인 정보는 읽지 않아요. Codex 사용량은 설치된 Codex 프로그램에 한도(사용률)만 물어봐요. 우클릭 메뉴에서 끌 수 있어요.</dd></div>
         <div><dt data-i18n="privacy.not.title">하지 않는 것</dt><dd data-i18n="privacy.not.body">대화 내용을 밖으로 보내거나 따로 저장하지 않아요. 계정 정보도 다루지 않아요.</dd></div>
+        <div><dt data-i18n="privacy.update.title">새 버전 확인</dt><dd data-i18n="privacy.update.body">새 버전이 나왔는지 GitHub의 최신 릴리스 정보를 읽어요. 보내는 정보는 없고, 우클릭 메뉴의 업데이트 확인에서 끌 수 있어요.</dd></div>
         <div><dt data-i18n="privacy.opt.title">설정 파일</dt><dd data-i18n="privacy.opt.body">Claude Code를 쓰고 있으면, 처음 켤 때 Claude Code의 설정 파일(<code>~/.claude/settings.json</code>)에 항목 두 개를 자동으로 추가해요. 승인 대기를 알리는 hook과 사용량을 저장하는 statusLine이에요. 이미 쓰는 statusLine은 그대로 실행돼요. 바꾸기 전에 백업을 만들고, 우클릭 메뉴의 Claude 연동에서 언제든 해제할 수 있어요.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="privacy">
+      <div>
+        <p class="eyebrow" data-i18n="install.eyebrow">설치</p>
+        <h2 style="margin-top:14px" data-i18n="install.title">한 줄로 설치하거나, 파일로 받으세요.</h2>
+        <p class="lead" style="margin-top:14px" data-i18n="install.lead">터미널을 쓴다면 Homebrew가 가장 편해요. 아니라면 dmg 파일을 받아 설치하세요.</p>
+      </div>
+      <dl class="privacy-list" style="margin:0">
+        <div>
+          <dt data-i18n="install.brew.title">Homebrew로 설치</dt>
+          <dd class="stack">
+            <span class="cmd"><span class="prompt" aria-hidden="true">$</span><code>brew install <span class="nw">--cask</span> <span class="nw">huniversal/tap/desktoto</span></code><button type="button" class="copy" data-copy="brew install --cask huniversal/tap/desktoto" data-i18n-aria="install.copyAria" aria-label="명령 복사" aria-live="polite"><span class="label" data-i18n="install.copy">복사</span><span class="done" data-i18n="install.copied">복사됨</span></button></span>
+            <span data-i18n="install.brew.body">설치하면서 다운로드 표시를 지워 주어서 처음 실행할 때 경고가 나오지 않아요. 새 버전은 <code>brew upgrade --cask desktoto</code>로 받고, 지우려면 <code>brew uninstall --cask desktoto</code>를 실행해요.</span>
+          </dd>
+        </div>
+        <div>
+          <dt data-i18n="install.dmg.title">dmg로 설치</dt>
+          <dd class="stack">
+            <ol class="steps">
+              <li><span data-i18n="install.step1">Desktoto.dmg를 받아 열고, Desktoto를 응용 프로그램 폴더로 끌어다 놓아요.</span></li>
+              <li><span data-i18n="install.step2">처음 열면 개발자를 확인할 수 없다는 경고가 떠요. 창을 닫아요.</span></li>
+              <li><span data-i18n="install.step3">시스템 설정, 개인정보 보호 및 보안 맨 아래에서 &ldquo;그래도 열기&rdquo;를 누르고 암호를 입력해요.</span></li>
+              <li><span data-i18n="install.step4">다시 열면 메뉴바에 캐릭터가 나타나요.</span></li>
+            </ol>
+            <span data-i18n="install.term.lead">터미널이 편하다면 이 명령으로 경고 없이 열 수도 있어요.</span>
+            <span class="cmd small"><span class="prompt" aria-hidden="true">$</span><code>xattr -dr <span class="nw">com.apple.quarantine</span> <span class="nw">/Applications/Desktoto.app</span></code><button type="button" class="copy" data-copy="xattr -dr com.apple.quarantine /Applications/Desktoto.app" data-i18n-aria="install.copyAria" aria-label="명령 복사" aria-live="polite"><span class="label" data-i18n="install.copy">복사</span><span class="done" data-i18n="install.copied">복사됨</span></button></span>
+          </dd>
+        </div>
+        <div>
+          <dt data-i18n="install.req.title">요구 사항</dt>
+          <dd data-i18n="install.req.body">macOS 26 이상의 Apple Silicon Mac에서 쓸 수 있어요. Intel Mac은 지원하지 않아요.</dd>
+        </div>
       </dl>
     </div>
   </section>
@@ -740,10 +810,10 @@
 
   /* 영어 문구. 한국어는 HTML에 들어 있는 원문을 그대로 쓰므로 사전에는 영어만 둔다. */
   var EN = {
-    "nav.states": "States", "nav.privacy": "Privacy",
+    "nav.states": "States", "nav.privacy": "Privacy", "nav.install": "Install", "nav.github": "GitHub repository",
     "hero.title": "While AI works,<br>watch it from your menu bar.",
     "hero.lead": "<span class=\"ln\">Desktoto shows the status of your AI agent sessions as a small character in the menu bar.</span><span class=\"ln\">See when a task has finished, or when it's waiting for you, without opening a window.</span>",
-    "hero.cta1": "View on GitHub",
+    "hero.cta1": "Download for macOS", "hero.note": "macOS 26 or later, Apple Silicon",
     "problem.eyebrow": "The problem", "problem.title": "Run several sessions, and things slip by.",
     "problem.1": "You work in another window and only notice a task finished long after it did.",
     "problem.2": "An approval prompt is open and the AI is stuck, but you don't know and keep waiting.",
@@ -764,7 +834,19 @@
     "privacy.lead": "<span class=\"ln\">Desktoto never sends your conversations anywhere.</span><span class=\"ln\">It only reads records already on your computer, and asks the Codex app for its usage numbers.</span>",
     "privacy.reads.title": "What it reads", "privacy.reads.body": "Session records in <code>~/.claude/projects</code> and <code>~/.codex/sessions</code>, plus session info from the Claude desktop app and the usage response the app keeps temporarily on your computer (just the 5-hour and weekly usage values). It only uses status information: the title, model, token usage, limit usage, and whether a response has finished. It never reads your login credentials. For Codex usage, it asks the installed Codex app for the limit numbers only; you can turn this off in the right-click menu.",
     "privacy.not.title": "What it doesn't do", "privacy.not.body": "It doesn't send your conversations anywhere or store them separately. It doesn't handle account information either.",
+    "privacy.update.title": "Update check", "privacy.update.body": "It reads the latest release info from GitHub to see whether a new version is out. Nothing is sent, and you can turn it off with Check for updates in the right-click menu.",
     "privacy.opt.title": "Settings file", "privacy.opt.body": "If you use Claude Code, the first launch adds two entries to its settings file (<code>~/.claude/settings.json</code>): a hook that reports approval prompts and a statusLine that saves usage. A statusLine you already use keeps running. It makes a backup first, and you can turn it off anytime from Claude integration in the right-click menu.",
+    "install.eyebrow": "Install", "install.title": "Install with one line, or download the file.",
+    "install.lead": "If you use the terminal, Homebrew is the easiest. Otherwise download the dmg and install it.",
+    "install.req.title": "Requirements", "install.req.body": "It runs on Apple Silicon Macs with macOS 26 or later. Intel Macs aren't supported.",
+    "install.brew.title": "Install with Homebrew", "install.copy": "Copy", "install.copied": "Copied", "install.copyAria": "Copy command",
+    "install.brew.body": "It clears the download flag while installing, so no warning appears on first launch. Get new versions with <code>brew upgrade --cask desktoto</code>, and remove it with <code>brew uninstall --cask desktoto</code>.",
+    "install.dmg.title": "Install with the dmg",
+    "install.step1": "Download and open Desktoto.dmg, then drag Desktoto into the Applications folder.",
+    "install.step2": "On first launch a warning says the developer can't be verified. Close it.",
+    "install.step3": "In System Settings, Privacy &amp; Security, press &ldquo;Open Anyway&rdquo; at the bottom and enter your password.",
+    "install.step4": "Open it again and the character appears in your menu bar.",
+    "install.term.lead": "If you prefer the terminal, this command opens it without the warning.",
     "footer.1": "Desktoto is a free, non-commercial project with no ads or payments.",
     "footer.2": "The character is a fan creation inspired by the Claude Code mascot. Claude is a trademark of Anthropic and Codex is a trademark of OpenAI. Desktoto is not an official product of either company."
   };
@@ -814,6 +896,19 @@
         applyLang(next);
         requestAnimationFrame(function () { document.body.classList.remove("lang-fade"); });
       }, 170);
+    });
+  });
+
+  /* 설치 명령 복사: 성공하면 잠시 "복사됨"을 보여 준다. 클립보드를 쓸 수 없으면 표시를 바꾸지 않는다(명령은 선택해서 복사할 수 있다). */
+  document.querySelectorAll("[data-copy]").forEach(function (button) {
+    var copiedTimer = null;
+    button.addEventListener("click", function () {
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(button.getAttribute("data-copy")).then(function () {
+        button.classList.add("copied");
+        clearTimeout(copiedTimer);
+        copiedTimer = setTimeout(function () { button.classList.remove("copied"); }, 1800);
+      }, function () { /* 권한이 없으면 아무것도 하지 않는다. */ });
     });
   });
 
