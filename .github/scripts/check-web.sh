@@ -17,7 +17,7 @@ require_pattern() {
   grep -Eiq "$1" "$PAGE" || fail "$PAGE: $2"
 }
 
-for file in index.html og-source.html og.png favicon.svg favicon.ico apple-touch-icon.png; do
+for file in index.html og-source.html og-v2.png favicon.svg favicon.ico apple-touch-icon.png; do
   [ -f "$WEB_DIR/$file" ] || fail "필수 파일이 없습니다: $WEB_DIR/$file"
 done
 
@@ -42,10 +42,10 @@ case "$og_image" in
 esac
 [ -f "$WEB_DIR/${og_image#"$SITE_ORIGIN"/}" ] || fail "og:image가 가리키는 파일이 없습니다: $og_image"
 
-# og.png 크기: PNG 헤더의 너비와 높이(각 4바이트, 16바이트 지점부터)를 읽는다.
-read -r width height < <(od -An -tu1 -j16 -N8 "$WEB_DIR/og.png" \
+# og-v2.png 크기: PNG 헤더의 너비와 높이(각 4바이트, 16바이트 지점부터)를 읽는다.
+read -r width height < <(od -An -tu1 -j16 -N8 "$WEB_DIR/og-v2.png" \
   | awk '{ print $1*16777216+$2*65536+$3*256+$4, $5*16777216+$6*65536+$7*256+$8 }')
-[ "$width" = 1200 ] && [ "$height" = 630 ] || fail "og.png 크기가 1200x630이 아닙니다: ${width}x${height}"
+[ "$width" = 1200 ] && [ "$height" = 630 ] || fail "og-v2.png 크기가 1200x630이 아닙니다: ${width}x${height}"
 
 # 설치 안내: 설치 섹션과 헤더 링크, 히어로의 dmg 다운로드 링크가 있어야 한다. 파일 이름에 버전이 없어야 releases/latest/download가 항상 최신을 가리킨다.
 DMG_URL='https://github.com/huniversal/Desktoto/releases/latest/download/Desktoto.dmg'
