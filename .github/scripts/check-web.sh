@@ -47,11 +47,12 @@ read -r width height < <(od -An -tu1 -j16 -N8 "$WEB_DIR/og-v2.png" \
   | awk '{ print $1*16777216+$2*65536+$3*256+$4, $5*16777216+$6*65536+$7*256+$8 }')
 [ "$width" = 1200 ] && [ "$height" = 630 ] || fail "og-v2.png 크기가 1200x630이 아닙니다: ${width}x${height}"
 
-# 설치 안내: 설치 섹션과 헤더 링크, 히어로의 dmg 다운로드 링크가 있어야 한다. 파일 이름에 버전이 없어야 releases/latest/download가 항상 최신을 가리킨다.
+# 설치 안내: 설치 섹션과 헤더 링크, 히어로의 설치 섹션 바로 가기, 설치 섹션 안의 dmg 다운로드 링크가 있어야 한다. 파일 이름에 버전이 없어야 releases/latest/download가 항상 최신을 가리킨다.
 DMG_URL='https://github.com/huniversal/Desktoto/releases/latest/download/Desktoto.dmg'
 require_pattern '<section id="install"' "설치 섹션(#install)이 없습니다"
 require_pattern '<a class="text" href="#install"' "헤더의 설치 링크(#install)가 없습니다"
-grep -Fq "href=\"$DMG_URL\"" "$PAGE" || fail "$PAGE: dmg 다운로드 링크가 없습니다: $DMG_URL"
+sed -n '/<header class="hero">/,/<\/header>/p' "$PAGE" | grep -Fq '<a class="btn" href="#install"' || fail "$PAGE: 히어로의 설치 섹션 바로 가기(#install)가 없습니다"
+sed -n '/<section id="install"/,/<\/section>/p' "$PAGE" | grep -Fq "href=\"$DMG_URL\"" || fail "$PAGE: 설치 섹션 안에 dmg 다운로드 링크가 없습니다: $DMG_URL"
 grep -Fq 'brew install --cask huniversal/tap/desktoto' "$PAGE" || fail "$PAGE: Homebrew 설치 명령이 없습니다"
 
 # ai-run 시절 이름이 남아 있으면 실패한다.
