@@ -1,1 +1,7 @@
-// 앱 진입점과 조립은 #11에서 구현한다.
+import AppKit
+
+let app = NSApplication.shared
+let delegate = AppDelegate()
+app.delegate = delegate
+app.setActivationPolicy(.accessory)
+app.run()

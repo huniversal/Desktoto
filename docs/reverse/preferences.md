@@ -15,14 +15,14 @@
 | 테마 | `theme` | `system` | `light`, `dark`, `system` |
 | 유리 단계 | `glassStyle` | `regular` | `clear`, `slightlyClear`, `regular`, `slightlyTinted`, `tinted` |
 | 알림 | `sendsNotifications` | true | Bool |
-| Claude Code 연동 | `connectsClaudeCode` | true | Bool |
+| Claude Code 연동 | `connectsClaudeCode` | 원본 true, 새 앱 false(#11 D-1) | Bool |
 | Codex 실시간 조회 | `fetchesCodexUsage` | true | Bool |
 
 - 저장된 값이 없거나 형식이 맞지 않으면(알 수 없는 문자열, 다른 타입) 기본값을 쓴다.
 - 유리 단계는 예전에 3단계(`clear`, `regular`, `tinted`)였고, 그 값은 그대로 읽힌다.
 - 두 패널이 모두 꺼져 있으면 보여줄 것이 없어서 패널을 열지 않는다.
 - 번들 식별자가 달라 새 앱은 원본의 저장값을 읽지 못하고 기본값으로 시작한다(`docs/architecture.md` 1장).
-- `connectsClaudeCode`와 `fetchesCodexUsage`는 값만 저장한다. 연결과 해제, 조회 시작과 중지는 각각 #7, #11에서 한다.
+- `connectsClaudeCode`와 `fetchesCodexUsage`는 값만 저장한다. 연결과 해제는 `ClaudeIntegration`(#7), 조회 시작과 중지는 `UsageMonitoring`을 앱이 호출해서(#11) 한다.
 
 ## 2. 우클릭 설정 메뉴
 
@@ -40,7 +40,7 @@
 10. 구분선
 11. Desktoto 종료 (키 q)
 
-원본의 종료 항목 제목은 앱 이름만 바뀌었다. 새 구현은 항목 모델(`SettingsMenu`)까지만 만들고, `NSMenu` 조립은 #11에서 한다.
+원본의 종료 항목 제목은 앱 이름만 바뀌었다. 새 구현은 항목 모델(`SettingsMenu`)까지만 만들고, `NSMenu` 조립은 #11의 `SettingsMenuBuilder`가 했다.
 
 ## 3. 알림
 
@@ -69,4 +69,4 @@
 ## 6. 새 구현의 차이와 확인 필요
 
 - 원본의 `ObservableObject`와 전역 `isRunningAsApp`을 `@Observable`과 주입으로 바꿨다. 동작은 같다.
-- 실제 .app 번들에서 알림 배너, 알림 클릭 동작, 로그인 항목 켜기와 끄기는 단위 테스트로 검증할 수 없다. 앱 진입점이 #11에 있어 #11 이후 실제 Mac에서 확인한다.
+- 실제 .app 번들에서 알림 배너, 알림 클릭 동작, 로그인 항목 켜기와 끄기는 단위 테스트로 검증할 수 없다. 앱 진입점은 #11에서 만들었다. 실제 .app에서의 확인 결과와 남은 미검증은 `docs/tasks/11/verification.md`에 있다.

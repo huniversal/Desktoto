@@ -35,7 +35,9 @@ public final class AppSettings {
     public var glassStyle: GlassStyle {
         didSet { defaults.set(glassStyle.rawValue, forKey: Key.glassStyle) }
     }
-    // Claude Code 설정에 연동을 자동으로 넣을지. 사용자가 연동을 해제하면 false가 되어 다시 넣지 않는다.
+    // Claude Code 설정에 연동을 자동으로 넣을지. 원본과 달리 저장된 값이 없으면 false라서 메뉴에서 직접 켠 뒤에만 시작할 때 연결한다.
+    // 원본 앱에서 이미 연동을 해제한 사용자의 설정 파일을 새 앱이 처음 켜질 때 다시 쓰지 않게 하기 위함이다(#11 D-1).
+    // 사용자가 연동을 해제하면 false가 되어 다시 넣지 않는다.
     public var connectsClaudeCode: Bool {
         didSet { defaults.set(connectsClaudeCode, forKey: Key.connectsClaudeCode) }
     }
@@ -48,7 +50,7 @@ public final class AppSettings {
         didSet { defaults.set(sendsNotifications, forKey: Key.sendsNotifications) }
     }
 
-    // 저장된 값이 없으면 두 패널을 모두 보여주고, 흰색, 시스템 테마, 보통 유리를 쓰고, 알림을 보내고, 두 연동을 켠다.
+    // 저장된 값이 없으면 두 패널을 모두 보여주고, 흰색, 시스템 테마, 보통 유리를 쓰고, 알림을 보내고, Codex 연동을 켠다. Claude 연동은 끈다.
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         showsUsage = Self.readBool(defaults, forKey: Key.showsUsage) ?? true
@@ -57,7 +59,7 @@ public final class AppSettings {
         theme = defaults.string(forKey: Key.theme).flatMap(Theme.init(rawValue:)) ?? .system
         glassStyle = defaults.string(forKey: Key.glassStyle).flatMap(GlassStyle.init(rawValue:)) ?? .regular
         sendsNotifications = Self.readBool(defaults, forKey: Key.sendsNotifications) ?? true
-        connectsClaudeCode = Self.readBool(defaults, forKey: Key.connectsClaudeCode) ?? true
+        connectsClaudeCode = Self.readBool(defaults, forKey: Key.connectsClaudeCode) ?? false
         fetchesCodexUsage = Self.readBool(defaults, forKey: Key.fetchesCodexUsage) ?? true
     }
 

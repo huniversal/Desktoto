@@ -58,6 +58,7 @@ struct SessionInfoReader: Sendable {
         records: [JSONValue],
         file: LogFile,
         origin: CodexOrigin,
+        title: String? = nil,
         startedAt: Date?,
         isRunning: Bool,
         waitingKind: WaitingKind?
@@ -72,7 +73,7 @@ struct SessionInfoReader: Sendable {
             id: file.id,
             tool: .codex,
             projectName: projectName(from: workingDirectory),
-            title: nil,
+            title: title,
             modelName: modelName,
             usedTokens: tokenInfo?["last_token_usage"]?["input_tokens"]?.intValue,
             windowTokens: tokenInfo?["model_context_window"]?.intValue,

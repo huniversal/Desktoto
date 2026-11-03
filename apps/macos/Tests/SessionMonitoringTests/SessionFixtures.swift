@@ -90,8 +90,9 @@ enum ClaudeLine {
 // MARK: - Codex 기록 한 줄
 
 enum CodexLine {
-    static func sessionMeta(at date: Date, originator: String?, id: String?, cwd: String? = nil, padding: Int = 0) -> String {
+    static func sessionMeta(at date: Date, originator: String?, id: String?, cwd: String? = nil, padding: Int = 0, source: Any? = nil) -> String {
         var payload: [String: Any] = [:]
+        if let source { payload["source"] = source }
         if let originator { payload["originator"] = originator }
         if let id { payload["id"] = id }
         if let cwd { payload["cwd"] = cwd }
