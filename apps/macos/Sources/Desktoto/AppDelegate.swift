@@ -9,6 +9,7 @@ import Preferences
 import SessionMonitoring
 import SessionPanel
 import TerminalIntegration
+import UpdateCheck
 import UsageMonitoring
 
 /// Codex 사용량이 갱신되었을 때 앱에 알리는 연결. 사용량 감시기가 앱보다 먼저 만들어지므로 나중에 핸들러를 채운다.
@@ -33,6 +34,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let usageRelay: UsageUpdateRelay
     private let sessionOpener: SessionOpener
     private let claudeIntegration: ClaudeIntegration
+    private let updateMonitor: UpdateMonitor
+    private let urlOpener = SystemURLOpener()
     private let notifier = NotificationSender()
     private let loginItem = LoginItem()
     private let fileSystem: any FileSystem
@@ -96,6 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             fileSystem: LiveSettingsFileSystem(),
             resourceDirectory: Bundle.main.resourceURL ?? Bundle.main.bundleURL
         )
+        updateMonitor = UpdateMonitor(settings: settings, fileSystem: fileSystem)
         panelController = PanelController(now: timeSource.now)
         iconController = MenuBarIconController(button: statusItem.button, colorMode: settings.colorMode)
         sleepPolicy = SleepPolicy(
@@ -114,6 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         connectClaudeCodeIfAllowed()
         applyLoginItemDefaultOnce()
         setUpUsageMonitoring()
+        updateMonitor.start()
         menuBuilder.onAction = { [weak self] action in self?.perform(action) }
 
         // 알림을 누르면 그 세션으로 이동한다. 앱(.app)으로 실행 중일 때만 정식 알림을 쓴다.
@@ -216,7 +221,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 isRunningAsApp: AppBundle.isRunningAsApp,
                 isLoginItemEnabled: loginItem.isEnabled,
                 isClaudeCodeInstalled: fileSystem.directoryExists(at: fileSystem.homeDirectory.appendingPathComponent(".claude")),
-                isClaudeConnected: isClaudeConnected
+                isClaudeConnected: isClaudeConnected,
+                updateNoticeTitle: updateMonitor.noticeTitle
             )
             statusItem.menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
             statusItem.button?.performClick(nil)
@@ -234,6 +240,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             toggleCodexUsage()
         case .toggleClaudeIntegration:
             toggleClaudeIntegration()
+        case .toggleUpdateCheck:
+            settings.checksForUpdates.toggle()
+            updateMonitor.check()
+        case .openUpdatePage:
+            if let pageURL = updateMonitor.availableUpdate?.release.pageURL {
+                _ = urlOpener.open(pageURL)
+            }
         case .toggleUsagePanel:
             settings.showsUsage.toggle()
         case .toggleContextPanel:

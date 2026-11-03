@@ -6,6 +6,8 @@ public enum SettingsAction: Equatable, Sendable {
     case toggleNotifications
     case toggleCodexUsage
     case toggleClaudeIntegration
+    case toggleUpdateCheck
+    case openUpdatePage
     case toggleUsagePanel
     case toggleContextPanel
     case selectColorMode(ColorMode)
@@ -34,12 +36,21 @@ public struct SettingsMenuEnvironment: Sendable {
     public let isLoginItemEnabled: Bool
     public let isClaudeCodeInstalled: Bool
     public let isClaudeConnected: Bool
+    // 새 버전이 있을 때만 값이 있다. 문구는 앱이 만들어 넘긴다(Preferences는 업데이트 확인 모듈을 모른다).
+    public let updateNoticeTitle: String?
 
-    public init(isRunningAsApp: Bool, isLoginItemEnabled: Bool, isClaudeCodeInstalled: Bool, isClaudeConnected: Bool) {
+    public init(
+        isRunningAsApp: Bool,
+        isLoginItemEnabled: Bool,
+        isClaudeCodeInstalled: Bool,
+        isClaudeConnected: Bool,
+        updateNoticeTitle: String? = nil
+    ) {
         self.isRunningAsApp = isRunningAsApp
         self.isLoginItemEnabled = isLoginItemEnabled
         self.isClaudeCodeInstalled = isClaudeCodeInstalled
         self.isClaudeConnected = isClaudeConnected
+        self.updateNoticeTitle = updateNoticeTitle
     }
 }
 
@@ -47,7 +58,13 @@ public struct SettingsMenuEnvironment: Sendable {
 public enum SettingsMenu {
     @MainActor
     public static func makeEntries(settings: AppSettings, environment: SettingsMenuEnvironment) -> [SettingsMenuEntry] {
-        var entries: [SettingsMenuEntry] = [
+        var entries: [SettingsMenuEntry] = []
+        // 새 버전이 있을 때만 맨 위에 안내 항목을 보여 준다.
+        if let updateNoticeTitle = environment.updateNoticeTitle {
+            entries.append(.item(makeItem(updateNoticeTitle, isOn: false, action: .openUpdatePage)))
+            entries.append(.separator)
+        }
+        entries += [
             // 앱으로 실행 중일 때만 로그인 항목을 바꿀 수 있다.
             .item(makeItem("로그인 시 자동 실행", isOn: environment.isLoginItemEnabled, isEnabled: environment.isRunningAsApp, action: .toggleLoginItem)),
             .item(makeItem("알림 보내기", isOn: settings.sendsNotifications, action: .toggleNotifications)),
@@ -56,6 +73,7 @@ public enum SettingsMenu {
         if environment.isClaudeCodeInstalled {
             entries.append(.item(makeItem("Claude 연동", isOn: environment.isClaudeConnected, action: .toggleClaudeIntegration)))
         }
+        entries.append(.item(makeItem("업데이트 확인", isOn: settings.checksForUpdates, action: .toggleUpdateCheck)))
         entries.append(.separator)
 
         // 보여줄 패널은 둘 다, 하나만, 아예 없이도 고를 수 있다.
