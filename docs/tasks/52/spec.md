@@ -4,7 +4,7 @@
 
 - 이슈: #52 / https://github.com/huniversal/Desktoto/issues/52
 - 브랜치: feat/gemini-session-support/#52
-- specRevision: 2
+- specRevision: 3
 - 대상 ai-run 원본: N/A (원본에 Gemini와 Antigravity 언급이 없다. `~/Desktop/ai-run`의 `Sources`와 `landing`을 검색해 확인함)
 
 ## 목적
@@ -27,14 +27,20 @@
 
 ### 이 PC에서 직접 본 것
 
-- Gemini CLI 세션 파일: `session-<날짜>-<해시>.json` 단일 JSON 객체. 키는 `sessionId`, `projectHash`, `startTime`, `lastUpdated`, `messages`(각 항목 `id`, `timestamp`, `type`, `content`), `kind`. 2026-03의 옛 파일 하나만 확인했다.
-- 이 PC의 프로젝트 폴더 이름은 해시가 아니라 사용자 이름(`~/.gemini/tmp/huniverse/`)이었다. 문서의 `<project_hash>`와 다르다.
+- 현재 형식(0.66.0, 2026-11-04 실측): `~/.gemini/tmp/<프로젝트 폴더 이름의 소문자>/chats/session-<날짜>-<8자리>.jsonl`. **한 줄씩 추가되는 JSONL**이며 줄은 세 종류다.
+  - 첫 줄(헤더): `sessionId`, `projectHash`(64자리 16진수), `startTime`, `lastUpdated`, `kind`(`main`)
+  - 메시지 줄: `id`, `timestamp`, `type`, `content`. 관찰한 `type`은 `user`(content가 배열)와 `info`(content가 문자열)다.
+  - 갱신 줄: `{"$set":{"lastUpdated":...}}`. 메시지가 추가될 때마다 뒤따른다.
+- 프로젝트 폴더 안에 `.project_root`(작업 폴더 경로)와 `logs.json`이 있다. 폴더 이름은 문서의 `<project_hash>`가 아니라 작업 폴더 이름이다.
+- 문서의 단일 JSON(`messages` 배열)은 2026-03의 옛 파일에서만 보였고, 0.66.0은 JSONL이다. 두 형식이 섞여 있을 수 있다.
+- **Google 계정 로그인 불가**: 0.66.0에서 "Sign in with Google"이 "This client is no longer supported for Gemini Code Assist for individuals. To continue using Gemini, please migrate to the Antigravity suite of products"로 실패했다. 개인 Google 계정으로는 더 이상 쓸 수 없고, 남은 인증은 Gemini API 키와 Vertex AI다.
 - Antigravity: 대화가 `~/.gemini/antigravity/conversations/<uuid>.pb`로 저장된다. JSON이 아닌 **바이너리(protobuf)** 이고 형식 문서를 찾지 못했다.
 
 ### 확인하지 못한 것
 
-- 0.66.0이 지금 어떤 형식과 폴더 이름으로 세션을 쓰는지. `gemini -p`를 실행해 봤으나 브라우저 로그인 단계에서 멈췄다(로그인은 사용자가 직접 해야 한다). 로그인 후 새 세션 파일을 확인해야 한다.
+- 모델 응답과 도구 승인 대기 상태의 메시지 `type`. 로그인 실패로 모델 응답이 없어 `user`와 `info`만 관찰했다.
 - 응답 중, 입력 대기(도구 승인 대기 포함), 종료를 파일만으로 구분할 수 있는지.
+- API 키로 쓴 세션이 같은 형식인지.
 - Antigravity가 훅이나 다른 신호를 제공하는지.
 - 제보자가 실제로 어떤 툴을 어떤 방식으로 쓰는지.
 
@@ -82,6 +88,7 @@
 
 ## 미결정 사항
 
+- **전제 재확인**: 개인 Google 계정으로 Gemini CLI를 쓸 수 없게 되어 제보의 "Gemini CLI" 유저가 어떤 인증으로 쓰는지(API 키, Vertex, Workspace)와, 실제로 Antigravity(바이너리 `.pb`)를 쓰는 것은 아닌지 제보자에게 확인해야 한다. 이 답에 따라 Gemini CLI만 지원하는 것이 제보를 해결하는지 달라진다. 구현을 막는다.
 - 상태 판별 방식. 훅 설치는 제외했으므로 파일 관찰로 구분할 수 있는지 실측이 필요하며 구현을 막는다. 구분이 어렵다면 "세션 표시"까지만 할지 다시 정한다.
 - 제보자의 실제 환경. 구현을 막지는 않지만 범위 판단에 영향을 준다.
 
@@ -91,3 +98,4 @@
 |---|---|---|
 | 1 | 최초 작성. 조사 결과만 확정하고 설계와 범위는 제안과 미결정으로 둠 | 실제 세션 형식을 확인하기 전이며 범위가 합의되지 않음 |
 | 2 | 범위를 Gemini CLI 세션 표시로 확정. Antigravity, 사용량, 훅 설치는 제외 | 사용자와 합의(2026-11-04) |
+| 3 | 실측 결과 반영: 현재 형식이 JSONL(헤더, 메시지, `$set` 갱신 줄)임을 확인, Google 계정 로그인 불가와 그에 따른 전제 재확인 항목 추가 | 0.66.0 실행에서 확인 |
