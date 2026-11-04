@@ -1063,10 +1063,16 @@
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(function (entries) { isVisible = entries[0].isIntersecting; }).observe(stage);
     }
-    // 화면에서 벗어났거나 탭이 가려져 있으면 다음 동작으로 넘어가지 않고 기다린다.
+    // 화면에서 벗어났거나 탭이 가려져 있는 동안에는 대기 시간이 줄지 않는다. 다시 보이면 남은 시간만큼만 더 기다리고 다음 동작으로 넘어간다.
     function wait(ms) {
-      return new Promise(function (resolve) { setTimeout(resolve, ms); }).then(function () {
-        return new Promise(function (resolve) { (function check() { if (isVisible && !document.hidden) resolve(); else setTimeout(check, 200); })(); });
+      return new Promise(function (resolve) {
+        var left = ms, last = performance.now();
+        (function tick() {
+          var now = performance.now();
+          if (isVisible && !document.hidden) left -= now - last;
+          last = now;
+          if (left <= 0) resolve(); else setTimeout(tick, Math.min(left, 100));
+        })();
       });
     }
     function pointOf(el, fx, fy) {
