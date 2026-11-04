@@ -29,8 +29,19 @@ struct AntigravityTests {
 
         deinit { try? FileManager.default.removeItem(at: home) }
 
+        /// 앱 설치 폴더는 임시 홈 안으로 제한해서 이 PC에 설치된 Antigravity에 결과가 좌우되지 않게 한다.
+        var applicationsDirectory: URL { home.appendingPathComponent("Applications") }
+
         func makeMonitor() -> SessionMonitor {
-            SessionMonitor(fileSystem: LiveFileSystem(homeDirectory: home), timeSource: FixedTimeSource(now: now))
+            SessionMonitor(
+                fileSystem: LiveFileSystem(homeDirectory: home),
+                timeSource: FixedTimeSource(now: now),
+                applicationDirectories: [applicationsDirectory]
+            )
+        }
+
+        func installApp() throws {
+            try FileManager.default.createDirectory(at: applicationsDirectory.appendingPathComponent("Antigravity.app"), withIntermediateDirectories: true)
         }
 
         private func timestamp(secondsAgo: TimeInterval) -> String {
@@ -95,6 +106,22 @@ struct AntigravityTests {
         #expect(session.waitingKind == nil)
         #expect(session.isTerminalSession == false)
         #expect(await monitor.sessionInfo(id: "running-id") == session)
+    }
+
+    @Test func clickingASessionOpensTheInstalledApp() async throws {
+        let environment = try Environment()
+        environment.addConversation("open-id", status: "CASCADE_RUN_STATUS_IDLE")
+        // 앱이 없으면 열 곳이 없다.
+        let without = try #require(await environment.makeMonitor().activeSessions().first)
+        #expect(without.openURL == nil)
+        #expect(without.canOpen == false)
+        // 앱이 있으면 앱 번들을 연다. 터미널 세션이 아니므로 탭 이동은 쓰지 않는다.
+        try environment.installApp()
+        let session = try #require(await environment.makeMonitor().activeSessions().first)
+        #expect(session.openURL?.lastPathComponent == "Antigravity.app")
+        #expect(session.openURL?.deletingLastPathComponent().lastPathComponent == "Applications")
+        #expect(session.canOpen)
+        #expect(session.isTerminalSession == false)
     }
 
     @Test func lastStepWaitingForApprovalShowsAsApprovalNotRunning() async throws {

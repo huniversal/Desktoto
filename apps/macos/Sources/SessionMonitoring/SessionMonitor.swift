@@ -26,6 +26,8 @@ public actor SessionMonitor {
     private let terminalSessionChecker: (any TerminalSessionChecker)?
     private let sessionLinkResolver: (any SessionLinkResolver)?
     private let antigravityReader: AntigravityReader
+    /// Antigravity.app을 찾는 폴더들. 설치 위치가 /Applications 아니면 ~/Applications다.
+    private let applicationDirectories: [URL]
 
     /// 수정 시각이 같으면 이전 결과를 다시 쓴다. 1초마다 호출되어도 기록 파일은 바뀔 때만 읽는다.
     private var activityCache: [String: CachedActivity] = [:]
@@ -54,13 +56,18 @@ public actor SessionMonitor {
         environment: [String: String] = ProcessInfo.processInfo.environment,
         terminalSessionChecker: (any TerminalSessionChecker)? = nil,
         sessionLinkResolver: (any SessionLinkResolver)? = nil,
-        sqliteDatabase: any SQLiteDatabase = LiveSQLiteDatabase()
+        sqliteDatabase: any SQLiteDatabase = LiveSQLiteDatabase(),
+        applicationDirectories: [URL]? = nil
     ) {
         self.fileSystem = fileSystem
         self.timeSource = timeSource
         self.terminalSessionChecker = terminalSessionChecker
         self.sessionLinkResolver = sessionLinkResolver
         antigravityReader = AntigravityReader(fileSystem: fileSystem, database: sqliteDatabase)
+        self.applicationDirectories = applicationDirectories ?? [
+            URL(fileURLWithPath: "/Applications", isDirectory: true),
+            fileSystem.homeDirectory.appendingPathComponent("Applications", isDirectory: true)
+        ]
         recordReader = LogRecordReader(fileSystem: fileSystem)
         waitingSignalReader = WaitingSignalReader(fileSystem: fileSystem)
         originReader = CodexOriginReader(fileSystem: fileSystem)
@@ -181,6 +188,14 @@ public actor SessionMonitor {
         return isFresh || antigravityWaitingIDs.contains(conversation.id) ? .running : .idle
     }
 
+    /// 줄을 눌렀을 때 열 앱. Antigravity는 기존 대화를 id로 여는 링크가 없어서(`antigravity://`는 마켓플레이스와 새 대화용) 앱 자체를 앞으로 가져온다.
+    /// 앱을 찾지 못하면 nil이라 줄을 눌러도 아무 일도 하지 않는다.
+    private func antigravityAppURL() -> URL? {
+        applicationDirectories
+            .map { $0.appendingPathComponent("Antigravity.app", isDirectory: true) }
+            .first { fileSystem.directoryExists(at: $0) }
+    }
+
     private func makeAntigravityInfo(of conversation: AntigravityConversation) -> SessionInfo {
         let isWaiting = antigravityWaitingIDs.contains(conversation.id)
         let usedTokens = antigravityUsedTokens[conversation.id]
@@ -198,7 +213,7 @@ public actor SessionMonitor {
             isWindowEstimated: windowTokens != nil,
             isRunning: !isWaiting && conversation.isRunning,
             waitingKind: isWaiting ? .approval : nil,
-            openURL: nil,
+            openURL: antigravityAppURL(),
             workingDirectory: conversation.workspacePath,
             startedAt: nil,
             isTerminalSession: false
