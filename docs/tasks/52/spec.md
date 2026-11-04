@@ -4,7 +4,7 @@
 
 - 이슈: #52 / https://github.com/huniversal/Desktoto/issues/52
 - 브랜치: feat/gemini-session-support/#52
-- specRevision: 4
+- specRevision: 5
 - 대상 ai-run 원본: N/A (원본에 Gemini와 Antigravity 언급이 없다. `~/Desktop/ai-run`의 `Sources`와 `landing`을 검색해 확인함)
 
 ## 목적
@@ -35,6 +35,15 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 - 이 구조는 이 앱이 Claude에 쓰는 상태 스크립트 방식(`ai-run-statusline.sh`가 stdin JSON을 `~/.ai-run/status`에 저장)과 같게 적용할 수 있고, 상태 판별(`agent_state`, `tool_confirmation_pending`)과 주간 한도(`quota`)까지 얻을 수 있다.
 - Antigravity App(데스크탑)과 IDE는 별도 제품이며 `~/.gemini/antigravity/conversations/*.pb` 바이너리를 쓴다. statusLine이 CLI 문서에만 있어 App 쪽 신호는 확인하지 못했다.
 - 확인하지 못한 것: CLI 설치 명령과 실행 파일 이름, 이 PC에서의 실제 동작, 제보자가 쓰는 것이 CLI인지 App인지.
+
+### Antigravity App 실측 (2026-11-04, Antigravity 2.29.0, Gemini 모델로 짧은 대화 1회)
+
+- **대화마다 JSONL 기록이 생긴다**: `~/.gemini/antigravity/brain/<conversationId>/.system_generated/logs/transcript.jsonl`(같은 내용의 `transcript_full.jsonl`과 `chunks/` 아래 조각도 있다). 앞서 `.pb`만 있다고 본 것은 옛 파일 기준이었다.
+- 줄 형식: `step_index`, `source`, `type`, `status`, `created_at`, `content`와 모델 응답 줄의 `input_tokens`, `cache_read_tokens`, `output_tokens`. 관찰한 줄은 `type`이 `USER_INPUT`, `PLANNER_RESPONSE`이고 `status`는 둘 다 `DONE`이다.
+- 그 밖에 생긴 것: `conversation_summaries.db`(SQLite), `conversations/<id>.db`(SQLite)와 기존 `.pb`, `presence/<id>.lock`, `daemon/hub_<pid>.json`(포트와 토큰이 들어 있어 읽지 않는다), 설정은 `~/.gemini/config/`. 앱이 `antigravity-ide/`와 `antigravity-backup/`에 옛 데이터를 복사해 두었다.
+- 제품마다 폴더 이름이 다르다(훅 문서 기준): App은 `antigravity/`, CLI는 `antigravity-cli/`, IDE는 `antigravity-ide/`.
+- 훅은 `hooks.json`에서 `SessionStart`, `PreToolUse`, `PostToolUse`, `PreInvocation`, `PostInvocation`, `Stop`을 지원하고 stdin JSON에 `conversationId`, `transcriptPath`, `workspacePaths`, `modelName`, `lastUserInput`이 있다. 동기 실행으로 에이전트 루프를 막으며 `command` 타입만 된다. 사용자 설정 수정이 필요해 이번 범위에서는 쓰지 않는다.
+- 아직 관찰하지 못한 것: 실행 중, 도구 승인 대기, 오류일 때의 `status`와 `type` 값, App의 한도(quota) 신호, 대화가 끝났음을 아는 방법.
 
 ### 이 PC에서 직접 본 것
 
@@ -99,7 +108,8 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 
 ## 미결정 사항
 
-- **방향 전환 후보**: Gemini CLI는 개인 계정으로 쓸 수 없고, Antigravity CLI는 statusLine으로 상태와 주간 한도를 얻을 수 있어 대상을 Gemini CLI에서 Antigravity CLI로 바꾸는 것을 제안한다. 사용자와 합의가 필요하며, 그 경우 위의 "포함", "제외", 완료 조건을 다시 쓴다. 구현을 막는다.
+- **방향 전환 후보(실측으로 강화됨)**: Antigravity App과 CLI는 `transcript.jsonl`(JSONL, `status` 필드 포함)을 남기므로 훅 설치 없이 파일 관찰로 대화를 볼 수 있다. 대상을 Gemini CLI에서 Antigravity(`transcript.jsonl`)로 바꾸는 것을 제안한다. 사용자와 합의가 필요하다.
+- **(이전 기록)**: Gemini CLI는 개인 계정으로 쓸 수 없고, Antigravity CLI는 statusLine으로 상태와 주간 한도를 얻을 수 있어 대상을 Gemini CLI에서 Antigravity CLI로 바꾸는 것을 제안한다. 사용자와 합의가 필요하며, 그 경우 위의 "포함", "제외", 완료 조건을 다시 쓴다. 구현을 막는다.
 - **전제 재확인**: 개인 Google 계정으로 Gemini CLI를 쓸 수 없게 되어 제보의 "Gemini CLI" 유저가 어떤 인증으로 쓰는지(API 키, Vertex, Workspace)와, 실제로 Antigravity(바이너리 `.pb`)를 쓰는 것은 아닌지 제보자에게 확인해야 한다. 이 답에 따라 Gemini CLI만 지원하는 것이 제보를 해결하는지 달라진다. 구현을 막는다.
 - 상태 판별 방식. 훅 설치는 제외했으므로 파일 관찰로 구분할 수 있는지 실측이 필요하며 구현을 막는다. 구분이 어렵다면 "세션 표시"까지만 할지 다시 정한다.
 - 제보자의 실제 환경. 구현을 막지는 않지만 범위 판단에 영향을 준다.
@@ -112,3 +122,4 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 | 2 | 범위를 Gemini CLI 세션 표시로 확정. Antigravity, 사용량, 훅 설치는 제외 | 사용자와 합의(2026-11-04) |
 | 3 | 실측 결과 반영: 현재 형식이 JSONL(헤더, 메시지, `$set` 갱신 줄)임을 확인, Google 계정 로그인 불가와 그에 따른 전제 재확인 항목 추가 | 0.66.0 실행에서 확인 |
 | 4 | Antigravity CLI의 statusLine 조사 결과 추가, 대상을 Antigravity CLI로 바꾸는 방향을 미결정으로 제안 | 공식 문서 확인. 사용자와 합의 전이라 범위는 바꾸지 않음 |
+| 5 | Antigravity App 실측 결과 반영: `transcript.jsonl` 존재와 줄 형식, 훅 이벤트 확인. 범위는 합의 전이라 바꾸지 않음 | 사용자가 Antigravity App에서 Gemini로 대화한 뒤 파일 변화를 비교 |
