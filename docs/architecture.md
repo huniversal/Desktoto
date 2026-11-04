@@ -75,7 +75,7 @@ apps/macos/
 | `Domain` | 값 타입: `AiTool`, `SessionInfo`, `SessionRunState`, `WaitingKind`, `ToolUsage`, `UsageWindow`와 기능 사이 연결용 프로토콜 | 없음 | #4, #6 | `SessionWatcher`와 `UsageWatcher`의 타입 선언 |
 | `Boundaries` | 외부 경계 프로토콜 5개와 실제(Live) 구현, 두 기능이 쓰는 JSONL 끝부분 읽기 | `Domain`은 쓰지 않음 | 전체 | `LogTail`, 여러 파일에 흩어진 파일, 프로세스, 시간 접근 코드 |
 | `DesignSystem` | 디자인 토큰(색, 간격, 곡률, 그림자, 타이포), `GlassStyle`, `Theme`, `ColorMode`, 공용 컴포넌트 | 없음 | #3 | `SessionPanelView`의 상수와 컴포넌트, `AppSettings`의 스타일 타입 |
-| `SessionMonitoring` | 기록 탐색, 진행과 완료와 대기 판정, 컨텍스트 창 판정, 승인 대기 신호 읽기 | `Domain`, `Boundaries` | #4 | `SessionWatcher` |
+| `SessionMonitoring` | 기록 탐색, 진행과 완료와 대기 판정, 컨텍스트 창 판정, 승인 대기 신호 읽기, Antigravity App의 SQLite 상태 읽기(#52) | `Domain`, `Boundaries` | #4 | `SessionWatcher` |
 | `UsageMonitoring` | 사용량 소스 4곳(데스크탑 캐시, statusLine 파일, Codex 서버, Codex 기록)과 최신값 선택, zstd 해독 | `Domain`, `Boundaries`, `CZstd` | #6 | `UsageWatcher`, `ClaudeDesktopUsage`, `CodexRateLimitReader` |
 | `ClaudeIntegration` | `settings.json`의 훅과 statusLine 연결과 해제, 백업, 스크립트 설치 | `Boundaries` | #7 | `ClaudeIntegration`, `scripts/*.sh` |
 | `TerminalIntegration` | CLI 프로세스 탐색, 세션과의 매칭, 터미널 생존 확인, Claude 데스크탑 앱 딥링크 매핑, iTerm2와 Terminal과 Orca 탭 이동, 세션 열기 | `Domain`, `Boundaries` | #5 | `TerminalJumper`, `SessionWatcher`의 생존 확인 |
@@ -147,6 +147,7 @@ CZstd  ◄── UsageMonitoring
 | `SettingsFileSystem` | 읽기 실패와 파일 없음 구별, 제한 읽기, 링크 해석, 원자적 쓰기와 덮어쓰지 않는 복사 | `ClaudeIntegration` |
 | `TimeSource` | 현재 시각(`now`). Swift 표준의 `Clock`과 이름이 겹치지 않게 한다. `Timer` 같은 스케줄링은 `Desktoto` 앱이 맡는다 | 거의 전부 |
 | `ProcessRunner` | 짧은 명령 실행과 출력 수집, 프로세스 생존 확인. 장기 실행은 아래 보조 경계로 분리 | `TerminalIntegration`(`ps`, `lsof`, Orca CLI, 생존 확인), `UsageMonitoring`(`codex app-server`) |
+| `SQLiteDatabase` | 다른 앱의 SQLite 파일을 읽기 전용으로 질의. WAL 파일 때문에 열리지 않으면 임시 사본으로 읽는다(#52) | `SessionMonitoring`(Antigravity App 대화와 상태) |
 | `AppleScriptRunner` | 스크립트 문자열 실행 | `TerminalIntegration`, `Preferences` |
 | `URLOpener` | URL 열기, 실행 중인 앱 확인 | `TerminalIntegration`, `Desktoto` |
 

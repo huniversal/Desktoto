@@ -4,7 +4,7 @@
 
 - 이슈: #52 / https://github.com/huniversal/Desktoto/issues/52
 - 브랜치: feat/gemini-session-support/#52
-- specRevision: 7
+- specRevision: 8
 - 대상 ai-run 원본: N/A (원본에 Gemini와 Antigravity 언급이 없다. `~/Desktop/ai-run`의 `Sources`와 `landing`을 검색해 확인함)
 
 ## 목적
@@ -116,8 +116,8 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 
 ## 미결정 사항
 
-- SQLite 읽기 방식과 의존성(시스템 SQLite 사용 여부, WAL 처리). 구현을 막는다.
-- 값 9가 승인 대기 외의 대기(질문 등)에도 쓰이는지, 오류와 취소 때의 값. 구현을 막지는 않지만 상태 표시 정확도에 영향을 준다.
+- (해결, specRevision 8) SQLite 읽기 방식: macOS 시스템 `SQLite3`를 `Boundaries`의 `SQLiteDatabase` 경계로 감싸 읽기 전용으로 연다. WAL 파일 때문에 열리지 않으면 파일 묶음을 본인만 접근하는 임시 폴더로 복사해 사본을 읽고 바로 지운다. 새 외부 의존은 없다.
+- 모델 이름, 컨텍스트 사용량, 세션 열기(딥링크)는 이번 구현에서 비어 있다(모델 알 수 없음으로 표시, 눌러도 열지 않음). 값 9가 승인 대기 외의 대기(질문 등)에도 쓰이는지, 오류와 취소 때의 값. 구현을 막지는 않지만 상태 표시 정확도에 영향을 준다.
 - Antigravity CLI와 IDE 지원 시점. 제외했으므로 구현을 막지 않는다.
 - 제보자가 쓰는 것이 App인지 CLI인지. 구현을 막지는 않지만 제보 해결 여부에 영향을 준다.
 
@@ -132,3 +132,4 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 | 5 | Antigravity App 실측 결과 반영: `transcript.jsonl` 존재와 줄 형식, 훅 이벤트 확인. 범위는 합의 전이라 바꾸지 않음 | 사용자가 Antigravity App에서 Gemini로 대화한 뒤 파일 변화를 비교 |
 | 6 | 승인 대기와 진행 중을 구분할 수 있는 SQLite 신호 조사 결과 반영. 범위는 합의 전이라 바꾸지 않음 | 승인 창이 뜬 상태, 승인 직후, 응답이 끝난 뒤의 상태를 비교(사용자가 승인과 종료를 확인) |
 | 7 | 대상을 Antigravity App으로 확정. Gemini CLI, Antigravity CLI와 IDE, 사용량, 훅 설치는 제외. 설계, 완료 조건, 검증을 새로 작성 | 사용자와 합의(2026-11-04). Gemini CLI는 개인 계정 로그인이 막혔고 Antigravity App은 파일로 상태를 읽을 수 있음 |
+| 8 | 구현 결정 반영: SQLite 경계(`SQLiteDatabase`)와 임시 사본 읽기, 요약 DB에서 대화 목록과 제목과 작업 폴더를 읽고 대화별 DB의 마지막 단계 `status`로 승인 대기 판정, 승인 대기는 10분이 지나도 30분까지 표시, 모델과 사용량과 세션 열기는 비움 | 실제 구현과 이 PC의 실제 Antigravity 데이터 확인 |
