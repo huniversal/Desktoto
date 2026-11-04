@@ -4,7 +4,7 @@
 
 - 이슈: #52 / https://github.com/huniversal/Desktoto/issues/52
 - 브랜치: feat/gemini-session-support/#52
-- specRevision: 6
+- specRevision: 7
 - 대상 ai-run 원본: N/A (원본에 Gemini와 Antigravity 언급이 없다. `~/Desktop/ai-run`의 `Sources`와 `landing`을 검색해 확인함)
 
 ## 목적
@@ -73,53 +73,53 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 
 ## 작업 범위
 
-범위는 2026-11-04에 사용자와 합의했다(Gemini CLI만).
+범위는 2026-11-04에 사용자와 합의했다. 대상은 **Antigravity**다(Gemini CLI는 개인 Google 계정 로그인이 막혀 제외).
 
 ### 포함
 
-- Gemini CLI 세션을 세션 목록에 표시한다. 상태 판별 방식은 실측 후 확정한다.
+- Antigravity App(데스크탑)의 대화를 세션 목록에 표시한다. 상태는 작업 중, 승인 대기, 끝남으로 구분한다.
 - 새 툴 추가에 필요한 도메인과 모니터링 변경, 테스트
 
 ### 제외
 
-- Antigravity 지원. 바이너리 형식이라 파일 읽기만으로는 어렵고 형식 문서가 없다. 별도 이슈로 다룬다.
-- 사용량(한도 게이지). Gemini의 한도는 하루 요청 수라서 현재의 5시간과 주간 구조(`UsageWindow`)와 맞지 않는다. 필요하면 별도로 설계한다.
-- 사용자의 Gemini 설정 파일을 수정하는 훅 설치. 합의하지 않았으므로 파일 관찰 방식만 검토한다.
+- Gemini CLI. 개인 계정으로 쓸 수 없고, API 키나 Vertex 인증 유저는 별도로 다룬다.
+- Antigravity CLI와 IDE 확장. 폴더 이름이 다르고(`antigravity-cli/`, `antigravity-ide/`) 이 PC에서 확인하지 못했다. 별도 이슈로 다룬다.
+- 사용량(한도 게이지). App의 한도 신호를 확인하지 못했고 Gemini의 한도 구조도 달라 별도 설계가 필요하다.
+- 사용자의 Antigravity 설정(`hooks.json` 등)을 수정하는 훅 설치. 파일 관찰만 쓴다.
 
 ## 설계 결정
 
-- 파일 구조와 로직의 책임: 미결정. 기존 `.jsonl` 로그 읽기가 한 줄씩 추가되는 파일을 전제로 하므로, 단일 JSON을 통째로 다시 쓰는 Gemini 형식이 같은 읽기 경로에 맞는지 확인해야 한다.
-- 상태와 데이터 흐름: 미결정. 파일의 `lastUpdated` 변화와 `messages`의 마지막 `type`으로 판별하는 방식, 또는 훅(`Notification`, `AfterAgent`)을 설치하는 방식 중 선택한다. 훅 방식은 사용자의 Gemini 설정 파일을 수정하게 되어 별도 합의가 필요하다.
-- 선택한 방식과 이유: 미결정. 위 실측 결과에 달려 있다.
-- 예외 처리: 미결정. 잘린 JSON, 프로젝트 폴더 이름 규칙 변화, 보존 기간으로 인한 세션 삭제를 검토한다.
+- 파일 구조와 로직의 책임: 미결정. 읽을 원본은 `~/.gemini/antigravity/brain/<conversationId>/.system_generated/logs/transcript.jsonl`(제목, 마지막 활동, 줄 수)과 두 SQLite(`conversation_summaries.db`의 `status`, 대화별 `.db`의 마지막 단계 `status`)다. 기존 `.jsonl` 읽기에 얹을 수 있는지, SQLite 읽기를 어디에 둘지는 구현 전에 정한다. 파일 시스템과 SQLite 접근은 프로토콜 뒤에 두어 테스트에서 대체한다.
+- 상태와 데이터 흐름: 작업 중은 요약 `RUNNING`, 끝남은 `IDLE`이고 `not_fully_idle=0`, 승인 대기는 마지막 단계 `status 9`로 구분한다(위 실측). 대화 목록과 제목은 `transcript.jsonl`과 요약 DB에서 읽는다.
+- 선택한 방식과 이유: 훅 설치 없이 파일만 관찰한다. 사용자 설정을 건드리지 않고, `transcript.jsonl`만으로는 승인 대기를 구분할 수 없어 SQLite의 단계 상태를 함께 읽는다.
+- 예외 처리: WAL 모드 DB는 읽기 전용으로 직접 열리지 않으므로 읽는 방식(파일 세트 복사 또는 대안)을 구현 전에 확정한다. 스키마와 정수 값은 비공개 내부 형식이므로 알 수 없는 값, 없는 테이블, 잘린 파일은 오류 없이 "상태 알 수 없음"으로 처리하고 버전 변경을 PR에 위험으로 적는다.
 
 ## 완료 조건
 
-범위가 합의되면 확정한다. 현재 후보는 아래와 같다.
-
-- AC-1: Gemini CLI 세션이 세션 목록에 나타나고, 프로젝트 이름과 마지막 활동이 표시된다.
-- AC-2: 실행 중과 입력 대기와 종료가 구분되어 표시된다(방식은 미결정).
-- AC-3: 기존 Claude와 Codex 세션 표시가 바뀌지 않는다.
-- AC-4: 합성 데이터와 가짜 FileSystem으로 단위 테스트가 있고, `swift build`와 `swift test`가 통과한다.
-- AC-5: 실제 Gemini CLI 0.66.0 이상으로 만든 세션에서 표시를 확인한다.
+- AC-1: Antigravity App 대화가 세션 목록에 나타나고 제목과 마지막 활동이 표시된다.
+- AC-2: 작업 중, 승인 대기, 끝남이 구분되어 표시된다.
+- AC-3: DB가 없거나 스키마와 값이 예상과 다를 때 앱이 죽지 않고 상태 알 수 없음으로 표시한다.
+- AC-4: 기존 Claude와 Codex 세션 표시가 바뀌지 않는다.
+- AC-5: 합성 데이터와 가짜 경계로 단위 테스트가 있고 `swift build`와 `swift test`가 통과한다.
+- AC-6: 실제 Antigravity 2.29.0 이상으로 만든 대화에서 표시와 상태 전환을 확인한다.
 
 ## 검증 방법
 
 | 완료 조건 | 확인 방법 | 기대 결과 |
 |---|---|---|
-| AC-1 | 합성 세션 JSON으로 단위 테스트, 실제 Gemini CLI 세션으로 패널 확인 | 세션 표시 |
-| AC-2 | 상태별 합성 데이터와 실제 세션에서 상태 전환 관찰 | 상태 구분 |
-| AC-3 | 기존 테스트 전체 | 변경 없이 통과 |
-| AC-4 | `cd apps/macos && swift build && swift test` | 통과 |
-| AC-5 | 사용자가 로그인한 Gemini CLI로 짧은 대화를 만든 뒤 확인 | 로그인이 없으면 미검증으로 기록 |
+| AC-1 | 합성 `transcript.jsonl`과 요약 DB로 단위 테스트, 실제 앱에서 대화를 만들어 패널 확인 | 대화 표시 |
+| AC-2 | 상태별 합성 데이터, 실제 앱에서 승인이 필요한 요청을 보내 전환 관찰 | 세 상태 구분 |
+| AC-3 | 빈 파일, 없는 테이블, 모르는 `status` 값으로 단위 테스트 | 오류 없이 상태 알 수 없음 |
+| AC-4 | 기존 테스트 전체 | 변경 없이 통과 |
+| AC-5 | `cd apps/macos && swift build && swift test` | 통과 |
+| AC-6 | 사용자가 로그인한 Antigravity App으로 확인 | 로그인이 없으면 미검증으로 기록 |
 
 ## 미결정 사항
 
-- **방향 전환 후보(실측으로 강화됨)**: Antigravity App과 CLI는 `transcript.jsonl`(JSONL, `status` 필드 포함)을 남기므로 훅 설치 없이 파일 관찰로 대화를 볼 수 있다. 대상을 Gemini CLI에서 Antigravity(`transcript.jsonl`)로 바꾸는 것을 제안한다. 사용자와 합의가 필요하다.
-- **(이전 기록)**: Gemini CLI는 개인 계정으로 쓸 수 없고, Antigravity CLI는 statusLine으로 상태와 주간 한도를 얻을 수 있어 대상을 Gemini CLI에서 Antigravity CLI로 바꾸는 것을 제안한다. 사용자와 합의가 필요하며, 그 경우 위의 "포함", "제외", 완료 조건을 다시 쓴다. 구현을 막는다.
-- **전제 재확인**: 개인 Google 계정으로 Gemini CLI를 쓸 수 없게 되어 제보의 "Gemini CLI" 유저가 어떤 인증으로 쓰는지(API 키, Vertex, Workspace)와, 실제로 Antigravity(바이너리 `.pb`)를 쓰는 것은 아닌지 제보자에게 확인해야 한다. 이 답에 따라 Gemini CLI만 지원하는 것이 제보를 해결하는지 달라진다. 구현을 막는다.
-- 상태 판별 방식. 훅 설치는 제외했으므로 파일 관찰로 구분할 수 있는지 실측이 필요하며 구현을 막는다. 구분이 어렵다면 "세션 표시"까지만 할지 다시 정한다.
-- 제보자의 실제 환경. 구현을 막지는 않지만 범위 판단에 영향을 준다.
+- SQLite 읽기 방식과 의존성(시스템 SQLite 사용 여부, WAL 처리). 구현을 막는다.
+- 값 9가 승인 대기 외의 대기(질문 등)에도 쓰이는지, 오류와 취소 때의 값. 구현을 막지는 않지만 상태 표시 정확도에 영향을 준다.
+- Antigravity CLI와 IDE 지원 시점. 제외했으므로 구현을 막지 않는다.
+- 제보자가 쓰는 것이 App인지 CLI인지. 구현을 막지는 않지만 제보 해결 여부에 영향을 준다.
 
 ## 주요 설계 변경
 
@@ -131,3 +131,4 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 | 4 | Antigravity CLI의 statusLine 조사 결과 추가, 대상을 Antigravity CLI로 바꾸는 방향을 미결정으로 제안 | 공식 문서 확인. 사용자와 합의 전이라 범위는 바꾸지 않음 |
 | 5 | Antigravity App 실측 결과 반영: `transcript.jsonl` 존재와 줄 형식, 훅 이벤트 확인. 범위는 합의 전이라 바꾸지 않음 | 사용자가 Antigravity App에서 Gemini로 대화한 뒤 파일 변화를 비교 |
 | 6 | 승인 대기와 진행 중을 구분할 수 있는 SQLite 신호 조사 결과 반영. 범위는 합의 전이라 바꾸지 않음 | 승인 창이 뜬 상태, 승인 직후, 응답이 끝난 뒤의 상태를 비교(사용자가 승인과 종료를 확인) |
+| 7 | 대상을 Antigravity App으로 확정. Gemini CLI, Antigravity CLI와 IDE, 사용량, 훅 설치는 제외. 설계, 완료 조건, 검증을 새로 작성 | 사용자와 합의(2026-11-04). Gemini CLI는 개인 계정 로그인이 막혔고 Antigravity App은 파일로 상태를 읽을 수 있음 |
