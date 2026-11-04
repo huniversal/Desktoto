@@ -57,6 +57,21 @@ enum PanelText {
         return "\(minutes)분"
     }
 
+    // 사용량 카드 제목. 같은 툴의 계정이 하나뿐이면 툴 이름만, 둘 이상이면 계정 이름을 덧붙여 구분한다.
+    static func usageTitle(of usage: ToolUsage, among usages: [ToolUsage]) -> String {
+        guard usages.filter({ $0.tool == usage.tool }).count > 1 else { return usage.tool.rawValue }
+        return "\(usage.tool.rawValue) (\(accountName(of: usage.account)))"
+    }
+
+    // 설정 폴더 경로에서 보여 줄 이름. 기본 계정은 "기본", Orca처럼 마지막 폴더가 home이면 그 윗 폴더 이름을 쓴다.
+    static func accountName(of account: String?) -> String {
+        guard let account else { return "기본" }
+        let components = URL(fileURLWithPath: account).standardizedFileURL.pathComponents.filter { $0 != "/" }
+        guard let last = components.last else { return account }
+        if last == "home", components.count > 1 { return components[components.count - 2] }
+        return last
+    }
+
     // 창 크기를 확정하지 못하고 추정한 값에는 ~를 붙인다.
     private static func estimateMark(of session: SessionInfo) -> String {
         session.isWindowEstimated ? "~" : ""

@@ -6,6 +6,34 @@ import Testing
 struct PanelTextTests {
     private let now = Date(timeIntervalSince1970: 1_000_000)
 
+    // #50 AC-2
+    @Test func singleAccountTitleStaysToolNameOnly() {
+        let usage = ToolUsage(tool: .claude, fiveHour: nil, weekly: nil, updatedAt: nil)
+        let codex = ToolUsage(tool: .codex, fiveHour: nil, weekly: nil, updatedAt: nil)
+        #expect(PanelText.usageTitle(of: usage, among: [usage, codex]) == "Claude")
+        #expect(PanelText.usageTitle(of: codex, among: [usage, codex]) == "Codex")
+    }
+
+    // #50 AC-1
+    @Test func severalAccountsOfOneToolGetAccountNamesInTitle() {
+        let main = ToolUsage(tool: .claude, fiveHour: nil, weekly: nil, updatedAt: nil)
+        let work = ToolUsage(tool: .claude, account: "/synthetic/claude-profiles/work/home", fiveHour: nil, weekly: nil, updatedAt: nil)
+        let codex = ToolUsage(tool: .codex, fiveHour: nil, weekly: nil, updatedAt: nil)
+        let all = [main, work, codex]
+        #expect(PanelText.usageTitle(of: main, among: all) == "Claude (기본)")
+        #expect(PanelText.usageTitle(of: work, among: all) == "Claude (work)")
+        #expect(PanelText.usageTitle(of: codex, among: all) == "Codex")
+        #expect(Set(all.map(\.id)).count == 3)
+    }
+
+    // #50
+    @Test func accountNameUsesLastFolderOrParentOfHome() {
+        #expect(PanelText.accountName(of: nil) == "기본")
+        #expect(PanelText.accountName(of: "/synthetic/.claude-work") == ".claude-work")
+        #expect(PanelText.accountName(of: "/synthetic/profiles/personal/home/") == "personal")
+        #expect(PanelText.accountName(of: "/home") == "home")
+    }
+
     // AC-1
     @Test func tokenCountMatchesOriginalAtBoundaries() {
         #expect(PanelText.tokenCount(0) == "0")
