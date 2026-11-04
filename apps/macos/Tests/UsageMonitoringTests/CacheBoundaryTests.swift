@@ -28,6 +28,29 @@ struct CacheBoundaryTests {
 
     private let base = "https://claude.ai/api/organizations/abcd-1234/usage"
 
+    /// 데스크탑 캐시는 어느 계정의 값인지 알 수 없다. 기본 계정과만 겨루고, 다른 계정만 있으면 카드를 더하지 않는다.
+    @Test func desktopCacheCompetesOnlyWithDefaultAccount() async throws {
+        let files = InMemoryFileSystem()
+        let status = files.homeDirectory.appendingPathComponent(".ai-run/status")
+        let desktopCache = cacheFile(files, name: "desktop_0")
+        files.addFile(at: desktopCache, data: validEntry(utilization: 75), modifiedAt: now.addingTimeInterval(-10))
+        files.addFile(at: status.appendingPathComponent("work.json"), text: #"{"rate_limits":{"five_hour":{"used_percentage":20}}}"#, modifiedAt: now)
+        files.addFile(at: status.appendingPathComponent("work.config-dir"), text: "/synthetic/work-config", modifiedAt: now)
+        let monitor = UsageMonitor(fileSystem: files, timeSource: FixedTimeSource(now: now))
+        // 탐색이 끝나 캐시 파일을 읽을 때까지 기다린 뒤에 단언해야 아래 결과가 의미를 가진다.
+        try await waitFor {
+            _ = await monitor.getUsages()
+            return files.readCount(of: desktopCache) > 0
+        }
+        #expect(await monitor.getUsages().map(\.account) == ["/synthetic/work-config"])
+
+        files.addFile(at: status.appendingPathComponent("home.json"), text: #"{"rate_limits":{"five_hour":{"used_percentage":30}}}"#, modifiedAt: now.addingTimeInterval(-60))
+        let withDefault = await monitor.getUsages()
+        #expect(withDefault.map(\.account) == [nil, "/synthetic/work-config"])
+        #expect(withDefault.first?.fiveHour?.usedRatio == 0.75)
+        await monitor.stop()
+    }
+
     @Test func newestQueryVariantWinsAndFallsBackWhenCorrupted() async throws {
         let files = InMemoryFileSystem()
         let clock = FixedTimeSource(now: now)
