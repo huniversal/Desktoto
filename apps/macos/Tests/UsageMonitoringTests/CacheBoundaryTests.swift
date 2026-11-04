@@ -37,10 +37,11 @@ struct CacheBoundaryTests {
         files.addFile(at: status.appendingPathComponent("work.json"), text: #"{"rate_limits":{"five_hour":{"used_percentage":20}}}"#, modifiedAt: now)
         files.addFile(at: status.appendingPathComponent("work.config-dir"), text: "/synthetic/work-config", modifiedAt: now)
         let monitor = UsageMonitor(fileSystem: files, timeSource: FixedTimeSource(now: now))
-        // 탐색이 끝나 캐시 파일을 읽을 때까지 기다린 뒤에 단언해야 아래 결과가 의미를 가진다.
+        // 탐색의 앞부분 읽기(1회)에 이어 값을 파싱하는 전체 읽기(2회)까지 끝나야 데스크탑 값이 후보가 된다.
+        // 그 전에 단언하면 데스크탑 값이 빠진 결과를 정상으로 오해한다.
         try await waitFor {
             _ = await monitor.getUsages()
-            return files.readCount(of: desktopCache) > 0
+            return files.readCount(of: desktopCache) >= 2
         }
         #expect(await monitor.getUsages().map(\.account) == ["/synthetic/work-config"])
 
