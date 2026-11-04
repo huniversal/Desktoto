@@ -4,7 +4,7 @@
 
 - 이슈: #52 / https://github.com/huniversal/Desktoto/issues/52
 - 브랜치: feat/gemini-session-support/#52
-- specRevision: 5
+- specRevision: 6
 - 대상 ai-run 원본: N/A (원본에 Gemini와 Antigravity 언급이 없다. `~/Desktop/ai-run`의 `Sources`와 `landing`을 검색해 확인함)
 
 ## 목적
@@ -43,7 +43,14 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 - 그 밖에 생긴 것: `conversation_summaries.db`(SQLite), `conversations/<id>.db`(SQLite)와 기존 `.pb`, `presence/<id>.lock`, `daemon/hub_<pid>.json`(포트와 토큰이 들어 있어 읽지 않는다), 설정은 `~/.gemini/config/`. 앱이 `antigravity-ide/`와 `antigravity-backup/`에 옛 데이터를 복사해 두었다.
 - 제품마다 폴더 이름이 다르다(훅 문서 기준): App은 `antigravity/`, CLI는 `antigravity-cli/`, IDE는 `antigravity-ide/`.
 - 훅은 `hooks.json`에서 `SessionStart`, `PreToolUse`, `PostToolUse`, `PreInvocation`, `PostInvocation`, `Stop`을 지원하고 stdin JSON에 `conversationId`, `transcriptPath`, `workspacePaths`, `modelName`, `lastUserInput`이 있다. 동기 실행으로 에이전트 루프를 막으며 `command` 타입만 된다. 사용자 설정 수정이 필요해 이번 범위에서는 쓰지 않는다.
-- 아직 관찰하지 못한 것: 실행 중, 도구 승인 대기, 오류일 때의 `status`와 `type` 값, App의 한도(quota) 신호, 대화가 끝났음을 아는 방법.
+- **`transcript.jsonl`만으로는 승인 대기를 구분할 수 없다**: 승인 창이 떠 있는 동안 마지막 줄은 "도구 호출(`PLANNER_RESPONSE`에 `tool_calls`) 직후"와 같은 모양이고, 모든 줄이 `status: DONE`이다. 줄은 단계가 끝난 뒤에 추가된다.
+- **SQLite에는 상태가 있다**(2026-11-04 실측, 승인 창이 뜬 상태의 읽기 전용 사본 조회):
+  - `~/.gemini/antigravity/conversation_summaries.db`의 `conversation_summaries` 테이블: `status`(`CASCADE_RUN_STATUS_RUNNING` 또는 `CASCADE_RUN_STATUS_IDLE`), `not_fully_idle`(0 또는 1), `killed`, `step_count`, `last_modified_time`, `last_user_input_time`. 끝난 대화는 `IDLE`과 0, 작업 중과 승인 대기 중은 모두 `RUNNING`과 1이었다. 이 테이블만으로는 승인 대기를 구분하지 못한다.
+  - `~/.gemini/antigravity/conversations/<id>.db`의 `steps` 테이블: 단계마다 정수 `status`. 완료된 단계는 모두 `3`이었고, 승인을 기다리는 마지막 단계(`step_type` 132, `run_command`로 추정)만 `9`였다. 사용자가 승인을 눌렀다고 확인한 뒤, 1초 간격 기록에서 같은 단계가 `9`에서 `3`으로 바뀐 것을 확인했다(22:48:35 `9`, 22:48:43 `3`). 값 9의 의미는 문서가 없어 "승인 대기"로 보며, 다른 종류의 대기에도 쓰이는지는 모른다.
+  - 응답이 끝난 뒤: 요약 `IDLE`과 `not_fully_idle=0`, `steps`의 모든 단계 `status=3`, `step_count`가 `transcript.jsonl` 줄 수(36)와 같고 마지막 줄은 `tool_calls`가 없는 `PLANNER_RESPONSE`였다.
+  - 승인 대기 중에는 `step_count`(35)가 `transcript.jsonl` 줄 수(34)보다 1 컸다. 아직 기록되지 않은 진행 중 단계가 있다는 뜻으로 보인다.
+  - 두 DB는 WAL 모드라 원본을 읽기 전용으로 직접 열 수 없었고 파일 세트를 복사해 읽어야 했다. 스키마와 정수 값은 문서화되지 않은 내부 형식이라 버전이 바뀌면 깨질 수 있다.
+- 아직 관찰하지 못한 것: 오류일 때의 값, 9가 다른 대기(질문 등)에도 쓰이는지, App의 한도(quota) 신호, 대화가 끝났음을 아는 가장 안정적인 방법.
 
 ### 이 PC에서 직접 본 것
 
@@ -123,3 +130,4 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 | 3 | 실측 결과 반영: 현재 형식이 JSONL(헤더, 메시지, `$set` 갱신 줄)임을 확인, Google 계정 로그인 불가와 그에 따른 전제 재확인 항목 추가 | 0.66.0 실행에서 확인 |
 | 4 | Antigravity CLI의 statusLine 조사 결과 추가, 대상을 Antigravity CLI로 바꾸는 방향을 미결정으로 제안 | 공식 문서 확인. 사용자와 합의 전이라 범위는 바꾸지 않음 |
 | 5 | Antigravity App 실측 결과 반영: `transcript.jsonl` 존재와 줄 형식, 훅 이벤트 확인. 범위는 합의 전이라 바꾸지 않음 | 사용자가 Antigravity App에서 Gemini로 대화한 뒤 파일 변화를 비교 |
+| 6 | 승인 대기와 진행 중을 구분할 수 있는 SQLite 신호 조사 결과 반영. 범위는 합의 전이라 바꾸지 않음 | 승인 창이 뜬 상태, 승인 직후, 응답이 끝난 뒤의 상태를 비교(사용자가 승인과 종료를 확인) |
