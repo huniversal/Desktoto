@@ -184,15 +184,18 @@ public actor SessionMonitor {
     private func makeAntigravityInfo(of conversation: AntigravityConversation) -> SessionInfo {
         let isWaiting = antigravityWaitingIDs.contains(conversation.id)
         let usedTokens = antigravityUsedTokens[conversation.id]
+        let modelName = antigravityModelNames[conversation.id]
+        // 사용량이 있어도 창 크기를 모르는 모델이면 퍼센트를 계산하지 않는다.
+        let windowTokens = usedTokens == nil ? nil : SessionMonitoringPolicy.antigravityEstimatedWindow(forModel: modelName)
         return SessionInfo(
             id: conversation.id,
             tool: .antigravity,
             projectName: conversation.workspacePath.map { URL(fileURLWithPath: $0).lastPathComponent } ?? SessionMonitoringPolicy.unknownProjectName,
             title: conversation.title,
-            modelName: antigravityModelNames[conversation.id],
+            modelName: modelName,
             usedTokens: usedTokens,
-            windowTokens: usedTokens == nil ? nil : SessionMonitoringPolicy.antigravityEstimatedWindow,
-            isWindowEstimated: usedTokens != nil,
+            windowTokens: windowTokens,
+            isWindowEstimated: windowTokens != nil,
             isRunning: !isWaiting && conversation.isRunning,
             waitingKind: isWaiting ? .approval : nil,
             openURL: nil,

@@ -22,8 +22,16 @@ enum SessionMonitoringPolicy {
     /// Antigravity App이 대화와 상태를 남기는 폴더. 홈 폴더 기준 경로다.
     static let antigravityRootPath = ".gemini/antigravity"
 
-    /// Antigravity는 대화의 컨텍스트 창 크기를 파일에 남기지 않는다. Gemini 계열이 보통 100만 토큰대라서 이 값으로 추정하고 화면에 ~를 붙인다.
-    static let antigravityEstimatedWindow = 1_048_576
+    /// Antigravity는 Gemini 말고 Claude와 GPT-OSS 모델도 쓰고, 대화의 컨텍스트 창 크기를 파일에 남기지 않는다.
+    /// 모델 이름으로 추정하고 화면에 ~를 붙인다. 모르는 모델이면 nil이라 퍼센트를 계산하지 않는다.
+    /// Gemini 3.8 Flash의 입력 한도 1,048,576은 Gemini API 문서 값이다. Claude와 GPT-OSS는 공개된 일반 한도다.
+    static func antigravityEstimatedWindow(forModel name: String?) -> Int? {
+        guard let name else { return nil }
+        if name.hasPrefix("gemini-") { return 1_048_576 }
+        if name.hasPrefix("claude-") { return 200_000 }
+        if name.hasPrefix("gpt-oss") { return 131_072 }
+        return nil
+    }
 
     static let maxSessionCount = 10
     static let unknownProjectName = "알 수 없음"

@@ -54,12 +54,12 @@ struct AntigravityTests {
         }
 
         /// 대화별 DB의 실행기 메타데이터(바이너리) 한 줄을 넣는다.
-        func addExecutorMetadata(_ id: String, blob: Data) throws {
+        func addExecutorMetadata(_ id: String, blob: Data, table: String = "executor_metadata") throws {
             let url = home.appendingPathComponent(".gemini/antigravity/conversations/\(id).db")
             let database = try #require(SQLiteFixture(url: url))
-            #expect(database.execute("CREATE TABLE IF NOT EXISTS executor_metadata (idx integer PRIMARY KEY, data blob)"))
+            #expect(database.execute("CREATE TABLE IF NOT EXISTS \(table) (idx integer PRIMARY KEY, data blob)"))
             let hex = blob.map { String(format: "%02x", $0) }.joined()
-            #expect(database.execute("INSERT OR REPLACE INTO executor_metadata VALUES (0, x'\(hex)')"))
+            #expect(database.execute("INSERT OR REPLACE INTO \(table) VALUES (0, x'\(hex)')"))
         }
 
         /// 대화 기록(JSONL)을 쓴다.
@@ -218,7 +218,9 @@ struct AntigravityTests {
         #expect(AntigravityReader.modelName(in: mixed) == "gemini-3.8-flash")
         #expect(AntigravityReader.modelName(in: Data()) == nil)
         #expect(AntigravityReader.modelName(in: Data("gemini-".utf8)) == nil)
-        #expect(AntigravityReader.modelName(in: Data(Self.field(0x0a, "claude-opus")))  == nil)
+        #expect(AntigravityReader.modelName(in: Data(Self.field(0x0a, "llama-3-70b"))) == nil)
+        #expect(AntigravityReader.modelName(in: Data(Self.field(0x0a, "claude-sonnet-4-6") + Self.field(0x6a, "tail"))) == "claude-sonnet-4-6")
+        #expect(AntigravityReader.modelName(in: Data(Self.field(0x0a, "gpt-oss-120b"))) == "gpt-oss-120b")
         // 길이가 실제보다 길면 읽지 않는다.
         #expect(AntigravityReader.modelName(in: Data([0x0a, 0x40] + Array("gemini-3.8-flash".utf8))) == nil)
     }
@@ -238,8 +240,41 @@ struct AntigravityTests {
         let session = try #require(await environment.makeMonitor().activeSessions().first)
         #expect(session.modelName == "gemini-3.8-flash-high")
         #expect(session.usedTokens == 27_000)
-        #expect(session.windowTokens == SessionMonitoringPolicy.antigravityEstimatedWindow)
+        #expect(session.windowTokens == 1_048_576)
         #expect(session.isWindowEstimated)
+    }
+
+    @Test(arguments: [("claude-sonnet-4-6", 200_000), ("gpt-oss-120b", 131_072), ("gemini-3.8-flash-high", 1_048_576)])
+    func contextWindowIsEstimatedFromTheModelFamily(model: String, expectedWindow: Int) async throws {
+        let environment = try Environment()
+        environment.addConversation("model-id", status: "CASCADE_RUN_STATUS_IDLE")
+        try environment.addExecutorMetadata("model-id", blob: Data(Self.field(0x0a, model)))
+        try environment.writeTranscript("model-id", lines: [#"{"step_index":1,"type":"PLANNER_RESPONSE","input_tokens":1000,"cache_read_tokens":500}"#])
+        let session = try #require(await environment.makeMonitor().activeSessions().first)
+        #expect(session.modelName == model)
+        #expect(session.usedTokens == 1_500)
+        #expect(session.windowTokens == expectedWindow)
+        #expect(session.isWindowEstimated)
+    }
+
+    @Test func usageWithoutAKnownModelShowsNoPercentage() async throws {
+        let environment = try Environment()
+        environment.addConversation("unknown-id", status: "CASCADE_RUN_STATUS_IDLE")
+        try environment.writeTranscript("unknown-id", lines: [#"{"step_index":1,"type":"PLANNER_RESPONSE","input_tokens":1000,"cache_read_tokens":500}"#])
+        let session = try #require(await environment.makeMonitor().activeSessions().first)
+        #expect(session.modelName == nil)
+        #expect(session.usedTokens == 1_500)
+        #expect(session.windowTokens == nil)
+        #expect(session.isWindowEstimated == false)
+    }
+
+    @Test func generationMetadataTextIsNotMistakenForAModelName() async throws {
+        let environment = try Environment()
+        environment.addConversation("gen-id", status: "CASCADE_RUN_STATUS_IDLE")
+        // 생성 메타데이터에는 안내문 같은 텍스트가 들어 있고 `gemini-api` 같은 문자열이 모델 이름처럼 보일 수 있다.
+        try environment.addExecutorMetadata("gen-id", blob: Data(Self.field(0x0a, "gemini-api")), table: "gen_metadata")
+        let session = try #require(await environment.makeMonitor().activeSessions().first)
+        #expect(session.modelName == nil)
     }
 
     @Test func missingTranscriptAndMetadataLeaveModelAndUsageEmpty() async throws {

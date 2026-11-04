@@ -60,30 +60,31 @@ struct AntigravityReader: Sendable {
         return nil
     }
 
-    /// 대화별 DB의 실행기와 생성 메타데이터(바이너리)에서 `gemini-3.8-flash-high` 같은 모델 이름을 찾는다. 못 찾으면 nil이다.
+    /// 대화별 DB의 실행기 메타데이터(바이너리)에서 `gemini-3.8-flash-high`나 `claude-sonnet-4-6` 같은 모델 이름을 찾는다. 못 찾으면 nil이다.
+    /// 생성 메타데이터(`gen_metadata`)에는 안내문 같은 긴 텍스트가 섞여 있어 `gemini-api` 같은 문자열을 모델로 잘못 읽을 수 있어서 보지 않는다.
     func modelName(conversationID: String) -> String? {
-        let url = stepsDatabaseURL(conversationID: conversationID)
-        for table in ["executor_metadata", "gen_metadata"] {
-            let rows = database.query(at: url, sql: "SELECT data FROM \(table) ORDER BY idx DESC LIMIT 3") ?? []
-            for case .blob(let blob)? in rows.map({ $0["data"] }) {
-                if let name = Self.modelName(in: blob) { return name }
-            }
+        let rows = database.query(at: stepsDatabaseURL(conversationID: conversationID), sql: "SELECT data FROM executor_metadata ORDER BY idx DESC LIMIT 3") ?? []
+        for case .blob(let blob)? in rows.map({ $0["data"] }) {
+            if let name = Self.modelName(in: blob) { return name }
         }
         return nil
     }
 
-    /// 프로토콜 버퍼의 문자열 필드는 값 바로 앞 바이트가 길이다. `gemini-`로 시작하는 문자열을 찾아 그 길이만큼만 잘라서,
+    /// Antigravity가 지원하는 모델 계열의 이름 접두어(Gemini, Claude, GPT-OSS).
+    private static let modelNamePrefixes = ["gemini-", "claude-", "gpt-"].map { Array($0.utf8) }
+
+    /// 프로토콜 버퍼의 문자열 필드는 값 바로 앞 바이트가 길이다. 모델 이름 접두어로 시작하는 문자열을 찾아 그 길이만큼만 잘라서,
     /// 뒤따르는 다음 필드의 태그 바이트가 글자로 보여 이름에 섞이는 일을 막는다. 형식이 맞지 않으면 건너뛴다.
     static func modelName(in data: Data) -> String? {
-        let prefix = Array("gemini-".utf8)
         let bytes = [UInt8](data)
-        guard bytes.count > prefix.count else { return nil }
-        for start in 1...(bytes.count - prefix.count) where Array(bytes[start..<(start + prefix.count)]) == prefix {
-            let length = Int(bytes[start - 1])
-            guard length > prefix.count, start + length <= bytes.count,
-                  let text = String(bytes: bytes[start..<(start + length)], encoding: .ascii),
-                  text.allSatisfy({ $0.isLowercase || $0.isNumber || $0 == "." || $0 == "-" }) else { continue }
-            return text
+        for prefix in modelNamePrefixes where bytes.count > prefix.count {
+            for start in 1...(bytes.count - prefix.count) where Array(bytes[start..<(start + prefix.count)]) == prefix {
+                let length = Int(bytes[start - 1])
+                guard length > prefix.count, start + length <= bytes.count,
+                      let text = String(bytes: bytes[start..<(start + length)], encoding: .ascii),
+                      text.allSatisfy({ $0.isLowercase || $0.isNumber || $0 == "." || $0 == "-" }) else { continue }
+                return text
+            }
         }
         return nil
     }
