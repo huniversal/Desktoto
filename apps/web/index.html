@@ -332,14 +332,16 @@
   .gk-btn.primary { background: #0a7aff; color: #fff; }
   .gk-btn.hover { filter: brightness(0.9); }
   .gk-btn.press { transform: scale(0.96); }
-  /* 암호창은 제목줄 아래 영역 안에서만 내려온다. 숨길 때는 그림자(최대 42px)까지 영역 밖으로 올려 보이지 않게 한다. */
-  .gk-sheetwrap { position: absolute; z-index: 4; inset: 32px 0 0; overflow: hidden; pointer-events: none; }
+  /* 암호창은 모서리가 모두 둥근 떠 있는 창이다. 나타날 때 뒤 화면을 살짝 어둡게 하고, 숨길 때는 투명해져서 그림자도 보이지 않는다. */
+  .gk-sheetwrap { position: absolute; z-index: 4; inset: 32px 0 0; pointer-events: none; }
+  .gk-sheetwrap::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.16); opacity: 0; transition: opacity 0.3s; }
+  .gk-sheetwrap.show::before { opacity: 1; }
   .gk-sheet {
-    position: absolute; left: 50%; top: 0; width: min(250px, 86%); padding: 14px 16px 12px; text-align: center;
-    border-radius: 0 0 14px 14px; background: rgba(247, 246, 249, 0.97); box-shadow: 0 12px 30px rgba(0, 20, 80, 0.3);
-    transform: translate(-50%, calc(-100% - 50px)); transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.25, 1);
+    position: absolute; left: 50%; top: 16px; width: min(250px, 86%); padding: 16px 16px 14px; text-align: center;
+    border-radius: 14px; background: rgba(247, 246, 249, 0.98); box-shadow: 0 14px 34px rgba(0, 20, 80, 0.35), 0 0 0 0.5px rgba(0, 0, 0, 0.2);
+    opacity: 0; transform: translate(-50%, -12px) scale(0.97); transition: opacity 0.25s, transform 0.3s cubic-bezier(0.2, 0.8, 0.25, 1);
   }
-  .gk-sheet.show { transform: translate(-50%, 0); }
+  .gk-sheet.show { opacity: 1; transform: translate(-50%, 0); }
   .gk-sheet h4 { margin: 0 0 10px; font-size: 12.5px; font-weight: 600; letter-spacing: 0; }
   .gk-pw { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0.5px solid #cfcdd6; border-radius: 7px; background: #fff; }
   .gk-pw i { width: 7px; height: 7px; border-radius: 50%; background: #25252b; opacity: 0; }
@@ -369,7 +371,7 @@
   .steps.playing li { opacity: 0.45; transition: opacity 0.3s; }
   .steps.playing li.now { opacity: 1; }
   @media (prefers-reduced-motion: reduce) {
-    .gk-win, .gk-alert, .gk-sheet, .gk-cap, .gk-scroll, .gk-page, .gk-side p { transition: none; }
+    .gk-win, .gk-alert, .gk-sheet, .gk-sheetwrap::before, .gk-cap, .gk-scroll, .gk-page, .gk-side p { transition: none; }
     .gk-block.hot .gk-open { animation: none; }
     .tour.gk .menubar canvas.icon { transition: none; }
   }
@@ -1005,6 +1007,7 @@
     var sideItems = [].slice.call(root.querySelectorAll(".gk-side p"));
     var privItem = root.querySelector(".gk-side p.priv");
     var sheet = root.querySelector(".gk-sheet");
+    var sheetWrap = root.querySelector(".gk-sheetwrap");
     var dots = [].slice.call(root.querySelectorAll(".gk-pw i"));
     var okBtn = root.querySelector(".gk-ok");
     var alertEl = root.querySelector(".gk-alert");
@@ -1084,11 +1087,12 @@
       ripple.classList.remove("go"); void ripple.offsetWidth; ripple.classList.add("go");
     }
     function press(el) { el.classList.add("press"); setTimeout(function () { el.classList.remove("press"); }, 180); }
+    function setSheet(on) { sheet.classList.toggle("show", on); sheetWrap.classList.toggle("show", on); }
     function reset() {
       stage.classList.remove("icon-on");
       alertEl.classList.remove("show");
       win.classList.remove("show");
-      sheet.classList.remove("show");
+      setSheet(false);
       main.classList.remove("priv");
       block.classList.remove("hot");
       doneBtn.classList.remove("hover");
@@ -1126,12 +1130,12 @@
       click(); press(openBtn); await wait(350);
       block.classList.remove("hot");
       setStep(3, "gkCap3c");
-      sheet.classList.add("show"); await wait(700);
+      setSheet(true); await wait(700);
       for (var i = 0; i < DOTS; i++) { dots[i].classList.add("on"); await wait(110); }
       await wait(300);
       await glideTo(okBtn, 0.5, 0.5, 800);
       click(); press(okBtn); await wait(300);
-      sheet.classList.remove("show"); await wait(350);
+      setSheet(false); await wait(350);
       win.classList.remove("show"); await wait(500);
       // 4단계: 다시 열면 메뉴바에 캐릭터가 나타난다.
       setStep(4, "gkCap4");
