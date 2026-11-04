@@ -78,7 +78,10 @@ public actor ClaudeIntegration {
                 statusPath: binDirectory.appendingPathComponent(ClaudeSettings.statusScript).path,
                 hasStatusSaver: hasStatusSaver
             )
-            guard !NSDictionary(dictionary: settings).isEqual(to: updated) else { return .alreadyConnected }
+            guard !NSDictionary(dictionary: settings).isEqual(to: updated) else {
+                try refreshInstalledScripts()
+                return .alreadyConnected
+            }
             // 두 리소스를 먼저 읽어 누락 시 한쪽만 설치되는 일을 피한다.
             let scripts = try [ClaudeSettings.hookScript, ClaudeSettings.statusScript].map { name in
                 guard let data = try files.read(at: resourceDirectory.appendingPathComponent(name)) else {
@@ -94,6 +97,17 @@ public actor ClaudeIntegration {
             try files.writeAtomically(output, to: url)
             return .connected
         } catch { return .failed(failure(from: error)) }
+    }
+
+    /// 이미 연결된 유저도 앱을 업데이트하면 새 스크립트를 쓰게 한다. 설치된 적 있는 스크립트만 번들 내용으로 교체하고 settings는 건드리지 않는다.
+    private func refreshInstalledScripts() throws {
+        for name in [ClaudeSettings.hookScript, ClaudeSettings.statusScript] {
+            let installedURL = binDirectory.appendingPathComponent(name)
+            guard let installed = try files.read(at: installedURL),
+                  let bundled = try files.read(at: resourceDirectory.appendingPathComponent(name)),
+                  installed != bundled else { continue }
+            try files.writeAtomically(bundled, to: installedURL)
+        }
     }
 
     public func disconnect() -> Result {
