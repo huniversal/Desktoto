@@ -4,6 +4,7 @@ import Foundation
 
 /// Claude Code(`~/.claude/projects`)와 Codex(`~/.codex/sessions`)의 기록 파일을 감시해
 /// 세션이 작업 중인지 판정하고, 세션별 모델과 컨텍스트 사용량을 읽는다.
+/// Antigravity App(`~/.gemini/antigravity`)은 기록 파일이 아니라 SQLite의 상태로 판정한다.
 /// 터미널 프로세스가 살아 있는지는 직접 확인하지 않고, 주입받은 `TerminalSessionChecker`에 묻는다.
 public actor SessionMonitor {
     private struct CachedActivity {
@@ -24,6 +25,7 @@ public actor SessionMonitor {
     private let infoReader: SessionInfoReader
     private let terminalSessionChecker: (any TerminalSessionChecker)?
     private let sessionLinkResolver: (any SessionLinkResolver)?
+    private let antigravityReader: AntigravityReader
 
     /// 수정 시각이 같으면 이전 결과를 다시 쓴다. 1초마다 호출되어도 기록 파일은 바뀔 때만 읽는다.
     private var activityCache: [String: CachedActivity] = [:]
@@ -36,18 +38,26 @@ public actor SessionMonitor {
     private var recentFiles: [String: LogFile] = [:]
     /// Codex 제목 목록. 파일의 수정 시각이 바뀔 때만 다시 읽는다.
     private var codexTitleCache: (modifiedAt: Date, titles: [String: String])?
+    /// 마지막 조회에서 본 최근 Antigravity 대화와 그중 승인을 기다리는 대화.
+    private var recentAntigravity: [String: AntigravityConversation] = [:]
+    private var antigravityWaitingIDs: Set<String> = []
+    /// SQLite 파일은 WAL 때문에 본 파일의 수정 시각이 바로 바뀌지 않아서 -wal 파일의 시각까지 함께 비교한다.
+    private var antigravitySummaryCache: (signature: [Date?], conversations: [AntigravityConversation])?
+    private var antigravityStepsCache: [String: (signature: [Date?], isWaiting: Bool)] = [:]
 
     public init(
         fileSystem: any FileSystem,
         timeSource: any TimeSource,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         terminalSessionChecker: (any TerminalSessionChecker)? = nil,
-        sessionLinkResolver: (any SessionLinkResolver)? = nil
+        sessionLinkResolver: (any SessionLinkResolver)? = nil,
+        sqliteDatabase: any SQLiteDatabase = LiveSQLiteDatabase()
     ) {
         self.fileSystem = fileSystem
         self.timeSource = timeSource
         self.terminalSessionChecker = terminalSessionChecker
         self.sessionLinkResolver = sessionLinkResolver
+        antigravityReader = AntigravityReader(fileSystem: fileSystem, database: sqliteDatabase)
         recordReader = LogRecordReader(fileSystem: fileSystem)
         waitingSignalReader = WaitingSignalReader(fileSystem: fileSystem)
         originReader = CodexOriginReader(fileSystem: fileSystem)
@@ -63,30 +73,109 @@ public actor SessionMonitor {
         let now = timeSource.now
         let files = recentLogFiles(now: now)
         recentFiles = Dictionary(files.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return recentFiles.mapValues { RunStateJudge.runState(for: $0, now: now) }
+        refreshAntigravity(now: now)
+        var states = recentFiles.mapValues { RunStateJudge.runState(for: $0, now: now) }
+        for (id, conversation) in recentAntigravity {
+            states[id] = antigravityRunState(of: conversation, now: now)
+        }
+        return states
     }
 
     /// 마지막 sessionStates()에서 본 세션의 상세 정보를 읽는다.
     public func sessionInfo(id: String) -> SessionInfo? {
-        guard let file = recentFiles[id] else { return nil }
-        return makeSessionInfo(file: file, now: timeSource.now)
+        if let file = recentFiles[id] { return makeSessionInfo(file: file, now: timeSource.now) }
+        return recentAntigravity[id].map(makeAntigravityInfo(of:))
     }
 
     /// 최근 활동한 세션을 최신순으로 돌려준다.
     public func activeSessions() -> [SessionInfo] {
         let now = timeSource.now
-        return recentLogFiles(now: now)
+        let logSessions = recentLogFiles(now: now).map { (activity: $0.activity, info: makeSessionInfo(file: $0, now: now)) }
+        refreshAntigravity(now: now)
+        let antigravitySessions = recentAntigravity.values.map { (activity: $0.lastModified, info: makeAntigravityInfo(of: $0)) }
+        return (logSessions + antigravitySessions)
             .sorted { $0.activity > $1.activity }
             .prefix(SessionMonitoringPolicy.maxSessionCount)
-            .map { makeSessionInfo(file: $0, now: now) }
+            .map(\.info)
     }
 
     /// 응답을 기다리는 세션과 그 이유. 마지막 sessionStates()에서 본 최근 세션만 대상으로 한다.
     public func waitingKinds() -> [String: WaitingKind] {
         let now = timeSource.now
-        return recentFiles.values.reduce(into: [:]) { result, file in
+        var kinds = recentFiles.values.reduce(into: [String: WaitingKind]()) { result, file in
             if let kind = waitingKind(for: file, now: now) { result[file.id] = kind }
         }
+        for id in antigravityWaitingIDs { kinds[id] = .approval }
+        return kinds
+    }
+
+    // MARK: - Antigravity
+
+    /// 최근 대화를 읽어 recentAntigravity와 antigravityWaitingIDs를 갱신한다.
+    /// 최근 activeWindow 안에 바뀐 대화, 또는 그보다 오래됐어도 승인을 기다리는 대화(waitingMaxAge까지)만 남긴다.
+    private func refreshAntigravity(now: Date) {
+        var recent: [String: AntigravityConversation] = [:]
+        var waitingIDs: Set<String> = []
+        for conversation in antigravityConversations() {
+            let age = now.timeIntervalSince(conversation.lastModified)
+            guard age < SessionMonitoringPolicy.waitingMaxAge else { continue }
+            let isWaiting = conversation.isRunning && isAntigravityWaiting(conversationID: conversation.id)
+            guard age < SessionMonitoringPolicy.activeWindow || isWaiting else { continue }
+            recent[conversation.id] = conversation
+            if isWaiting { waitingIDs.insert(conversation.id) }
+        }
+        recentAntigravity = recent
+        antigravityWaitingIDs = waitingIDs
+        antigravityStepsCache = antigravityStepsCache.filter { recent[$0.key] != nil }
+    }
+
+    private func antigravityConversations() -> [AntigravityConversation] {
+        let signature = fileSignature(of: antigravityReader.summaryDatabaseURL)
+        if let cached = antigravitySummaryCache, cached.signature == signature { return cached.conversations }
+        let conversations = antigravityReader.recentConversations()
+        // 읽지 못한 결과(빈 목록)를 캐시하면 다음 조회에서 다시 읽지 못하므로, 파일이 없으면 저장하지 않는다.
+        antigravitySummaryCache = signature.contains { $0 != nil } ? (signature, conversations) : nil
+        return conversations
+    }
+
+    private func isAntigravityWaiting(conversationID: String) -> Bool {
+        let signature = fileSignature(of: antigravityReader.stepsDatabaseURL(conversationID: conversationID))
+        if let cached = antigravityStepsCache[conversationID], cached.signature == signature { return cached.isWaiting }
+        let isWaiting = antigravityReader.isWaitingForApproval(conversationID: conversationID)
+        antigravityStepsCache[conversationID] = (signature, isWaiting)
+        return isWaiting
+    }
+
+    /// 본 파일과 -wal 파일의 수정 시각. 파일이 없으면 nil이다.
+    private func fileSignature(of databaseURL: URL) -> [Date?] {
+        [databaseURL, URL(fileURLWithPath: databaseURL.path + "-wal")].map { fileSystem.modificationDate(of: $0) }
+    }
+
+    /// 승인을 기다리는 대화는 작업이 멈춘 것이 아니라 사람을 기다리는 것이라서 오래돼도 진행 중으로 본다.
+    private func antigravityRunState(of conversation: AntigravityConversation, now: Date) -> SessionRunState {
+        guard conversation.isRunning else { return conversation.isKilled ? .idle : .completed }
+        let isFresh = now.timeIntervalSince(conversation.lastModified) < SessionMonitoringPolicy.activeWindow
+        return isFresh || antigravityWaitingIDs.contains(conversation.id) ? .running : .idle
+    }
+
+    private func makeAntigravityInfo(of conversation: AntigravityConversation) -> SessionInfo {
+        let isWaiting = antigravityWaitingIDs.contains(conversation.id)
+        return SessionInfo(
+            id: conversation.id,
+            tool: .antigravity,
+            projectName: conversation.workspacePath.map { URL(fileURLWithPath: $0).lastPathComponent } ?? SessionMonitoringPolicy.unknownProjectName,
+            title: conversation.title,
+            modelName: nil,
+            usedTokens: nil,
+            windowTokens: nil,
+            isWindowEstimated: false,
+            isRunning: !isWaiting && conversation.isRunning,
+            waitingKind: isWaiting ? .approval : nil,
+            openURL: nil,
+            workingDirectory: conversation.workspacePath,
+            startedAt: nil,
+            isTerminalSession: false
+        )
     }
 
     // MARK: - 파일 탐색
@@ -136,6 +225,8 @@ public actor SessionMonitor {
                 .contains(SessionMonitoringPolicy.claudeSubagentDirectoryName)
         case .codex:
             return codexOrigin(of: url).isSubagent
+        case .antigravity:
+            return false
         }
     }
 
@@ -152,6 +243,8 @@ public actor SessionMonitor {
             let origin = codexOrigin(of: file.url)
             guard origin.isTerminalSession else { return false }
             return terminalSessionChecker.isClosed(sessionID: file.id, tool: .codex, workingDirectory: origin.workingDirectory)
+        case .antigravity:
+            return false
         }
     }
 
@@ -241,6 +334,14 @@ public actor SessionMonitor {
                 startedAt: startedAt,
                 isRunning: isRunning,
                 waitingKind: waitingKind
+            )
+        case .antigravity:
+            // 기록 파일로 읽지 않는 툴이라 이 경로에 오지 않는다. 오더라도 알려진 정보만으로 만든다.
+            return SessionInfo(
+                id: file.id, tool: .antigravity, projectName: SessionMonitoringPolicy.unknownProjectName, title: nil,
+                modelName: nil, usedTokens: nil, windowTokens: nil, isWindowEstimated: false,
+                isRunning: isRunning, waitingKind: waitingKind, openURL: nil, workingDirectory: nil,
+                startedAt: startedAt, isTerminalSession: false
             )
         }
     }

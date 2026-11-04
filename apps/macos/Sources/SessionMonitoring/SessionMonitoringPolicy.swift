@@ -19,6 +19,9 @@ enum SessionMonitoringPolicy {
     /// Codex 데스크탑 앱이 스레드 제목을 적어 두는 파일. 홈 폴더 기준 경로다.
     static let codexTitleIndexPath = ".codex/session_index.jsonl"
 
+    /// Antigravity App이 대화와 상태를 남기는 폴더. 홈 폴더 기준 경로다.
+    static let antigravityRootPath = ".gemini/antigravity"
+
     static let maxSessionCount = 10
     static let unknownProjectName = "알 수 없음"
 

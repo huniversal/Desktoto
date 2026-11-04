@@ -55,6 +55,8 @@ struct LogRecordReader: Sendable {
             records.contains { $0["payload"]?["type"]?.stringValue == "token_count" }
         case .claude:
             records.contains { $0["type"]?.stringValue == "assistant" && $0["message"]?["usage"] != nil }
+        case .antigravity:
+            false
         }
     }
 }
