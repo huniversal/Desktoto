@@ -4,7 +4,7 @@
 
 - 이슈: #50 / https://github.com/huniversal/Desktoto/issues/50
 - 브랜치: hotfix/claude-multi-account/#50
-- specRevision: 4
+- specRevision: 5
 - 대상 ai-run 원본: `~/Desktop/ai-run/Sources/AiRun/UsageWatcher.swift` (읽기 전용). 원본도 Claude 사용량을 후보 중 `updatedAt`이 가장 최근인 하나로 고르므로(`getClaudeUsage`) 같은 한계를 가진다. 원본의 한계로 보이는 동작이라 따라 하지 않고 이 명세에서 고치는 방향을 정한다.
 
 ## 목적
@@ -36,7 +36,8 @@ Claude 사용량은 툴당 하나의 값만 만들고 카드도 툴당 하나라
 공식 문서(Claude Code Authentication, Customize your status line, Hooks)로 확인한 사실과 아직 확인하지 못한 가설을 구분해 적는다.
 
 - 확인된 사실: 계정의 단위는 설정 폴더(`CLAUDE_CONFIG_DIR`, 기본 `~/.claude`)다. 폴더마다 설정, 세션 기록, 로그인이 분리된다. statusLine JSON에는 계정, 이메일 필드가 없고 `session_id`와 `transcript_path`는 있다. 훅 프로세스는 부모 환경을 상속한다.
-- 가설(구현 전 실측 필요): statusLine 명령도 `CLAUDE_CONFIG_DIR`를 상속받는다. Orca가 계정 폴더로 실행했을 때 `transcript_path`의 앞부분이 계정마다 달라진다.
+- 실측으로 확인됨(2026-11-04, Claude Code 2.1.318, macOS): statusLine 명령이 `CLAUDE_CONFIG_DIR`를 상속받는다. 임시 설정 폴더로 띄운 세션의 상태 파일 옆 `config-dir`에 그 폴더 경로가 기록되었고, `transcript_path`도 그 폴더 아래 경로였다. 상태 JSON에는 `rate_limits`가 들어 있었다(Pro 계정). 이 실측은 임시 폴더와 임시 HOME으로 한 것이며 실제 `~/.ai-run`은 건드리지 않았다.
+- 아직 가설: Orca가 만든 계정 폴더에서도 같게 동작한다(Orca 환경은 확인하지 못함).
 - 파일 구조와 로직의 책임: 계정 구분 정보를 기록하는 책임은 `apps/macos/Resources/ai-run-statusline.sh`가, 이미 설치된 스크립트를 새 버전으로 교체하는 책임은 `apps/macos/Sources/ClaudeIntegration/ClaudeIntegration.swift`가, 읽어서 계정별로 묶는 책임은 `apps/macos/Sources/UsageMonitoring/UsageMonitor.swift`와 `UsageParser.swift`가, 표시는 `apps/macos/Sources/SessionPanel/UsageCardView.swift`가 맡는다. 값 타입(`ToolUsage`)에 계정 식별자를 어떻게 담을지는 미결정이다.
 - 상태와 데이터 흐름: 상태 파일 후보를 계정 키로 묶고, 계정마다 가장 최근 파일 하나를 고른다. 현재의 "툴당 최신 하나" 선택을 "계정당 최신 하나"로 바꾼다. 후보는 수정 시각 기준 최근 40개 파일이며(기존 5개), 파일 수정 시각으로 캐시해 매번 다시 읽지 않는다. 최근 파일이 한 계정에 몰려도 다른 계정을 찾기 위한 것이다.
 - 데스크탑 캐시: 어느 계정의 값인지 알 수 없으므로 기본 계정의 상태 값과만 겨룬다(같은 시각이면 데스크탑 값). 기본 계정 상태 값이 없고 다른 계정만 있으면 데스크탑 값은 쓰지 않아 중복 카드를 만들지 않는다. 상태 값이 전혀 없으면 지금처럼 데스크탑 값 하나를 쓴다.
@@ -71,7 +72,8 @@ Claude 사용량은 툴당 하나의 값만 만들고 카드도 툴당 하나라
 
 ## 미결정 사항
 
-- 계정 구분 방식 최종 선택(환경변수 기록 대 `transcript_path` 추정). AC-5의 실측 결과에 달려 있어 구현을 막는다.
+- 계정 구분 방식 최종 선택은 환경변수 기록으로 확정했다(AC-5 실측). `transcript_path` 추정은 쓰지 않는다.
+- Orca 실제 환경에서의 동작은 계정 두 개가 있는 환경이 필요해 미검증이다.
 - 계정별 카드의 이름 표기(설정 폴더 이름을 별칭으로 쓸지 등). 개인정보 노출을 피해야 한다. UI 구현을 막는다.
 - 계정이 둘 이상이고 한쪽이 오래된 경우의 표시 방식(숨김 또는 흐리게 표시). 구현을 막지는 않는다.
 - 카드 이름은 우선 설정 폴더 이름(예: `.claude-work`, Orca의 `<account>`)을 쓰는 안으로 구현하고, 사용자가 바꾸자고 하면 재논의한다.
@@ -85,3 +87,4 @@ Claude 사용량은 툴당 하나의 값만 만들고 카드도 툴당 하나라
 | 2 | 스크립트 교체 로직을 포함 범위로 올림(AC-8 추가), 대상을 statusLine이 설정된 폴더의 계정으로 한정, 직접 만든 폴더 연동은 제외 | `connect()`가 이미 연결된 설정에서 스크립트를 다시 쓰지 않아 기존 유저에게 반영되지 않음. 연동이 `~/.claude/settings.json`에만 설치됨 |
 | 3 | 계정 폴더를 상태 JSON 안이 아니라 옆의 `<세션 id>.config-dir` 파일에 기록. AC-3(키 없는 기존 파일은 기본 계정)은 파일이 없을 때로 구현 | 기존 테스트가 상태 JSON의 바이트 보존을 요구하고 다른 코드가 그 JSON을 읽음 |
 | 4 | 상태 파일 후보를 최근 5개에서 40개로 늘리고 수정 시각 캐시 추가, 데스크탑 캐시는 기본 계정과만 겨루도록 규칙 확정. 기존 테스트 `onlyFiveNewestFilesAreCandidates`를 40개 기준으로 변경 | 최근 파일 5개가 한 계정에 몰리면 다른 계정이 누락됨 |
+| 5 | AC-5 실측 결과 반영: statusLine이 `CLAUDE_CONFIG_DIR`를 상속함을 확인하고 환경변수 기록 방식으로 확정 | 임시 폴더 세션에서 `config-dir`과 `transcript_path` 값 확인 |
