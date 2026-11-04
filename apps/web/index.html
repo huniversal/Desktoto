@@ -586,13 +586,13 @@
       <div>
         <p class="eyebrow" data-i18n="privacy.eyebrow">개인정보</p>
         <h2 style="margin-top:14px" data-i18n="privacy.title">내 대화는 컴퓨터 밖으로 나가지 않아요.</h2>
-        <p class="lead" style="margin-top:14px" data-i18n="privacy.lead"><span class="ln">Desktoto는 대화 내용을 인터넷에 보내지 않아요.</span><span class="ln">내 컴퓨터에 이미 있는 기록을 읽기만 하고, Codex 사용량만 Codex 프로그램에 물어봐요.</span></p>
+        <p class="lead" style="margin-top:14px" data-i18n="privacy.lead"><span class="ln">Desktoto는 대화 내용을 인터넷에 보내지 않아요.</span><span class="ln">내 컴퓨터에 이미 있는 기록을 읽기만 하고, 사용량은 설치된 AI 프로그램에 물어봐요.</span></p>
       </div>
       <dl class="privacy-list" style="margin:0">
-        <div><dt data-i18n="privacy.reads.title">읽는 것</dt><dd data-i18n="privacy.reads.body"><code>~/.claude/projects</code>와 <code>~/.codex/sessions</code>의 세션 기록, Claude 데스크탑 앱의 세션 정보와, 앱이 내 컴퓨터에 임시로 저장해 둔 사용량 응답(5시간과 주간 사용률 두 가지 값만). 제목, 모델, 토큰 사용량, 한도 사용률, 응답이 끝났는지 같은 상태만 써요. 로그인 정보는 읽지 않아요. Codex 사용량은 설치된 Codex 프로그램에 한도(사용률)만 물어봐요. 우클릭 메뉴에서 끌 수 있어요.</dd></div>
+        <div><dt data-i18n="privacy.reads.title">읽는 것</dt><dd data-i18n="privacy.reads.body">내 컴퓨터에 있는 AI 도구의 세션 기록 및 정보, 앱이 임시로 저장해 둔 사용량 응답. 제목, 모델, 토큰 사용량, 한도 사용률, 응답이 끝났는지 같은 상태만 써요. 로그인 정보는 읽지 않아요.</dd></div>
         <div><dt data-i18n="privacy.not.title">하지 않는 것</dt><dd data-i18n="privacy.not.body">대화 내용을 밖으로 보내거나 따로 저장하지 않아요. 계정 정보도 다루지 않아요.</dd></div>
-        <div><dt data-i18n="privacy.update.title">새 버전 확인</dt><dd data-i18n="privacy.update.body">새 버전이 나왔는지 GitHub의 최신 릴리스 정보를 읽어요. 보내는 정보는 없고, 우클릭 메뉴의 업데이트 확인에서 끌 수 있어요.</dd></div>
-        <div><dt data-i18n="privacy.opt.title">설정 파일</dt><dd data-i18n="privacy.opt.body">Claude Code를 쓰고 있으면, 처음 켤 때 Claude Code의 설정 파일(<code>~/.claude/settings.json</code>)에 항목 두 개를 자동으로 추가해요. 승인 대기를 알리는 hook과 사용량을 저장하는 statusLine이에요. 이미 쓰는 statusLine은 그대로 실행돼요. 바꾸기 전에 백업을 만들고, 우클릭 메뉴의 Claude 연동에서 언제든 해제할 수 있어요.</dd></div>
+        <div><dt data-i18n="privacy.update.title">새 버전 확인</dt><dd data-i18n="privacy.update.body">GitHub의 최신 릴리스 정보를 읽어 새 버전을 확인해요. 보내는 정보는 없고, 우클릭 메뉴에서 끌 수 있어요.</dd></div>
+        <div><dt data-i18n="privacy.opt.title">설정 파일</dt><dd data-i18n="privacy.opt.body">Claude Code를 쓰면 처음 켤 때 설정 파일(<code>~/.claude/settings.json</code>)에 승인 대기를 알리는 hook과 사용량을 저장하는 statusLine을 추가해요. 쓰던 statusLine은 그대로 실행되고, 바꾸기 전에 백업하며, 우클릭 메뉴의 Claude 연동에서 끌 수 있어요.</dd></div>
       </dl>
     </div>
   </section>
@@ -1224,11 +1224,11 @@
     "fv.m6": "Color", "fv.m7": "Theme", "fv.m8": "Quit Desktoto", "fv.m9": "White", "fv.m10": "Color",
     "fv.noti1": "Task finished", "fv.noti2": "Approval needed",
     "privacy.eyebrow": "Privacy", "privacy.title": "Your conversations never leave your computer.",
-    "privacy.lead": "<span class=\"ln\">Desktoto never sends your conversations anywhere.</span><span class=\"ln\">It only reads records already on your computer, and asks the Codex app for its usage numbers.</span>",
-    "privacy.reads.title": "What it reads", "privacy.reads.body": "Session records in <code>~/.claude/projects</code> and <code>~/.codex/sessions</code>, plus session info from the Claude desktop app and the usage response the app keeps temporarily on your computer (just the 5-hour and weekly usage values). It only uses status information: the title, model, token usage, limit usage, and whether a response has finished. It never reads your login credentials. For Codex usage, it asks the installed Codex app for the limit numbers only; you can turn this off in the right-click menu.",
+    "privacy.lead": "<span class=\"ln\">Desktoto never sends your conversations anywhere.</span><span class=\"ln\">It only reads records already on your computer, and asks the AI apps you have installed for their usage numbers.</span>",
+    "privacy.reads.title": "What it reads", "privacy.reads.body": "Session records and info from the AI tools on your computer, plus the usage response the app keeps temporarily. It only uses status information: the title, model, token usage, limit usage, and whether a response has finished. It never reads your login credentials.",
     "privacy.not.title": "What it doesn't do", "privacy.not.body": "It doesn't send your conversations anywhere or store them separately. It doesn't handle account information either.",
-    "privacy.update.title": "Update check", "privacy.update.body": "It reads the latest release info from GitHub to see whether a new version is out. Nothing is sent, and you can turn it off with Check for updates in the right-click menu.",
-    "privacy.opt.title": "Settings file", "privacy.opt.body": "If you use Claude Code, the first launch adds two entries to its settings file (<code>~/.claude/settings.json</code>): a hook that reports approval prompts and a statusLine that saves usage. A statusLine you already use keeps running. It makes a backup first, and you can turn it off anytime from Claude integration in the right-click menu.",
+    "privacy.update.title": "Update check", "privacy.update.body": "It reads the latest release info from GitHub to check for a new version. Nothing is sent, and you can turn it off in the right-click menu.",
+    "privacy.opt.title": "Settings file", "privacy.opt.body": "If you use Claude Code, the first launch adds a hook that reports approval prompts and a statusLine that saves usage to its settings file (<code>~/.claude/settings.json</code>). A statusLine you already use keeps running, a backup is made first, and you can turn it off in Claude integration in the right-click menu.",
     "install.eyebrow": "Install", "install.title": "Install with one line, or download the file.",
     "install.cta": "Download for macOS",
     "install.lead": "If you use the terminal, Homebrew is the easiest. Otherwise download the dmg and install it.",
