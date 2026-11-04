@@ -4,7 +4,7 @@
 
 - 이슈: #52 / https://github.com/huniversal/Desktoto/issues/52
 - 브랜치: feat/gemini-session-support/#52
-- specRevision: 9
+- specRevision: 10
 - 대상 ai-run 원본: N/A (원본에 Gemini와 Antigravity 언급이 없다. `~/Desktop/ai-run`의 `Sources`와 `landing`을 검색해 확인함)
 
 ## 목적
@@ -90,7 +90,7 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 ## 설계 결정
 
 - 파일 구조와 로직의 책임: 미결정. 읽을 원본은 `~/.gemini/antigravity/brain/<conversationId>/.system_generated/logs/transcript.jsonl`(제목, 마지막 활동, 줄 수)과 두 SQLite(`conversation_summaries.db`의 `status`, 대화별 `.db`의 마지막 단계 `status`)다. 기존 `.jsonl` 읽기에 얹을 수 있는지, SQLite 읽기를 어디에 둘지는 구현 전에 정한다. 파일 시스템과 SQLite 접근은 프로토콜 뒤에 두어 테스트에서 대체한다.
-- 모델과 사용량(specRevision 9): 모델은 대화별 DB의 `executor_metadata`, `gen_metadata` 바이너리에서 `gemini-` 문자열을 찾는다. 프로토콜 버퍼 문자열 필드는 값 바로 앞 바이트가 길이이므로 그 길이만큼만 잘라 뒤따르는 태그 바이트가 이름에 섞이지 않게 한다. 사용량은 `transcript.jsonl`의 가장 최근 모델 응답에서 `input_tokens + cache_read_tokens`를 쓰고, 창 크기는 추정값(1,048,576)이다.
+- 모델과 사용량(specRevision 9): 모델은 대화별 DB의 `executor_metadata` 바이너리에서 `gemini-`, `claude-`, `gpt-`로 시작하는 문자열을 찾는다(Antigravity는 Gemini 외에 Claude와 GPT-OSS 모델도 쓴다. 실측에서 한 대화가 `claude-sonnet-4-6`이었다). `gen_metadata`는 안내문 같은 긴 텍스트가 섞여 `gemini-api` 같은 문자열을 모델로 잘못 읽을 수 있어 보지 않는다. 프로토콜 버퍼 문자열 필드는 값 바로 앞 바이트가 길이이므로 그 길이만큼만 잘라 뒤따르는 태그 바이트가 이름에 섞이지 않게 한다. 사용량은 `transcript.jsonl`의 가장 최근 모델 응답에서 `input_tokens + cache_read_tokens`를 쓰고, 창 크기는 모델 이름으로 추정한다: `gemini-*`는 1,048,576(Gemini API 문서의 Gemini 3.8 Flash 입력 한도), `claude-*`는 200,000, `gpt-oss*`는 131,072(Claude와 GPT-OSS는 공개된 일반 한도이며 Antigravity에서의 실제 한도는 확인하지 못함). 모델을 모르거나 모르는 계열이면 퍼센트를 계산하지 않는다. 모두 화면에 ~를 붙인다.
 - 상태와 데이터 흐름: 작업 중은 요약 `RUNNING`, 끝남은 `IDLE`이고 `not_fully_idle=0`, 승인 대기는 마지막 단계 `status 9`로 구분한다(위 실측). 대화 목록과 제목은 `transcript.jsonl`과 요약 DB에서 읽는다.
 - 선택한 방식과 이유: 훅 설치 없이 파일만 관찰한다. 사용자 설정을 건드리지 않고, `transcript.jsonl`만으로는 승인 대기를 구분할 수 없어 SQLite의 단계 상태를 함께 읽는다.
 - 예외 처리: WAL 모드 DB는 읽기 전용으로 직접 열리지 않으므로 읽는 방식(파일 세트 복사 또는 대안)을 구현 전에 확정한다. 스키마와 정수 값은 비공개 내부 형식이므로 알 수 없는 값, 없는 테이블, 잘린 파일은 오류 없이 "상태 알 수 없음"으로 처리하고 버전 변경을 PR에 위험으로 적는다.
@@ -118,7 +118,7 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 ## 미결정 사항
 
 - (해결, specRevision 8) SQLite 읽기 방식: macOS 시스템 `SQLite3`를 `Boundaries`의 `SQLiteDatabase` 경계로 감싸 읽기 전용으로 연다. WAL 파일 때문에 열리지 않으면 파일 묶음을 본인만 접근하는 임시 폴더로 복사해 사본을 읽고 바로 지운다. 새 외부 의존은 없다.
-- 세션 열기(딥링크)는 이번 구현에서 비어 있다(눌러도 대화가 열리지 않음). 모델 이름은 대화별 DB의 바이너리에서 길이 바이트로 잘라 읽으며 파일에 없으면 "모델 알 수 없음"이다(실측에서 한 대화는 모델 문자열이 어디에도 없었다). 컨텍스트 창 크기는 파일에 없어 100만 토큰으로 추정하고 화면에 ~를 붙인다. 값 9가 승인 대기 외의 대기(질문 등)에도 쓰이는지, 오류와 취소 때의 값. 구현을 막지는 않지만 상태 표시 정확도에 영향을 준다.
+- 세션 열기(딥링크)는 이번 구현에서 비어 있다(눌러도 대화가 열리지 않음). 모델 이름은 대화별 DB의 바이너리에서 길이 바이트로 잘라 읽으며 파일에 없으면 "모델 알 수 없음"이다(실측에서 한 대화는 모델 문자열이 어디에도 없었다). 컨텍스트 창 크기는 파일에 없어 모델 이름으로 추정하고 화면에 ~를 붙인다. 값 9가 승인 대기 외의 대기(질문 등)에도 쓰이는지, 오류와 취소 때의 값. 구현을 막지는 않지만 상태 표시 정확도에 영향을 준다.
 - Antigravity CLI와 IDE 지원 시점. 제외했으므로 구현을 막지 않는다.
 - 제보자가 쓰는 것이 App인지 CLI인지. 구현을 막지는 않지만 제보 해결 여부에 영향을 준다.
 
@@ -135,3 +135,4 @@ Antigravity는 Antigravity App(데스크탑), Antigravity CLI, IDE 확장, SDK�
 | 7 | 대상을 Antigravity App으로 확정. Gemini CLI, Antigravity CLI와 IDE, 사용량, 훅 설치는 제외. 설계, 완료 조건, 검증을 새로 작성 | 사용자와 합의(2026-11-04). Gemini CLI는 개인 계정 로그인이 막혔고 Antigravity App은 파일로 상태를 읽을 수 있음 |
 | 8 | 구현 결정 반영: SQLite 경계(`SQLiteDatabase`)와 임시 사본 읽기, 요약 DB에서 대화 목록과 제목과 작업 폴더를 읽고 대화별 DB의 마지막 단계 `status`로 승인 대기 판정, 승인 대기는 10분이 지나도 30분까지 표시, 모델과 사용량과 세션 열기는 비움 | 실제 구현과 이 PC의 실제 Antigravity 데이터 확인 |
 | 9 | 모델 이름과 컨텍스트 사용량 표시 추가(창 크기는 추정). 실제 앱 확인에서 캐릭터는 작업 중에 뛰고 승인 대기가 감지됨을 관찰 | 사용자가 앱에서 모델과 사용량이 비어 있다고 확인 |
+| 10 | 모델 이름 접두어를 `claude-`와 `gpt-`까지 넓히고 `gen_metadata`는 읽지 않음. 창 크기를 모델별로 추정하고 모르는 모델은 퍼센트를 계산하지 않음 | 사용자가 Claude 모델 대화에서 모델이 안 나온다고 확인. 실제 파일에서 `claude-sonnet-4-6`을 확인 |
