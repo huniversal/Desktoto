@@ -4,7 +4,7 @@
 
 - 이슈: #50 / https://github.com/huniversal/Desktoto/issues/50
 - 브랜치: hotfix/claude-multi-account/#50
-- specRevision: 2
+- specRevision: 3
 - 대상 ai-run 원본: `~/Desktop/ai-run/Sources/AiRun/UsageWatcher.swift` (읽기 전용). 원본도 Claude 사용량을 후보 중 `updatedAt`이 가장 최근인 하나로 고르므로(`getClaudeUsage`) 같은 한계를 가진다. 원본의 한계로 보이는 동작이라 따라 하지 않고 이 명세에서 고치는 방향을 정한다.
 
 ## 목적
@@ -39,7 +39,7 @@ Claude 사용량은 툴당 하나의 값만 만들고 카드도 툴당 하나라
 - 가설(구현 전 실측 필요): statusLine 명령도 `CLAUDE_CONFIG_DIR`를 상속받는다. Orca가 계정 폴더로 실행했을 때 `transcript_path`의 앞부분이 계정마다 달라진다.
 - 파일 구조와 로직의 책임: 계정 구분 정보를 기록하는 책임은 `apps/macos/Resources/ai-run-statusline.sh`가, 이미 설치된 스크립트를 새 버전으로 교체하는 책임은 `apps/macos/Sources/ClaudeIntegration/ClaudeIntegration.swift`가, 읽어서 계정별로 묶는 책임은 `apps/macos/Sources/UsageMonitoring/UsageMonitor.swift`와 `UsageParser.swift`가, 표시는 `apps/macos/Sources/SessionPanel/UsageCardView.swift`가 맡는다. 값 타입(`ToolUsage`)에 계정 식별자를 어떻게 담을지는 미결정이다.
 - 상태와 데이터 흐름: 상태 파일 후보를 계정 키로 묶고, 계정마다 가장 최근 파일 하나를 고른다. 현재의 "툴당 최신 하나" 선택을 "계정당 최신 하나"로 바꾸는 방향이다.
-- 선택한 방식과 이유: 계정 키는 스크립트가 상속받은 `CLAUDE_CONFIG_DIR`(없으면 `~/.claude`)를 상태 파일에 함께 기록하는 방식을 우선 검토한다. `transcript_path`로 설정 폴더를 추정하는 방식은 Orca처럼 히스토리를 링크하는 환경에서 경로가 불확실해 보조 수단으로만 둔다. 최종 선택은 실측 결과로 정한다.
+- 선택한 방식과 이유: 계정 키는 스크립트가 상속받은 `CLAUDE_CONFIG_DIR`(없으면 `~/.claude`)를 상태 JSON 옆의 `<세션 id>.config-dir` 파일에 기록한다. 기존 테스트가 상태 JSON을 입력과 바이트 단위로 같게 보존하도록 고정하고 `ContextWindowResolver`도 그 JSON을 읽으므로, JSON을 고치지 않는 쪽을 택했다(specRevision 3). `transcript_path`로 설정 폴더를 추정하는 방식은 Orca처럼 히스토리를 링크하는 환경에서 경로가 불확실해 보조 수단으로만 둔다. 최종 선택은 실측 결과로 정한다.
 - 예외 처리: 계정 키가 없는 기존 상태 파일(이전 버전 스크립트가 쓴 것)은 기본 계정으로 취급해 지금처럼 동작한다. 계정이 하나면 카드는 하나이고 계정 이름을 표시하지 않는다. 오래된 계정의 값은 기존 `createStaleText`로 "N분 전 기준"을 계정별로 표시한다.
 
 ## 완료 조건
@@ -82,3 +82,4 @@ Claude 사용량은 툴당 하나의 값만 만들고 카드도 툴당 하나라
 |---|---|---|
 | 1 | 최초 설계 | 이슈 #50의 Tasks와 공식 문서 조사 결과. 미결정 항목은 확정하지 않음 |
 | 2 | 스크립트 교체 로직을 포함 범위로 올림(AC-8 추가), 대상을 statusLine이 설정된 폴더의 계정으로 한정, 직접 만든 폴더 연동은 제외 | `connect()`가 이미 연결된 설정에서 스크립트를 다시 쓰지 않아 기존 유저에게 반영되지 않음. 연동이 `~/.claude/settings.json`에만 설치됨 |
+| 3 | 계정 폴더를 상태 JSON 안이 아니라 옆의 `<세션 id>.config-dir` 파일에 기록. AC-3(키 없는 기존 파일은 기본 계정)은 파일이 없을 때로 구현 | 기존 테스트가 상태 JSON의 바이트 보존을 요구하고 다른 코드가 그 JSON을 읽음 |
