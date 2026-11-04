@@ -209,6 +209,41 @@ struct AntigravityTests {
         #expect(await monitor.waitingKinds().isEmpty)
     }
 
+    @Test func approvalWaitingSessionSurvivesTheSessionLimit() async throws {
+        let environment = try Environment()
+        for index in 0..<(SessionMonitoringPolicy.maxSessionCount + 3) {
+            environment.addConversation("busy-\(index)", status: "CASCADE_RUN_STATUS_RUNNING", secondsAgo: TimeInterval(index + 1))
+            try environment.setLastStepStatus("busy-\(index)", 3)
+        }
+        environment.addConversation("waiting-id", status: "CASCADE_RUN_STATUS_RUNNING", secondsAgo: 200)
+        try environment.setLastStepStatus("waiting-id", Self.observedWaitingStatus)
+        let sessions = await environment.makeMonitor().activeSessions()
+        #expect(sessions.count == SessionMonitoringPolicy.maxSessionCount)
+        #expect(sessions.contains { $0.id == "waiting-id" })
+        // 남은 자리는 최근 활동순으로 채우고, 목록은 다시 최신순이라 가장 오래된 대기 대화가 맨 뒤에 온다.
+        #expect(sessions.map(\.id) == (0..<(SessionMonitoringPolicy.maxSessionCount - 1)).map { "busy-\($0)" } + ["waiting-id"])
+    }
+
+    @Test func aFailedReadOfAConversationDatabaseIsNotCached() async throws {
+        let environment = try Environment()
+        environment.addConversation("late-id", status: "CASCADE_RUN_STATUS_RUNNING")
+        let url = environment.home.appendingPathComponent(".gemini/antigravity/conversations/late-id.db")
+        let fixedDate = Date(timeIntervalSince1970: 1_900_000_000)
+        // 파일은 있지만 아직 테이블이 없어 읽기에 실패한다.
+        try #require(SQLiteFixture(url: url)).close()
+        try FileManager.default.setAttributes([.modificationDate: fixedDate], ofItemAtPath: url.path)
+        let monitor = environment.makeMonitor()
+        #expect(await monitor.waitingKinds().isEmpty)
+        _ = await monitor.sessionStates()
+        #expect(await monitor.waitingKinds().isEmpty)
+
+        // 내용이 채워졌지만 수정 시각은 그대로여도, 실패를 저장해 두지 않았으므로 다시 읽는다.
+        try environment.setLastStepStatus("late-id", Self.observedWaitingStatus)
+        try FileManager.default.setAttributes([.modificationDate: fixedDate], ofItemAtPath: url.path)
+        _ = await monitor.sessionStates()
+        #expect(await monitor.waitingKinds() == ["late-id": .approval])
+    }
+
     @Test func changesInTheDatabasesAreReadAgain() async throws {
         let environment = try Environment()
         environment.addConversation("live-id", status: "CASCADE_RUN_STATUS_RUNNING")

@@ -31,15 +31,15 @@ struct AntigravityReader: Sendable {
         rootURL.appendingPathComponent("conversations/\(conversationID).db")
     }
 
-    /// 서브 에이전트(부모 대화가 있는 것)는 사용자가 따로 보는 대화가 아니라서 뺀다. 최신순이다.
-    func recentConversations() -> [AntigravityConversation] {
+    /// 서브 에이전트(부모 대화가 있는 것)는 사용자가 따로 보는 대화가 아니라서 뺀다. 최신순이다. 읽지 못하면 nil이다.
+    func recentConversations() -> [AntigravityConversation]? {
         let sql = """
         SELECT conversation_id, title, workspace_uris, status, killed, last_modified_time \
         FROM conversation_summaries \
         WHERE parent_conversation_id = '' AND nesting_depth = 0 \
         ORDER BY last_modified_time DESC LIMIT \(Self.recentConversationLimit)
         """
-        guard let rows = database.query(at: summaryDatabaseURL, sql: sql) else { return [] }
+        guard let rows = database.query(at: summaryDatabaseURL, sql: sql) else { return nil }
         return rows.compactMap(Self.conversation(from:))
     }
 
@@ -62,12 +62,13 @@ struct AntigravityReader: Sendable {
 
     /// 대화별 DB의 실행기 메타데이터(바이너리)에서 `gemini-3.8-flash-high`나 `claude-sonnet-4-6` 같은 모델 이름을 찾는다. 못 찾으면 nil이다.
     /// 생성 메타데이터(`gen_metadata`)에는 안내문 같은 긴 텍스트가 섞여 있어 `gemini-api` 같은 문자열을 모델로 잘못 읽을 수 있어서 보지 않는다.
-    func modelName(conversationID: String) -> String? {
-        let rows = database.query(at: stepsDatabaseURL(conversationID: conversationID), sql: "SELECT data FROM executor_metadata ORDER BY idx DESC LIMIT 3") ?? []
+    /// 못 찾은 것(`.some(nil)`)과 읽지 못한 것(`nil`)을 구분한다.
+    func modelName(conversationID: String) -> String?? {
+        guard let rows = database.query(at: stepsDatabaseURL(conversationID: conversationID), sql: "SELECT data FROM executor_metadata ORDER BY idx DESC LIMIT 3") else { return nil }
         for case .blob(let blob)? in rows.map({ $0["data"] }) {
-            if let name = Self.modelName(in: blob) { return name }
+            if let name = Self.modelName(in: blob) { return .some(name) }
         }
-        return nil
+        return .some(nil)
     }
 
     /// Antigravity가 지원하는 모델 계열의 이름 접두어(Gemini, Claude, GPT-OSS).
@@ -89,11 +90,11 @@ struct AntigravityReader: Sendable {
         return nil
     }
 
-    /// 가장 마지막 단계가 승인 대기 상태인지. 읽지 못하면 false다.
-    func isWaitingForApproval(conversationID: String) -> Bool {
+    /// 가장 마지막 단계가 승인 대기 상태인지. 읽지 못하면 nil이고, 단계가 아직 없으면 false다.
+    func isWaitingForApproval(conversationID: String) -> Bool? {
         let sql = "SELECT status FROM steps ORDER BY idx DESC LIMIT 1"
-        guard let status = database.query(at: stepsDatabaseURL(conversationID: conversationID), sql: sql)?.first?["status"]?.intValue else { return false }
-        return status == Self.waitingStepStatus
+        guard let rows = database.query(at: stepsDatabaseURL(conversationID: conversationID), sql: sql) else { return nil }
+        return rows.first?["status"]?.intValue == Self.waitingStepStatus
     }
 
     static func conversation(from row: SQLiteRow) -> AntigravityConversation? {

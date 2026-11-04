@@ -102,10 +102,14 @@ public actor SessionMonitor {
         let now = timeSource.now
         let logSessions = recentLogFiles(now: now).map { (activity: $0.activity, info: makeSessionInfo(file: $0, now: now)) }
         refreshAntigravity(now: now)
-        let antigravitySessions = recentAntigravity.values.map { (activity: $0.lastModified, info: makeAntigravityInfo(of: $0)) }
-        return (logSessions + antigravitySessions)
-            .sorted { $0.activity > $1.activity }
+        let antigravitySessions = recentAntigravity.values.map {
+            (activity: $0.lastModified, info: makeAntigravityInfo(of: $0), isWaiting: antigravityWaitingIDs.contains($0.id))
+        }
+        // 승인을 기다리는 대화는 개수 제한에 밀려 사라지면 안 되므로 먼저 둔다.
+        return (logSessions.map { (activity: $0.activity, info: $0.info, isWaiting: false) } + antigravitySessions)
+            .sorted { ($0.isWaiting ? 1 : 0, $0.activity) > ($1.isWaiting ? 1 : 0, $1.activity) }
             .prefix(SessionMonitoringPolicy.maxSessionCount)
+            .sorted { $0.activity > $1.activity }
             .map(\.info)
     }
 
@@ -152,8 +156,11 @@ public actor SessionMonitor {
     private func antigravityConversations() -> [AntigravityConversation] {
         let signature = fileSignature(of: antigravityReader.summaryDatabaseURL)
         if let cached = antigravitySummaryCache, cached.signature == signature { return cached.conversations }
-        let conversations = antigravityReader.recentConversations()
-        // 읽지 못한 결과(빈 목록)를 캐시하면 다음 조회에서 다시 읽지 못하므로, 파일이 없으면 저장하지 않는다.
+        // 읽지 못한 결과를 캐시하면 파일이 바뀌기 전까지 다시 읽지 못하므로, 읽지 못하면 저장하지 않는다.
+        guard let conversations = antigravityReader.recentConversations() else {
+            antigravitySummaryCache = nil
+            return []
+        }
         antigravitySummaryCache = signature.contains { $0 != nil } ? (signature, conversations) : nil
         return conversations
     }
@@ -162,8 +169,10 @@ public actor SessionMonitor {
     private func antigravityDetails(of conversationID: String) -> (isWaiting: Bool, modelName: String?) {
         let signature = fileSignature(of: antigravityReader.stepsDatabaseURL(conversationID: conversationID))
         if let cached = antigravityStepsCache[conversationID], cached.signature == signature { return (cached.isWaiting, cached.modelName) }
-        let isWaiting = antigravityReader.isWaitingForApproval(conversationID: conversationID)
-        let modelName = antigravityReader.modelName(conversationID: conversationID)
+        let waiting = antigravityReader.isWaitingForApproval(conversationID: conversationID)
+        let model = antigravityReader.modelName(conversationID: conversationID)
+        // 읽지 못한 결과는 캐시하지 않아 다음 조회에서 다시 읽는다.
+        guard let isWaiting = waiting, let modelName = model else { return (waiting ?? false, model ?? nil) }
         antigravityStepsCache[conversationID] = (signature, isWaiting, modelName)
         return (isWaiting, modelName)
     }

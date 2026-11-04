@@ -73,15 +73,44 @@ struct LiveSQLiteDatabaseTests {
             // 연결이 모두 닫히면 내용은 본 파일에 합쳐진다. -wal과 -shm이 없는 WAL 모드 파일은 읽기 전용으로 열 수 없어 사본으로 읽는 경우다.
             for suffix in ["-wal", "-shm"] { try? FileManager.default.removeItem(atPath: url.path + suffix) }
             let before = try Data(contentsOf: url)
-            let rows = try #require(LiveSQLiteDatabase().query(at: url, sql: "SELECT count(*) AS n FROM items"))
+            let staging = directory.appendingPathComponent("staging")
+            try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
+            let rows = try #require(LiveSQLiteDatabase(stagingDirectory: staging).query(at: url, sql: "SELECT count(*) AS n FROM items"))
             #expect(rows.first?["n"] == .integer(2))
             // 원본은 바뀌지 않고 옆에 새 파일도 생기지 않으며, 임시 사본도 남지 않는다.
             #expect(try Data(contentsOf: url) == before)
             #expect(FileManager.default.fileExists(atPath: url.path + "-wal") == false)
             #expect(FileManager.default.fileExists(atPath: url.path + "-shm") == false)
-            let leftovers = try FileManager.default.contentsOfDirectory(atPath: FileManager.default.temporaryDirectory.path)
-                .filter { $0.hasPrefix("desktoto-sqlite-") && !$0.hasPrefix("desktoto-sqlite-tests-") }
-            #expect(leftovers.isEmpty)
+            #expect(try FileManager.default.contentsOfDirectory(atPath: staging.path).isEmpty)
+        }
+    }
+
+    @Test func copiesTheFilesWhenTheFolderCannotHoldTheSidecarFiles() throws {
+        try withTemporaryDirectory { directory in
+            let source = directory.appendingPathComponent("locked")
+            try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+            let url = source.appendingPathComponent("wal-locked.db")
+            try makeTable(at: url, usesWAL: true).close()
+            for suffix in ["-wal", "-shm"] { try? FileManager.default.removeItem(atPath: url.path + suffix) }
+            // 폴더에 쓸 수 없으면 읽기 전용 연결이 -shm을 만들지 못해 열리지 않는다. 그래서 사본을 읽는 경로를 지난다.
+            try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: source.path)
+            defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: source.path) }
+            let staging = directory.appendingPathComponent("staging")
+            try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
+            let rows = try #require(LiveSQLiteDatabase(stagingDirectory: staging).query(at: url, sql: "SELECT count(*) AS n FROM items"))
+            #expect(rows.first?["n"] == .integer(2))
+            #expect(try FileManager.default.contentsOfDirectory(atPath: staging.path).isEmpty)
+        }
+    }
+
+    @Test func textWithAnEmbeddedNulKeepsItsFullLength() throws {
+        try withTemporaryDirectory { directory in
+            let url = directory.appendingPathComponent("nul.db")
+            let fixture = try makeTable(at: url)
+            #expect(fixture.execute("INSERT INTO items (id, name) VALUES (3, 'ab' || char(0) || 'cd')"))
+            fixture.close()
+            let rows = try #require(LiveSQLiteDatabase().query(at: url, sql: "SELECT name FROM items WHERE id = 3"))
+            #expect(rows.first?["name"]?.stringValue == "ab\u{0}cd")
         }
     }
 }
