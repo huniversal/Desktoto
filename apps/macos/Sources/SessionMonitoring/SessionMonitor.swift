@@ -43,7 +43,10 @@ public actor SessionMonitor {
     private var antigravityWaitingIDs: Set<String> = []
     /// SQLite 파일은 WAL 때문에 본 파일의 수정 시각이 바로 바뀌지 않아서 -wal 파일의 시각까지 함께 비교한다.
     private var antigravitySummaryCache: (signature: [Date?], conversations: [AntigravityConversation])?
-    private var antigravityStepsCache: [String: (signature: [Date?], isWaiting: Bool)] = [:]
+    private var antigravityStepsCache: [String: (signature: [Date?], isWaiting: Bool, modelName: String?)] = [:]
+    private var antigravityTokensCache: [String: (signature: [Date?], usedTokens: Int?)] = [:]
+    private var antigravityModelNames: [String: String] = [:]
+    private var antigravityUsedTokens: [String: Int] = [:]
 
     public init(
         fileSystem: any FileSystem,
@@ -116,17 +119,27 @@ public actor SessionMonitor {
     private func refreshAntigravity(now: Date) {
         var recent: [String: AntigravityConversation] = [:]
         var waitingIDs: Set<String> = []
+        var modelNames: [String: String] = [:]
+        var usedTokens: [String: Int] = [:]
         for conversation in antigravityConversations() {
             let age = now.timeIntervalSince(conversation.lastModified)
             guard age < SessionMonitoringPolicy.waitingMaxAge else { continue }
-            let isWaiting = conversation.isRunning && isAntigravityWaiting(conversationID: conversation.id)
+            // 최근 활동이 없고 작업 중도 아닌 대화는 볼 필요가 없어서 대화별 DB를 읽지 않는다.
+            guard age < SessionMonitoringPolicy.activeWindow || conversation.isRunning else { continue }
+            let details = antigravityDetails(of: conversation.id)
+            let isWaiting = conversation.isRunning && details.isWaiting
             guard age < SessionMonitoringPolicy.activeWindow || isWaiting else { continue }
             recent[conversation.id] = conversation
             if isWaiting { waitingIDs.insert(conversation.id) }
+            modelNames[conversation.id] = details.modelName
+            usedTokens[conversation.id] = antigravityUsedTokens(of: conversation.id)
         }
         recentAntigravity = recent
         antigravityWaitingIDs = waitingIDs
+        antigravityModelNames = modelNames
+        antigravityUsedTokens = usedTokens
         antigravityStepsCache = antigravityStepsCache.filter { recent[$0.key] != nil }
+        antigravityTokensCache = antigravityTokensCache.filter { recent[$0.key] != nil }
     }
 
     private func antigravityConversations() -> [AntigravityConversation] {
@@ -138,12 +151,22 @@ public actor SessionMonitor {
         return conversations
     }
 
-    private func isAntigravityWaiting(conversationID: String) -> Bool {
+    /// 대화별 DB는 단계가 바뀔 때마다 갱신되므로, 본 파일과 -wal의 수정 시각이 같으면 이전 결과를 다시 쓴다.
+    private func antigravityDetails(of conversationID: String) -> (isWaiting: Bool, modelName: String?) {
         let signature = fileSignature(of: antigravityReader.stepsDatabaseURL(conversationID: conversationID))
-        if let cached = antigravityStepsCache[conversationID], cached.signature == signature { return cached.isWaiting }
+        if let cached = antigravityStepsCache[conversationID], cached.signature == signature { return (cached.isWaiting, cached.modelName) }
         let isWaiting = antigravityReader.isWaitingForApproval(conversationID: conversationID)
-        antigravityStepsCache[conversationID] = (signature, isWaiting)
-        return isWaiting
+        let modelName = antigravityReader.modelName(conversationID: conversationID)
+        antigravityStepsCache[conversationID] = (signature, isWaiting, modelName)
+        return (isWaiting, modelName)
+    }
+
+    private func antigravityUsedTokens(of conversationID: String) -> Int? {
+        let signature = [fileSystem.modificationDate(of: antigravityReader.transcriptURL(conversationID: conversationID))]
+        if let cached = antigravityTokensCache[conversationID], cached.signature == signature { return cached.usedTokens }
+        let usedTokens = antigravityReader.usedTokens(conversationID: conversationID)
+        antigravityTokensCache[conversationID] = (signature, usedTokens)
+        return usedTokens
     }
 
     /// 본 파일과 -wal 파일의 수정 시각. 파일이 없으면 nil이다.
@@ -160,15 +183,16 @@ public actor SessionMonitor {
 
     private func makeAntigravityInfo(of conversation: AntigravityConversation) -> SessionInfo {
         let isWaiting = antigravityWaitingIDs.contains(conversation.id)
+        let usedTokens = antigravityUsedTokens[conversation.id]
         return SessionInfo(
             id: conversation.id,
             tool: .antigravity,
             projectName: conversation.workspacePath.map { URL(fileURLWithPath: $0).lastPathComponent } ?? SessionMonitoringPolicy.unknownProjectName,
             title: conversation.title,
-            modelName: nil,
-            usedTokens: nil,
-            windowTokens: nil,
-            isWindowEstimated: false,
+            modelName: antigravityModelNames[conversation.id],
+            usedTokens: usedTokens,
+            windowTokens: usedTokens == nil ? nil : SessionMonitoringPolicy.antigravityEstimatedWindow,
+            isWindowEstimated: usedTokens != nil,
             isRunning: !isWaiting && conversation.isRunning,
             waitingKind: isWaiting ? .approval : nil,
             openURL: nil,

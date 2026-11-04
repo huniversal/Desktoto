@@ -43,6 +43,51 @@ struct AntigravityReader: Sendable {
         return rows.compactMap(Self.conversation(from:))
     }
 
+    func transcriptURL(conversationID: String) -> URL {
+        rootURL.appendingPathComponent("brain/\(conversationID)/.system_generated/logs/transcript.jsonl")
+    }
+
+    /// 대화 기록에서 가장 최근 모델 응답의 컨텍스트 토큰(새 입력 + 캐시에서 읽은 입력)을 읽는다. 없으면 nil이다.
+    func usedTokens(conversationID: String) -> Int? {
+        let url = transcriptURL(conversationID: conversationID)
+        for maxBytes in SessionMonitoringPolicy.stateTailByteSteps {
+            let tail = LogTail.readRecords(of: url, maxBytes: maxBytes, fileSystem: fileSystem)
+            if let record = tail.records.first(where: { $0["input_tokens"]?.intValue != nil }), let input = record["input_tokens"]?.intValue {
+                return input + (record["cache_read_tokens"]?.intValue ?? 0)
+            }
+            if tail.isComplete { break }
+        }
+        return nil
+    }
+
+    /// 대화별 DB의 실행기와 생성 메타데이터(바이너리)에서 `gemini-3.8-flash-high` 같은 모델 이름을 찾는다. 못 찾으면 nil이다.
+    func modelName(conversationID: String) -> String? {
+        let url = stepsDatabaseURL(conversationID: conversationID)
+        for table in ["executor_metadata", "gen_metadata"] {
+            let rows = database.query(at: url, sql: "SELECT data FROM \(table) ORDER BY idx DESC LIMIT 3") ?? []
+            for case .blob(let blob)? in rows.map({ $0["data"] }) {
+                if let name = Self.modelName(in: blob) { return name }
+            }
+        }
+        return nil
+    }
+
+    /// 프로토콜 버퍼의 문자열 필드는 값 바로 앞 바이트가 길이다. `gemini-`로 시작하는 문자열을 찾아 그 길이만큼만 잘라서,
+    /// 뒤따르는 다음 필드의 태그 바이트가 글자로 보여 이름에 섞이는 일을 막는다. 형식이 맞지 않으면 건너뛴다.
+    static func modelName(in data: Data) -> String? {
+        let prefix = Array("gemini-".utf8)
+        let bytes = [UInt8](data)
+        guard bytes.count > prefix.count else { return nil }
+        for start in 1...(bytes.count - prefix.count) where Array(bytes[start..<(start + prefix.count)]) == prefix {
+            let length = Int(bytes[start - 1])
+            guard length > prefix.count, start + length <= bytes.count,
+                  let text = String(bytes: bytes[start..<(start + length)], encoding: .ascii),
+                  text.allSatisfy({ $0.isLowercase || $0.isNumber || $0 == "." || $0 == "-" }) else { continue }
+            return text
+        }
+        return nil
+    }
+
     /// 가장 마지막 단계가 승인 대기 상태인지. 읽지 못하면 false다.
     func isWaitingForApproval(conversationID: String) -> Bool {
         let sql = "SELECT status FROM steps ORDER BY idx DESC LIMIT 1"

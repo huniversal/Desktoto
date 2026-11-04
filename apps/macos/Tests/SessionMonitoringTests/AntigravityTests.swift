@@ -53,6 +53,22 @@ struct AntigravityTests {
             """))
         }
 
+        /// 대화별 DB의 실행기 메타데이터(바이너리) 한 줄을 넣는다.
+        func addExecutorMetadata(_ id: String, blob: Data) throws {
+            let url = home.appendingPathComponent(".gemini/antigravity/conversations/\(id).db")
+            let database = try #require(SQLiteFixture(url: url))
+            #expect(database.execute("CREATE TABLE IF NOT EXISTS executor_metadata (idx integer PRIMARY KEY, data blob)"))
+            let hex = blob.map { String(format: "%02x", $0) }.joined()
+            #expect(database.execute("INSERT OR REPLACE INTO executor_metadata VALUES (0, x'\(hex)')"))
+        }
+
+        /// 대화 기록(JSONL)을 쓴다.
+        func writeTranscript(_ id: String, lines: [String]) throws {
+            let directory = home.appendingPathComponent(".gemini/antigravity/brain/\(id)/.system_generated/logs")
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try Data((lines.joined(separator: "\n") + "\n").utf8).write(to: directory.appendingPathComponent("transcript.jsonl"))
+        }
+
         /// 대화별 DB의 마지막 단계 상태를 정한다. 앞 단계는 모두 완료(3)로 둔다.
         func setLastStepStatus(_ id: String, _ status: Int) throws {
             let url = home.appendingPathComponent(".gemini/antigravity/conversations/\(id).db")
@@ -185,6 +201,63 @@ struct AntigravityTests {
         try touch(environment.home.appendingPathComponent(".gemini/antigravity/conversation_summaries.db"), secondsFromNow: 20)
         #expect(await monitor.sessionStates() == ["live-id": .completed])
         #expect(await monitor.waitingKinds().isEmpty)
+    }
+
+    /// 프로토콜 버퍼의 문자열 필드처럼 [태그, 길이, 값...]으로 만든다.
+    private static func field(_ tag: UInt8, _ text: String) -> [UInt8] {
+        [tag, UInt8(text.utf8.count)] + Array(text.utf8)
+    }
+
+    @Test func modelNameIsCutAtItsLengthByteEvenWhenTheNextTagLooksLikeALetter() {
+        // 다음 필드의 태그 'j'(0x6a)가 이름 바로 뒤에 붙어 있어도 이름에 섞이지 않는다.
+        var blob = Data([0x08, 0x01] + Self.field(0x0a, "gemini-3.8-flash-high"))
+        blob.append(contentsOf: Self.field(0x6a, "enable-rpc-sandbox-proxy"))
+        #expect(AntigravityReader.modelName(in: blob) == "gemini-3.8-flash-high")
+        // 이름 앞에 다른 문자열이 있어도, 길이가 맞지 않는 gemini- 조각은 건너뛰고 맞는 것을 고른다.
+        let mixed = Data(Self.field(0x12, "used_non_gemini_model") + Self.field(0x0a, "gemini-3.8-flash"))
+        #expect(AntigravityReader.modelName(in: mixed) == "gemini-3.8-flash")
+        #expect(AntigravityReader.modelName(in: Data()) == nil)
+        #expect(AntigravityReader.modelName(in: Data("gemini-".utf8)) == nil)
+        #expect(AntigravityReader.modelName(in: Data(Self.field(0x0a, "claude-opus")))  == nil)
+        // 길이가 실제보다 길면 읽지 않는다.
+        #expect(AntigravityReader.modelName(in: Data([0x0a, 0x40] + Array("gemini-3.8-flash".utf8))) == nil)
+    }
+
+    @Test func sessionInfoCarriesModelAndEstimatedContextUsage() async throws {
+        let environment = try Environment()
+        environment.addConversation("rich-id", status: "CASCADE_RUN_STATUS_RUNNING")
+        try environment.setLastStepStatus("rich-id", 3)
+        try environment.addExecutorMetadata("rich-id", blob: Data(Self.field(0x0a, "gemini-3.8-flash-high") + Self.field(0x6a, "tail")))
+        try environment.writeTranscript("rich-id", lines: [
+            #"{"step_index":0,"type":"USER_INPUT","status":"DONE","content":"hi"}"#,
+            #"{"step_index":1,"type":"PLANNER_RESPONSE","status":"DONE","input_tokens":1000,"cache_read_tokens":2000,"output_tokens":50}"#,
+            #"{"step_index":2,"type":"GENERIC","status":"DONE","content":"tool result"}"#,
+            #"{"step_index":3,"type":"PLANNER_RESPONSE","status":"DONE","input_tokens":3000,"cache_read_tokens":24000,"output_tokens":90}"#,
+            #"{"step_index":4,"type":"GENERIC","status":"DONE","content":"later tool result"}"#
+        ])
+        let session = try #require(await environment.makeMonitor().activeSessions().first)
+        #expect(session.modelName == "gemini-3.8-flash-high")
+        #expect(session.usedTokens == 27_000)
+        #expect(session.windowTokens == SessionMonitoringPolicy.antigravityEstimatedWindow)
+        #expect(session.isWindowEstimated)
+    }
+
+    @Test func missingTranscriptAndMetadataLeaveModelAndUsageEmpty() async throws {
+        let environment = try Environment()
+        environment.addConversation("bare-id", status: "CASCADE_RUN_STATUS_IDLE")
+        let session = try #require(await environment.makeMonitor().activeSessions().first)
+        #expect(session.modelName == nil)
+        #expect(session.usedTokens == nil)
+        #expect(session.windowTokens == nil)
+        #expect(session.isWindowEstimated == false)
+    }
+
+    @Test func transcriptWithoutTokenFieldsOrWithBrokenLinesIsIgnored() async throws {
+        let environment = try Environment()
+        environment.addConversation("odd-id", status: "CASCADE_RUN_STATUS_IDLE")
+        try environment.writeTranscript("odd-id", lines: [#"{"step_index":0,"type":"USER_INPUT"}"#, "{broken", #"{"input_tokens":"many"}"#])
+        let session = try #require(await environment.makeMonitor().activeSessions().first)
+        #expect(session.usedTokens == nil)
     }
 
     @Test func timestampsAndWorkspaceUrisParseTheObservedFormats() throws {

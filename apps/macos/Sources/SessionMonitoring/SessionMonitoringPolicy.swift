@@ -22,6 +22,9 @@ enum SessionMonitoringPolicy {
     /// Antigravity App이 대화와 상태를 남기는 폴더. 홈 폴더 기준 경로다.
     static let antigravityRootPath = ".gemini/antigravity"
 
+    /// Antigravity는 대화의 컨텍스트 창 크기를 파일에 남기지 않는다. Gemini 계열이 보통 100만 토큰대라서 이 값으로 추정하고 화면에 ~를 붙인다.
+    static let antigravityEstimatedWindow = 1_048_576
+
     static let maxSessionCount = 10
     static let unknownProjectName = "알 수 없음"
 
