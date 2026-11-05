@@ -37,18 +37,21 @@ struct FeedbackModelTests {
         FeedbackModel(sender: sender, appVersion: "1.0.0", osVersion: "27.0.1", text: text)
     }
 
-    private func waitUntilFinished(_ model: FeedbackModel) async {
-        while model.phase == .sending { await Task.yield() }
+    // 전송이 끝날 때까지 기다렸다가 결과(성공이면 nil)를 돌려준다.
+    private func sendAndWait(_ model: FeedbackModel) async -> FeedbackFailure? {
+        await withCheckedContinuation { continuation in
+            model.startSending { continuation.resume(returning: $0) }
+        }
     }
 
     // AC-4
     @Test(arguments: ["", "  ", "\n"])
-    func cannotSendEmptyText(text: String) async {
+    func cannotSendEmptyText(text: String) {
         let sender = FakeSender(behavior: {})
         let model = makeModel(text: text, sender: sender)
 
         #expect(!model.canSend)
-        await model.send()
+        model.startSending { _ in Issue.record("빈 글은 전송을 시작하면 안 된다") }
 
         #expect(sender.callCount == 0)
         #expect(model.phase == .editing)
@@ -64,17 +67,17 @@ struct FeedbackModelTests {
     }
 
     // AC-4
-    @Test func sendsTextWithVersionsAndFinishesAsSent() async {
+    @Test func sendsTrimmedTextWithVersionsAndReportsSuccess() async {
         let sender = FakeSender(behavior: {})
         let model = makeModel(text: " 버그가 있어요 ", sender: sender)
 
-        await model.send()
+        let failure = await sendAndWait(model)
 
-        #expect(model.phase == .sent)
+        #expect(failure == nil)
+        #expect(model.phase == .editing)
         #expect(sender.calls.elements.first?.text == "버그가 있어요")
         #expect(sender.calls.elements.first?.appVersion == "1.0.0")
         #expect(sender.calls.elements.first?.osVersion == "27.0.1")
-        #expect(!model.canSend)
     }
 
     // AC-4
@@ -86,13 +89,15 @@ struct FeedbackModelTests {
         })
         let model = makeModel(text: "긴 의견", sender: sender)
 
-        await model.send()
+        let firstFailure = await sendAndWait(model)
+        #expect(firstFailure == .network)
         #expect(model.phase == .failed(.network))
         #expect(model.text == "긴 의견")
         #expect(model.canSend)
 
-        await model.send()
-        #expect(model.phase == .sent)
+        let secondFailure = await sendAndWait(model)
+        #expect(secondFailure == nil)
+        #expect(model.phase == .editing)
         #expect(sender.callCount == 2)
     }
 
@@ -105,42 +110,57 @@ struct FeedbackModelTests {
     func mapsSendFailureToUserFacingFailure(failure: FeedbackSendFailure, expected: FeedbackFailure) async {
         let model = makeModel(sender: FakeSender(behavior: { throw failure }))
 
-        await model.send()
+        let result = await sendAndWait(model)
 
+        #expect(result == expected)
         #expect(model.phase == .failed(expected))
     }
 
     // AC-4
-    @Test func blocksDuplicateSendWhileSending() async {
+    @Test func blocksDuplicateSendWhileDelivering() async {
         let gate = Gate()
         let sender = FakeSender(behavior: { await gate.wait() })
         let model = makeModel(sender: sender)
 
-        model.startSending()
-        #expect(model.phase == .sending)
-        #expect(!model.canSend)
-        model.startSending()
+        let failure: FeedbackFailure? = await withCheckedContinuation { continuation in
+            model.startSending { continuation.resume(returning: $0) }
+            // 전송이 끝나기 전에 바로 막혀야 한다.
+            #expect(!model.canSend)
+            model.startSending { _ in Issue.record("전송 중에 두 번째 전송이 시작되면 안 된다") }
+            Task { await gate.open() }
+        }
 
-        await gate.open()
-        await waitUntilFinished(model)
-
-        #expect(model.phase == .sent)
+        #expect(failure == nil)
         #expect(sender.callCount == 1)
     }
 
     // AC-4
-    @Test func cancelDuringSendIgnoresLateResult() async {
-        let gate = Gate()
-        let sender = FakeSender(behavior: { await gate.wait() })
+    @Test func clearsPreviousFailureWhenSendingAgain() async {
+        let attempts = CallLog<Int>()
+        let sender = FakeSender(behavior: {
+            attempts.append(attempts.count + 1)
+            if attempts.count == 1 { throw FeedbackSendFailure.unexpectedStatus(500) }
+        })
         let model = makeModel(sender: sender)
+        _ = await sendAndWait(model)
+        #expect(model.phase == .failed(.rejected))
 
-        model.startSending()
-        model.cancelSending()
-        #expect(model.phase == .editing)
-
-        await gate.open()
-        for _ in 0..<20 { await Task.yield() }
+        model.startSending { _ in }
 
         #expect(model.phase == .editing)
+    }
+
+    // AC-4
+    @Test func restoresFailedTextInFrontOfNewText() {
+        let model = makeModel(text: "", sender: FakeSender(behavior: {}))
+
+        model.restore(failedText: "실패한 글", failure: .network)
+        #expect(model.text == "실패한 글")
+        #expect(model.phase == .failed(.network))
+
+        model.text = "실패한 글\n\n새 글"
+        model.restore(failedText: "또 실패한 글", failure: .rejected)
+        #expect(model.text == "또 실패한 글\n\n실패한 글\n\n새 글")
+        #expect(model.phase == .failed(.rejected))
     }
 }

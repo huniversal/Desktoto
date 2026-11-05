@@ -12,12 +12,12 @@ public enum FeedbackFailure: Equatable, Sendable {
 
 public enum FeedbackPhase: Equatable, Sendable {
     case editing
-    case sending
-    case sent
+    // 직전 전송이 실패해서 글을 되돌려 놓은 상태. 오류를 보여 주고 다시 보낼 수 있다.
     case failed(FeedbackFailure)
 }
 
-// 입력 창의 상태. 입력 글과 전송 단계를 한 곳에서 소유하고, 보내는 동안 중복 전송을 막는다.
+// 입력 창의 상태. 보내기를 누르면 곧바로 보낸 것으로 보고(낙관적 업데이트) 호출한 쪽이 창을 닫는다.
+// 전송은 모델이 끝까지 이어 가고, 실패했을 때만 결과로 알려서 글을 되돌릴 수 있게 한다.
 @MainActor
 @Observable
 public final class FeedbackModel {
@@ -33,7 +33,7 @@ public final class FeedbackModel {
     @ObservationIgnored private let sender: any FeedbackSending
     @ObservationIgnored private let appVersion: String
     @ObservationIgnored private let osVersion: String
-    @ObservationIgnored private var sendTask: Task<Void, Never>?
+    @ObservationIgnored private var isDelivering = false
 
     public init(sender: any FeedbackSending, appVersion: String, osVersion: String, text: String = "") {
         self.sender = sender
@@ -43,45 +43,36 @@ public final class FeedbackModel {
     }
 
     public var canSend: Bool {
-        guard phase != .sending, phase != .sent else { return false }
-        return makeMessage() != nil
+        !isDelivering && makeMessage() != nil
     }
 
-    // 버튼에서 부르는 진입점. 전송 작업은 모델이 소유해서 창을 닫을 때 취소할 수 있다.
-    // 단계는 Task가 시작되기 전에 바로 바꿔서, 연타해도 두 번째 전송이 시작되지 않는다.
-    public func startSending() {
-        guard let message = beginSending() else { return }
-        sendTask = Task { await deliver(message) }
+    // 보내기를 누르면 바로 불러서 창을 닫는다. 이미 보내는 중이거나 보낼 글이 없으면 아무 일도 하지 않는다.
+    // `onResult`는 전송이 끝난 뒤 불린다. 성공이면 nil이고, 실패이면 이유를 준다.
+    public func startSending(onResult: @escaping @MainActor (FeedbackFailure?) -> Void) {
+        guard !isDelivering, let message = makeMessage() else { return }
+        // 연타해도 두 번째 전송이 시작되지 않도록 Task보다 먼저 바꾼다.
+        isDelivering = true
+        phase = .editing
+        Task {
+            let failure = await deliver(message)
+            isDelivering = false
+            if let failure { phase = .failed(failure) }
+            onResult(failure)
+        }
     }
 
-    // 창을 닫을 때 진행 중인 전송을 취소한다. 보낸 뒤에는 아무 일도 하지 않는다.
-    public func cancelSending() {
-        sendTask?.cancel()
-        sendTask = nil
-        if phase == .sending { phase = .editing }
+    // 전송에 실패한 글을 이미 열려 있는 창에 되돌린다. 새로 쓰던 글이 있으면 그 앞에 붙여서 어느 쪽도 잃지 않는다.
+    public func restore(failedText: String, failure: FeedbackFailure) {
+        text = text.isEmpty ? failedText : "\(failedText)\n\n\(text)"
+        phase = .failed(failure)
     }
 
-    // 테스트에서 끝까지 기다리기 위해 분리했다. 보내는 중이거나 이미 보냈으면 다시 보내지 않는다.
-    func send() async {
-        guard let message = beginSending() else { return }
-        await deliver(message)
-    }
-
-    private func beginSending() -> FeedbackMessage? {
-        guard canSend, let message = makeMessage() else { return nil }
-        phase = .sending
-        return message
-    }
-
-    private func deliver(_ message: FeedbackMessage) async {
+    private func deliver(_ message: FeedbackMessage) async -> FeedbackFailure? {
         do {
             try await sender.send(message)
-            // 취소된 뒤에 도착한 결과가 상태를 바꾸지 않게 한다.
-            guard !Task.isCancelled else { return }
-            phase = .sent
+            return nil
         } catch {
-            guard !Task.isCancelled else { return }
-            phase = .failed(Self.convertToFailure(error))
+            return Self.convertToFailure(error)
         }
     }
 

@@ -4,30 +4,40 @@ import Feedback
 import SwiftUI
 
 /// 의견 입력 창의 표시와 수명을 맡는다. 창은 하나만 열고, 이미 열려 있으면 앞으로 가져온다.
-/// 창을 닫으면 진행 중인 전송을 취소하고 입력은 버린다.
+/// 보내기를 누르면 바로 창을 닫고(낙관적 업데이트) 전송은 이어 간다. 전송이 실패하면 쓰던 글을 되돌려 창을 다시 연다.
 @MainActor
 final class FeedbackWindowController: NSObject, NSWindowDelegate {
     private let sender: any FeedbackSending
     private var window: NSWindow?
     private var model: FeedbackModel?
+    private var theme: Theme = .system
 
     init(sender: any FeedbackSending) {
         self.sender = sender
     }
 
     func show(theme: Theme) {
+        self.theme = theme
         if let window {
             window.appearance = Self.makeAppearance(for: theme)
             NSApp.activate()
             window.makeKeyAndOrderFront(nil)
             return
         }
-        let model = FeedbackModel(
+        present(FeedbackModel(
             sender: sender,
             appVersion: FeedbackVersionText.appVersion(from: Bundle.main.infoDictionary),
             osVersion: FeedbackVersionText.osVersion(ProcessInfo.processInfo.operatingSystemVersion)
-        )
-        let view = FeedbackView(model: model) { [weak self] in self?.window?.close() }
+        ))
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        model = nil
+        window = nil
+    }
+
+    private func present(_ model: FeedbackModel) {
+        let view = FeedbackView(model: model) { [weak self, model] in self?.submit(model) }
         let window = NSWindow(contentViewController: NSHostingController(rootView: view))
         window.title = FeedbackText.windowTitle
         window.styleMask = [.titled, .closable]
@@ -41,10 +51,25 @@ final class FeedbackWindowController: NSObject, NSWindowDelegate {
         window.makeKeyAndOrderFront(nil)
     }
 
-    func windowWillClose(_ notification: Notification) {
-        model?.cancelSending()
-        model = nil
-        window = nil
+    // 전송을 시작하자마자 창을 닫는다. 전송 결과를 기다리는 모델은 이 클로저가 붙잡고 있다.
+    private func submit(_ model: FeedbackModel) {
+        guard model.canSend else { return }
+        model.startSending { [weak self] failure in
+            guard let failure else { return }
+            self?.restore(model, after: failure)
+        }
+        window?.close()
+    }
+
+    // 실패한 글을 되돌린다. 그 사이에 새 창이 열려 있으면 그 창에 합치고, 없으면 같은 글로 창을 다시 연다.
+    private func restore(_ failedModel: FeedbackModel, after failure: FeedbackFailure) {
+        if let model {
+            model.restore(failedText: failedModel.text, failure: failure)
+            NSApp.activate()
+            window?.makeKeyAndOrderFront(nil)
+        } else {
+            present(failedModel)
+        }
     }
 
     private static func makeAppearance(for theme: Theme) -> NSAppearance? {
