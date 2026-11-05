@@ -11,13 +11,16 @@ final class FeedbackWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var model: FeedbackModel?
     private var theme: Theme = .system
+    // 창을 상태바 아이콘 아래에 띄우기 위한 기준. 실패해서 창을 다시 열 때도 같은 위치를 쓴다.
+    private weak var buttonWindow: NSWindow?
 
     init(sender: any FeedbackSending) {
         self.sender = sender
     }
 
-    func show(theme: Theme) {
+    func show(theme: Theme, buttonWindow: NSWindow?) {
         self.theme = theme
+        self.buttonWindow = buttonWindow
         if let window {
             window.appearance = Self.makeAppearance(for: theme)
             NSApp.activate()
@@ -44,11 +47,22 @@ final class FeedbackWindowController: NSObject, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.appearance = Self.makeAppearance(for: theme)
         window.delegate = self
-        window.center()
+        placeBelowStatusItem(window)
         self.model = model
         self.window = window
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
+    }
+
+    // 세션 패널처럼 아이콘 아래에서 아이콘 왼쪽 끝에 맞춰 오른쪽으로 펼친다. 아이콘 위치를 모르면 화면 가운데에 둔다.
+    private func placeBelowStatusItem(_ window: NSWindow) {
+        guard let buttonWindow else {
+            window.center()
+            return
+        }
+        let visibleFrame = (buttonWindow.screen ?? NSScreen.main)?.visibleFrame ?? .zero
+        let origin = FeedbackWindowFrame.origin(buttonFrame: buttonWindow.frame, visibleFrame: visibleFrame, size: window.frame.size)
+        window.setFrameOrigin(origin)
     }
 
     // 전송을 시작하자마자 창을 닫는다. 전송 결과를 기다리는 모델은 이 클로저가 붙잡고 있다.

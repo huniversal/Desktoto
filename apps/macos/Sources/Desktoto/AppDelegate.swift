@@ -258,7 +258,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .showUsageGuide:
             showUsageGuide()
         case .showFeedback:
-            feedbackWindowController?.show(theme: settings.theme)
+            feedbackWindowController?.show(theme: settings.theme, buttonWindow: statusItem.button?.window)
         case .toggleUsagePanel:
             settings.showsUsage.toggle()
         case .toggleContextPanel:
