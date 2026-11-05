@@ -2,7 +2,8 @@ import Boundaries
 import Foundation
 
 // CLI 프로세스가 돌고 있는 터미널 탭을 앞으로 가져온다. iTerm2와 Terminal.app은 tty로, Orca는 CLI와 워크트리 폴더로,
-// cmux는 프로세스 환경의 패널 UUID와 cmux CLI로 찾는다. 다른 터미널은 지원하지 않는다.
+// cmux는 프로세스 환경의 패널 UUID와 cmux CLI로 찾는다. IDE(VS Code, Antigravity IDE)의 통합 터미널은 탭을 지정할 수 없어 IDE 앱만 앞으로 가져온다.
+// 다른 터미널은 지원하지 않는다.
 public struct TerminalTabFocuser: Sendable {
     private struct TerminalApp {
         let bundleIdentifier: String
@@ -12,6 +13,16 @@ public struct TerminalTabFocuser: Sendable {
     private static let terminalApps = [
         TerminalApp(bundleIdentifier: "com.googlecode.iterm2", makeScript: { TerminalScripts.makeITermScript(tty: $0) }),
         TerminalApp(bundleIdentifier: "com.apple.Terminal", makeScript: { TerminalScripts.makeTerminalScript(tty: $0) })
+    ]
+    // 통합 터미널을 가진 IDE. 외부에서 창이나 터미널 탭을 지정할 방법이 없어서 앱 단위로만 앞으로 가져온다.
+    private struct IDEApp {
+        let appName: String
+        let bundleIdentifier: String
+    }
+
+    private static let ideApps = [
+        IDEApp(appName: "Visual Studio Code.app", bundleIdentifier: "com.microsoft.VSCode"),
+        IDEApp(appName: "Antigravity IDE.app", bundleIdentifier: "com.google.antigravity-ide")
     ]
     private static let orcaAppName = "Orca.app"
     private static let orcaBundleIdentifier = "com.stablyai.orca"
@@ -38,6 +49,12 @@ public struct TerminalTabFocuser: Sendable {
         }
         if let cmuxAppPath = findAncestorAppPath(of: process.pid, appName: Self.cmuxAppName, in: processTree) {
             return focusCmuxTerminal(process: process, cmuxAppPath: cmuxAppPath)
+        }
+        if let ideApp = Self.ideApps.first(where: {
+            findAncestorAppPath(of: process.pid, appName: $0.appName, in: processTree) != nil
+        }) {
+            urlOpener.activate(bundleIdentifier: ideApp.bundleIdentifier)
+            return true
         }
         let ttyPath = "/dev/\(process.tty)"
 

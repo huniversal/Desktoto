@@ -8,7 +8,7 @@ public enum SettingsAction: Equatable, Sendable {
     case toggleClaudeIntegration
     case toggleUpdateCheck
     case openUpdatePage
-    case showIntegrationGuide
+    case showUsageGuide
     case toggleUsagePanel
     case toggleContextPanel
     case selectColorMode(ColorMode)
@@ -76,7 +76,7 @@ public enum SettingsMenu {
         }
         entries.append(.item(makeItem("업데이트 확인", isOn: settings.checksForUpdates, action: .toggleUpdateCheck)))
         // 도구별로 사용자가 알아야 할 제약과 설정 방법을 보여 준다. 항상 보인다.
-        entries.append(.item(makeItem("연동 안내…", isOn: false, action: .showIntegrationGuide)))
+        entries.append(.item(makeItem("사용 안내…", isOn: false, action: .showUsageGuide)))
         entries.append(.separator)
 
         // 보여줄 패널은 둘 다, 하나만, 아예 없이도 고를 수 있다.

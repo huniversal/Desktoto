@@ -151,6 +151,44 @@ struct TerminalTabFocuserTests {
         #expect(runner.commands.last == "\(cmuxCLI) focus-panel --panel \(firstSurfaceID)")
     }
 
+    // AC-10
+    @Test func activatesTheIDEAppForIntegratedTerminals() {
+        let cases = [
+            ("/Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper", "com.microsoft.VSCode"),
+            ("/Applications/Antigravity IDE.app/Contents/Frameworks/Antigravity IDE Helper.app/Contents/MacOS/Antigravity IDE Helper", "com.google.antigravity-ide")
+        ]
+        cases.forEach { helperPath, bundleIdentifier in
+            let tree = """
+              10 1 \(helperPath)
+              20 10 /bin/zsh
+              30 20 claude
+            """
+            let runner = ScriptedProcessRunner(outputs: ["/bin/ps -axo pid=,ppid=,comm=": tree])
+            let script = RecordingAppleScriptRunner { _ in true }
+            let opener = FakeURLOpener(runningBundleIdentifiers: ["com.googlecode.iterm2"])
+            #expect(makeFocuser(runner: runner, script: script, opener: opener).focus(process: process, sessionTitle: nil))
+            #expect(opener.activatedBundleIdentifiers == [bundleIdentifier])
+            #expect(script.sources.isEmpty)
+            #expect(runner.commands == ["/bin/ps -axo pid=,ppid=,comm="])
+        }
+    }
+
+    // AC-10: Orca와 cmux 안에서 IDE가 조상이어도(예: IDE에서 연 터미널이 아님) 기존 앱이 우선한다.
+    @Test func prefersOrcaAndCmuxOverIDEAncestors() {
+        let tree = """
+          5 1 /Applications/Visual Studio Code.app/Contents/MacOS/Code
+          10 5 /Applications/cmux.app/Contents/MacOS/cmux
+          20 10 /bin/zsh
+          30 20 /usr/local/bin/claude
+        """
+        let runner = ScriptedProcessRunner(outputs: ["/bin/ps -axo pid=,ppid=,comm=": tree])
+        let opener = FakeURLOpener()
+        let script = RecordingAppleScriptRunner { _ in true }
+        // cmux 경로로 갔지만 환경 출력이 없어 실패한다. IDE 앱은 활성화되지 않는다.
+        #expect(!makeFocuser(runner: runner, script: script, opener: opener).focus(process: process, sessionTitle: nil))
+        #expect(opener.activatedBundleIdentifiers.isEmpty)
+    }
+
     // AC-5
     @Test func cmuxFailuresReturnFalseWithoutActivating() {
         let opener = FakeURLOpener(runningBundleIdentifiers: ["com.googlecode.iterm2"])

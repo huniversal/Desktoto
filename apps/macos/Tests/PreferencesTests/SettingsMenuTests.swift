@@ -51,7 +51,7 @@ struct SettingsMenuTests {
         let entries = SettingsMenu.makeEntries(settings: settings, environment: makeEnvironment())
 
         #expect(titles(of: entries) == [
-            "로그인 시 자동 실행", "알림 보내기", "Codex 연동", "Claude 연동", "업데이트 확인", "연동 안내…", "-",
+            "로그인 시 자동 실행", "알림 보내기", "Codex 연동", "Claude 연동", "업데이트 확인", "사용 안내…", "-",
             "표시할 패널", "색상", "테마", "Liquid Glass", "-", "Desktoto 종료"
         ])
         #expect(submenuItems("표시할 패널", in: entries).map(\.title) == ["사용량", "컨텍스트"])
@@ -128,7 +128,7 @@ struct SettingsMenuTests {
         #expect(quit.keyEquivalent == "q")
     }
     // #53 AC-8: 환경과 관계없이 항상 보이고 누를 수 있다.
-    @Test func alwaysShowsIntegrationGuide() {
+    @Test func alwaysShowsUsageGuide() {
         let (settings, defaults, suiteName) = makeSettings()
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
@@ -140,10 +140,10 @@ struct SettingsMenuTests {
         environments.forEach { environment in
             let entries = SettingsMenu.makeEntries(settings: settings, environment: environment)
             let guides = entries.compactMap { entry -> SettingsMenuItem? in
-                guard case .item(let item) = entry, item.action == .showIntegrationGuide else { return nil }
+                guard case .item(let item) = entry, item.action == .showUsageGuide else { return nil }
                 return item
             }
-            #expect(guides.map(\.title) == ["연동 안내…"])
+            #expect(guides.map(\.title) == ["사용 안내…"])
             #expect(guides.allSatisfy { $0.isEnabled && !$0.isOn })
         }
     }

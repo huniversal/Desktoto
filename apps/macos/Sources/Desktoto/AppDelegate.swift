@@ -247,8 +247,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let pageURL = updateMonitor.availableUpdate?.release.pageURL {
                 _ = urlOpener.open(pageURL)
             }
-        case .showIntegrationGuide:
-            showIntegrationGuide()
+        case .showUsageGuide:
+            showUsageGuide()
         case .toggleUsagePanel:
             settings.showsUsage.toggle()
         case .toggleContextPanel:
@@ -269,15 +269,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // 도구별로 사용자가 알아야 할 제약과 설정 방법을 알려 준다. 앱은 다른 앱의 설정을 바꾸지 않는다.
-    private func showIntegrationGuide() {
+    private func showUsageGuide() {
         let alert = NSAlert()
-        alert.messageText = "연동 안내"
+        alert.messageText = "사용 안내"
         alert.informativeText = """
-        cmux
-        세션 줄을 눌러도 cmux 탭으로 자동 이동하지 않아요. 이동하려면 cmux 설정 > 자동화에서 "소켓 제어 모드"를 "자동화 모드"로 바꿔 주세요. 같은 Mac 사용자의 프로그램이 cmux를 제어할 수 있게 되는 설정이에요. 컨텍스트와 토큰 표시는 설정 없이 돼요.
+        [cmux]
+        카드를 눌러도 탭으로 이동하지 않습니다.
+        cmux 설정 > 자동화에서 "소켓 제어 모드"를 "자동화 모드"로 바꾸면 이동합니다.
 
-        Antigravity
-        Gemini 같은 모델의 사용량(한도)은 표시하지 못해요. 컨텍스트는 모델 이름으로 창 크기를 추정한 값이라 ~를 붙여 보여 줘요.
+        [Antigravity]
+        사용량(한도)은 표시되지 않습니다.
+        컨텍스트는 추정값이라 ~가 붙습니다.
+
+        [VS Code, Antigravity IDE]
+        카드를 누르면 IDE 앱이 앞으로 옵니다.
+        터미널 탭은 직접 찾아야 합니다.
         """
         alert.addButton(withTitle: "확인")
         NSApp.activate()
