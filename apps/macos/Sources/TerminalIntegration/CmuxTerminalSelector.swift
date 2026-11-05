@@ -7,13 +7,15 @@ enum CmuxTerminalSelector {
 
     // `ps eww -p <pid>` 출력은 명령줄 뒤에 `KEY=VALUE`가 공백으로 이어진다. 외부 출력은 미검증 입력이므로
     // UUID 형식인 값만 돌려주고, 없거나 형식이 틀리면 nil이다(명령 인자로 쓰기 전에 걸러낸다).
-    // 환경 변수는 출력 맨 끝에 오므로, 명령 인자에 같은 모양의 토큰이 섞여 있어도 마지막 값을 쓴다.
+    // 환경 변수는 출력 맨 끝에 오므로, 명령 인자에 같은 모양의 토큰이 섞여 있어도 마지막 토큰만 보고 검증한다.
+    // 마지막 토큰의 값이 UUID가 아니면 앞쪽 인자의 값으로 대신하지 않고 nil로 둔다.
+    // 출력에는 인자와 환경 변수의 경계가 없어서, 환경 변수 없이 인자에만 있는 경우까지는 가려내지 못한다.
     static func parseSurfaceID(fromEnvironmentOutput output: String) -> String? {
         output
             .split(whereSeparator: { $0.isWhitespace })
-            .filter { $0.hasPrefix(surfaceIDPrefix) }
+            .last { $0.hasPrefix(surfaceIDPrefix) }
             .map { String($0.dropFirst(surfaceIDPrefix.count)) }
-            .last { UUID(uuidString: $0) != nil }
+            .flatMap { UUID(uuidString: $0) == nil ? nil : $0 }
     }
 
     // 성공하면 표준 출력이 `OK ...`로 시작한다. 실패(소켓 거부 등)는 오류 출력으로 나와서 표준 출력이 비므로,

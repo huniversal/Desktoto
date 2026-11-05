@@ -20,6 +20,13 @@ struct CmuxTerminalSelectorTests {
         #expect(CmuxTerminalSelector.parseSurfaceID(fromEnvironmentOutput: output) == surfaceID)
     }
 
+    // AC-5: 환경 변수 값이 잘못되었으면 앞쪽 명령 인자의 유효한 UUID로 대신하지 않는다.
+    @Test func doesNotFallBackToAnArgumentWhenTheEnvironmentValueIsMalformed() {
+        let otherSurfaceID = "11111111-2222-3333-4444-555555555555"
+        let output = "1332 s004 S+ 0:01.20 claude --note CMUX_SURFACE_ID=\(otherSurfaceID) HOME=/Users/me CMUX_SURFACE_ID=not-a-uuid"
+        #expect(CmuxTerminalSelector.parseSurfaceID(fromEnvironmentOutput: output) == nil)
+    }
+
     // AC-5
     @Test func rejectsMissingOrMalformedSurfaceID() {
         #expect(CmuxTerminalSelector.parseSurfaceID(fromEnvironmentOutput: "") == nil)
