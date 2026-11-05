@@ -15,7 +15,7 @@
 | 최소 macOS | 26.0 |
 | zstd | 벤더링한 `CZstd` 유지 (v1.5.7, 해독부만) |
 | 패키지 위치 | `apps/macos` (모노레포) |
-| 모듈 구성 | 기능별 모듈 12개와 보조 타깃 2개 (3장) |
+| 모듈 구성 | 기능별 모듈 13개와 보조 타깃 2개 (3장) |
 | 외부 경계 | `Boundaries`의 프로토콜 6개와 기능 모듈 안의 단일 기능 서비스 (5장) |
 
 ### 이름과 호환성
@@ -53,6 +53,7 @@ apps/macos/
 │   ├── TerminalIntegration/
 │   ├── Preferences/
 │   ├── UpdateCheck/
+│   ├── Feedback/
 │   ├── MenuBarIcon/
 │   ├── SessionPanel/
 │   ├── CZstd/            C 라이브러리(벤더링), include/ 와 LICENSE 포함
@@ -81,6 +82,7 @@ apps/macos/
 | `TerminalIntegration` | CLI 프로세스 탐색, 세션과의 매칭, 터미널 생존 확인, Claude 데스크탑 앱 딥링크 매핑, iTerm2와 Terminal과 Orca 탭 이동, 세션 열기 | `Domain`, `Boundaries` | #5 | `TerminalJumper`, `SessionWatcher`의 생존 확인 |
 | `Preferences` | 설정 모델과 저장, 알림, 로그인 항목 | `DesignSystem`, `Boundaries` | #8 | `AppSettings`, `NotificationSender` |
 | `UpdateCheck` | 새 버전 확인: 최신 릴리스 조회(GitHub API), 버전 비교, 24시간 확인 주기, 설치 방식(Homebrew 여부) 판별, 안내 문구 | `Boundaries` | #24 | 없음(새 기능) |
+| `Feedback` | 문의하기: 의견 본문 구성(길이 제한, 버전 푸터, 멘션 차단), 빌드에 주입된 Discord webhook 주소 검증, 전송, 입력 창 상태(`FeedbackModel`)와 View | `DesignSystem` | #56 | 없음(새 기능) |
 | `MenuBarIcon` | 캐릭터 격자, 프레임 계산, 상태에서 보여 줄 프레임 선택과 진행, 이미지 그리기와 비트맵 묶음 | `Domain`, `DesignSystem` | #9 | `SpriteRenderer`, `AppDelegate`의 아이콘 갱신 |
 | `SessionPanel` | 패널 View, 패널 모델, 투명 패널 창과 위치 계산 | `Domain`, `DesignSystem` | #10 | `SessionPanelView`, `AppDelegate`의 `GlassPanel` |
 | `Desktoto` | 진입점, 오케스트레이션(감시 타이머, 상태에서 UI로 전달, 알림 트리거, 세션 열기, 시작 시 연동), 우클릭 메뉴 | 위 모듈 중 `CZstd`, `TestSupport`를 제외한 모두 | #11 | `AppDelegate`, `main` |
@@ -95,21 +97,22 @@ apps/macos/
                         Desktoto (App)
    ┌────────────┬────────────┬────┴───────┬────────────┬──────────────┐
 SessionPanel MenuBarIcon Preferences SessionMonitoring UsageMonitoring
-     │            │          │        ClaudeIntegration  TerminalIntegration  UpdateCheck
+     │            │          │        ClaudeIntegration  TerminalIntegration  UpdateCheck  Feedback
      │            │          │              │                 │
      └─────┬──────┘          │              └────────┬────────┘
       DesignSystem ◄─────────┤                       │
                              └───────── Boundaries ◄─┘
 Domain ◄── SessionMonitoring, UsageMonitoring, TerminalIntegration, MenuBarIcon, SessionPanel
 CZstd  ◄── UsageMonitoring
+DesignSystem ◄── Feedback (입력 창 View)
 ```
 
 ### 의존 규칙
 
 컴파일러가 강제하도록 `Package.swift`의 타깃 의존으로 표현한다.
 
-1. 기능 모듈(`SessionMonitoring`, `UsageMonitoring`, `ClaudeIntegration`, `TerminalIntegration`, `Preferences`, `UpdateCheck`)끼리 서로 import하지 않는다. 조립은 `Desktoto` 앱만 한다.
-2. UI 모듈(`SessionPanel`, `MenuBarIcon`)은 `Boundaries`를 import하지 않는다. 파일, 프로세스, 시간에 접근하지 못하고, 표시용 데이터는 모델로 전달받는다.
+1. 기능 모듈(`SessionMonitoring`, `UsageMonitoring`, `ClaudeIntegration`, `TerminalIntegration`, `Preferences`, `UpdateCheck`, `Feedback`)끼리 서로 import하지 않는다. 조립은 `Desktoto` 앱만 한다.
+2. UI 모듈(`SessionPanel`, `MenuBarIcon`)은 `Boundaries`를 import하지 않는다. 파일, 프로세스, 시간에 접근하지 못하고, 표시용 데이터는 모델로 전달받는다. 입력 창 View를 가진 `Feedback`도 `Boundaries`를 import하지 않고 전송은 자기 모듈의 프로토콜로 주입받는다.
 3. `DesignSystem`은 `Domain`을 모른다. `Domain`은 의존이 없다.
 
 ### 기능 사이의 연결
@@ -166,7 +169,8 @@ CZstd  ◄── UsageMonitoring
 | 서비스 | 위치 |
 | --- | --- |
 | 알림 센터(`UserNotifications`), 로그인 항목(`SMAppService`) | `Preferences` |
-| 최신 릴리스 조회(`URLSession`, GitHub API) | `UpdateCheck` (네트워크 접근은 이 모듈에만 있고, 보내는 정보 없이 읽기만 한다) |
+| 최신 릴리스 조회(`URLSession`, GitHub API) | `UpdateCheck` (보내는 정보 없이 읽기만 한다) |
+| 의견 전송(`URLSession`, Discord webhook) | `Feedback` (앱이 밖으로 글을 보내는 유일한 곳. 사용자가 보내기를 누를 때만 입력한 글과 앱 버전과 macOS 버전을 한 번 POST한다. webhook 주소는 소스가 아니라 릴리스 빌드가 `Info.plist`의 `FeedbackWebhookURL`에 넣는다([CI와 릴리스 운영](ci.md)). 주소가 없거나 `https://discord.com/api/webhooks/` 형식이 아니면 메뉴 항목이 없다) |
 | 소리(`NSSound`) | `Desktoto` |
 | `UserDefaults` | 이미 `init(defaults:)`로 주입 가능하므로 프로토콜을 만들지 않는다. 테스트는 `UserDefaults(suiteName:)`를 쓴다 |
 

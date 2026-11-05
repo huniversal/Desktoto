@@ -16,14 +16,16 @@ struct SettingsMenuTests {
         isLoginItemEnabled: Bool = false,
         isClaudeCodeInstalled: Bool = true,
         isClaudeConnected: Bool = false,
-        updateNoticeTitle: String? = nil
+        updateNoticeTitle: String? = nil,
+        isFeedbackAvailable: Bool = false
     ) -> SettingsMenuEnvironment {
         SettingsMenuEnvironment(
             isRunningAsApp: isRunningAsApp,
             isLoginItemEnabled: isLoginItemEnabled,
             isClaudeCodeInstalled: isClaudeCodeInstalled,
             isClaudeConnected: isClaudeConnected,
-            updateNoticeTitle: updateNoticeTitle
+            updateNoticeTitle: updateNoticeTitle,
+            isFeedbackAvailable: isFeedbackAvailable
         )
     }
 
@@ -58,6 +60,28 @@ struct SettingsMenuTests {
         #expect(submenuItems("색상", in: entries).map(\.title) == ["흰색", "컬러"])
         #expect(submenuItems("테마", in: entries).map(\.title) == ["라이트", "다크", "시스템 설정에 맞춤"])
         #expect(submenuItems("Liquid Glass", in: entries).map(\.title) == ["투명", "조금 투명", "보통", "조금 진하게", "틴트"])
+    }
+
+    // AC-5 (#56)
+    @Test func showsFeedbackItemRightAfterUsageGuideOnlyWhenAvailable() {
+        let (settings, defaults, suiteName) = makeSettings()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let available = SettingsMenu.makeEntries(settings: settings, environment: makeEnvironment(isFeedbackAvailable: true))
+        let unavailable = SettingsMenu.makeEntries(settings: settings, environment: makeEnvironment(isFeedbackAvailable: false))
+
+        #expect(titles(of: available) == [
+            "로그인 시 자동 실행", "알림 보내기", "Codex 연동", "Claude 연동", "업데이트 확인", "사용 안내…", "문의하기…", "-",
+            "표시할 패널", "색상", "테마", "Liquid Glass", "-", "Desktoto 종료"
+        ])
+        #expect(!titles(of: unavailable).contains("문의하기…"))
+        guard case .item(let feedback) = available[6] else {
+            Issue.record("문의하기 항목이 사용 안내 바로 뒤에 없다")
+            return
+        }
+        #expect(feedback.action == .showFeedback)
+        #expect(feedback.isEnabled)
+        #expect(!feedback.isOn)
     }
 
     // AC-5

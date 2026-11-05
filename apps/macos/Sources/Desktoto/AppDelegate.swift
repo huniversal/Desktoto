@@ -3,6 +3,7 @@ import Boundaries
 import ClaudeIntegration
 import DesignSystem
 import Domain
+import Feedback
 import Foundation
 import MenuBarIcon
 import Preferences
@@ -35,6 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let sessionOpener: SessionOpener
     private let claudeIntegration: ClaudeIntegration
     private let updateMonitor: UpdateMonitor
+    // 빌드에 의견을 보낼 주소가 있을 때만 만든다. 없으면 문의하기 메뉴 항목이 없다.
+    private let feedbackWindowController: FeedbackWindowController?
     private let urlOpener = SystemURLOpener()
     private let notifier = NotificationSender()
     private let loginItem = LoginItem()
@@ -100,6 +103,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             resourceDirectory: Bundle.main.resourceURL ?? Bundle.main.bundleURL
         )
         updateMonitor = UpdateMonitor(settings: settings, fileSystem: fileSystem)
+        feedbackWindowController = AppBundle.isRunningAsApp
+            ? FeedbackWebhook(infoDictionary: Bundle.main.infoDictionary)
+                .map { webhook in
+                    FeedbackWindowController(sender: DiscordFeedbackSender(webhook: webhook), themeProvider: { settings.theme })
+                }
+            : nil
         panelController = PanelController(now: timeSource.now)
         iconController = MenuBarIconController(button: statusItem.button, colorMode: settings.colorMode)
         sleepPolicy = SleepPolicy(
@@ -222,7 +231,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 isLoginItemEnabled: loginItem.isEnabled,
                 isClaudeCodeInstalled: fileSystem.directoryExists(at: fileSystem.homeDirectory.appendingPathComponent(".claude")),
                 isClaudeConnected: isClaudeConnected,
-                updateNoticeTitle: updateMonitor.noticeTitle
+                updateNoticeTitle: updateMonitor.noticeTitle,
+                isFeedbackAvailable: feedbackWindowController != nil
             )
             statusItem.menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
             statusItem.button?.performClick(nil)
@@ -249,6 +259,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         case .showUsageGuide:
             showUsageGuide()
+        case .showFeedback:
+            feedbackWindowController?.show(buttonWindow: statusItem.button?.window)
         case .toggleUsagePanel:
             settings.showsUsage.toggle()
         case .toggleContextPanel:

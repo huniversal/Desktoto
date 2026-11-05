@@ -59,7 +59,12 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.number }}
           BUILD_NUMBER: ${{ github.run_number }}
-        run: sh scripts/build-app.sh
+          FEEDBACK_WEBHOOK_URL: ${{ secrets.FEEDBACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$FEEDBACK_WEBHOOK_URL" ]; then
+            echo "::warning::FEEDBACK_WEBHOOK_URL Secret이 비어 있어 문의하기 항목이 없는 앱을 릴리스합니다."
+          fi
+          sh scripts/build-app.sh
       - name: Create zip
         id: zip
         working-directory: apps/macos/build
