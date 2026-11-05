@@ -53,6 +53,16 @@ struct DiscordFeedbackSenderTests {
         }
     }
 
+    // AC-3: 데이터가 조금씩 들어와도 끝나지 않는 요청을 막도록 전체 제한(resource)도 10초로 둔다.
+    @Test func defaultSessionEnforcesTotalDeadline() {
+        let configuration = DiscordFeedbackSender.makeSession().configuration
+
+        #expect(configuration.timeoutIntervalForResource == 10)
+        #expect(configuration.timeoutIntervalForRequest == 10)
+        // 디스크에 캐시를 남기지 않는 임시 세션이다.
+        #expect(configuration.urlCache?.diskCapacity == 0)
+    }
+
     // AC-3
     @Test func reportsNonHTTPResponseAsInvalid() async throws {
         let webhook = try #require(FeedbackWebhook(Self.webhookText))
@@ -74,7 +84,8 @@ struct DiscordFeedbackSenderTests {
 
         let request = try #require(requests.elements.first)
         #expect(requests.count == 1)
-        #expect(request.url?.absoluteString == Self.webhookText)
+        // 저장하지 못했을 때 성공 코드가 아니라 오류가 돌아오도록 `wait=true`를 붙인다.
+        #expect(request.url?.absoluteString == "\(Self.webhookText)?wait=true")
         #expect(request.httpMethod == "POST")
         #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
         #expect(request.timeoutInterval == 10)

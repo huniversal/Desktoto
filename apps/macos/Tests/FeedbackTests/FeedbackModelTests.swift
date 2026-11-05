@@ -57,13 +57,21 @@ struct FeedbackModelTests {
         #expect(model.phase == .editing)
     }
 
-    // AC-4
-    @Test func limitsPastedText() {
+    // AC-4: 한도를 넘는 글은 자르지 않고 그대로 두며, 줄이기 전까지 보내지 못한다.
+    @Test func keepsOverLimitTextWithoutTruncatingAndBlocksSending() {
         let model = makeModel(sender: FakeSender(behavior: {}))
+        let overLimitText = String(repeating: "가", count: FeedbackMessage.maximumTextLength + 100)
 
-        model.text = String(repeating: "가", count: FeedbackMessage.maximumTextLength + 100)
+        model.text = overLimitText
 
-        #expect(model.text.unicodeScalars.count == FeedbackMessage.maximumTextLength)
+        #expect(model.text == overLimitText)
+        #expect(model.isOverLimit)
+        #expect(!model.canSend)
+        model.startSending { _ in Issue.record("한도를 넘은 글은 전송을 시작하면 안 된다") }
+
+        model.text = String(repeating: "가", count: FeedbackMessage.maximumTextLength)
+        #expect(!model.isOverLimit)
+        #expect(model.canSend)
     }
 
     // AC-4
@@ -119,15 +127,25 @@ struct FeedbackModelTests {
     // AC-4
     @Test func blocksDuplicateSendWhileDelivering() async {
         let gate = Gate()
-        let sender = FakeSender(behavior: { await gate.wait() })
+        let entered = Gate()
+        // 보내는 쪽이 `send`에 들어와서 멈춘 뒤에야 두 번째 전송을 시도한다. 전송 작업이 시작된 뒤의 중복도 막히는지 본다.
+        let sender = FakeSender(behavior: {
+            await entered.open()
+            await gate.wait()
+        })
         let model = makeModel(sender: sender)
 
         let failure: FeedbackFailure? = await withCheckedContinuation { continuation in
             model.startSending { continuation.resume(returning: $0) }
-            // 전송이 끝나기 전에 바로 막혀야 한다.
+            // 시작 직후에도 바로 막혀야 한다.
             #expect(!model.canSend)
-            model.startSending { _ in Issue.record("전송 중에 두 번째 전송이 시작되면 안 된다") }
-            Task { await gate.open() }
+            Task { @MainActor in
+                await entered.wait()
+                #expect(sender.callCount == 1)
+                #expect(!model.canSend)
+                model.startSending { _ in Issue.record("전송 중에 두 번째 전송이 시작되면 안 된다") }
+                await gate.open()
+            }
         }
 
         #expect(failure == nil)
@@ -162,5 +180,18 @@ struct FeedbackModelTests {
         model.restore(failedText: "또 실패한 글", failure: .rejected)
         #expect(model.text == "또 실패한 글\n\n실패한 글\n\n새 글")
         #expect(model.phase == .failed(.rejected))
+    }
+
+    // AC-4: 실패한 글이 한도까지 찼어도 새로 쓰던 글을 잃지 않는다. 합친 글이 한도를 넘으면 자르지 않고 알린다.
+    @Test func restoreKeepsNewDraftEvenWhenFailedTextFillsTheLimit() {
+        let model = makeModel(text: "새로 쓰던 글", sender: FakeSender(behavior: {}))
+        let failedText = String(repeating: "가", count: FeedbackMessage.maximumTextLength)
+
+        model.restore(failedText: failedText, failure: .network)
+
+        #expect(model.text == "\(failedText)\n\n새로 쓰던 글")
+        #expect(model.text.hasSuffix("새로 쓰던 글"))
+        #expect(model.isOverLimit)
+        #expect(!model.canSend)
     }
 }

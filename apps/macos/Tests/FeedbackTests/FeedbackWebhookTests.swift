@@ -31,7 +31,16 @@ struct FeedbackWebhookTests {
         "https://discord.com/api/webhooks/1/x/extra",
         "https://discord.com/api/webhooks/1/x?wait=true",
         "https://discord.com/api/webhooks/1/x#frag",
-        "https://discord.com/other/1/x"
+        "https://discord.com/other/1/x",
+        "https://discord.com/api/webhooks/../..",
+        "https://discord.com/api/webhooks/./.",
+        "https://discord.com/api/webhooks/1/..",
+        "https://discord.com/api/webhooks/../x",
+        "https://discord.com/api/webhooks/%2e%2e/%2e%2e",
+        "https://discord.com/api/webhooks/1/x%2Fy",
+        "https://discord.com/api/webhooks/abc/x",
+        "https://discord.com/api/webhooks/1/a.b",
+        "https://discord.com/api/webhooks/1/한글"
     ])
     func rejectsInvalidURL(text: String) {
         #expect(FeedbackWebhook(text) == nil)

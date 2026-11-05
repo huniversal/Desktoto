@@ -25,10 +25,11 @@ public struct FeedbackView: View {
             }
             HStack {
                 Spacer()
-                Text(FeedbackText.characterCount(model.text.unicodeScalars.count))
+                // 한도를 넘으면 자르지 않고 빨갛게 알린다. 줄일 때까지 보낼 수 없다.
+                Text(FeedbackText.characterCount(model.textLength))
                     .font(DSTypography.caption)
                     .monospacedDigit()
-                    .secondaryText()
+                    .foregroundStyle(model.isOverLimit ? AnyShapeStyle(DSColor.danger) : AnyShapeStyle(.secondary))
                 Button(FeedbackText.sendButton) { onSubmit() }
                     .keyboardShortcut(.return, modifiers: .command)
                     .disabled(!model.canSend)

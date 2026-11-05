@@ -8,21 +8,22 @@ import SwiftUI
 @MainActor
 final class FeedbackWindowController: NSObject, NSWindowDelegate {
     private let sender: any FeedbackSending
+    // 창을 열 때마다 현재 테마를 읽는다. 실패해서 창을 다시 열 때 그 사이에 바뀐 테마도 반영하기 위함이다.
+    private let themeProvider: @MainActor () -> Theme
     private var window: NSWindow?
     private var model: FeedbackModel?
-    private var theme: Theme = .system
     // 창을 상태바 아이콘 아래에 띄우기 위한 기준. 실패해서 창을 다시 열 때도 같은 위치를 쓴다.
     private weak var buttonWindow: NSWindow?
 
-    init(sender: any FeedbackSending) {
+    init(sender: any FeedbackSending, themeProvider: @escaping @MainActor () -> Theme) {
         self.sender = sender
+        self.themeProvider = themeProvider
     }
 
-    func show(theme: Theme, buttonWindow: NSWindow?) {
-        self.theme = theme
+    func show(buttonWindow: NSWindow?) {
         self.buttonWindow = buttonWindow
         if let window {
-            window.appearance = Self.makeAppearance(for: theme)
+            window.appearance = Self.makeAppearance(for: themeProvider())
             NSApp.activate()
             window.makeKeyAndOrderFront(nil)
             return
@@ -45,7 +46,7 @@ final class FeedbackWindowController: NSObject, NSWindowDelegate {
         window.title = FeedbackText.windowTitle
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
-        window.appearance = Self.makeAppearance(for: theme)
+        window.appearance = Self.makeAppearance(for: themeProvider())
         window.delegate = self
         placeBelowStatusItem(window)
         self.model = model

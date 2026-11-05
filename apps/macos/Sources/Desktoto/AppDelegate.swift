@@ -105,7 +105,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateMonitor = UpdateMonitor(settings: settings, fileSystem: fileSystem)
         feedbackWindowController = AppBundle.isRunningAsApp
             ? FeedbackWebhook(infoDictionary: Bundle.main.infoDictionary)
-                .map { FeedbackWindowController(sender: DiscordFeedbackSender(webhook: $0)) }
+                .map { webhook in
+                    FeedbackWindowController(sender: DiscordFeedbackSender(webhook: webhook), themeProvider: { settings.theme })
+                }
             : nil
         panelController = PanelController(now: timeSource.now)
         iconController = MenuBarIconController(button: statusItem.button, colorMode: settings.colorMode)
@@ -258,7 +260,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .showUsageGuide:
             showUsageGuide()
         case .showFeedback:
-            feedbackWindowController?.show(theme: settings.theme, buttonWindow: statusItem.button?.window)
+            feedbackWindowController?.show(buttonWindow: statusItem.button?.window)
         case .toggleUsagePanel:
             settings.showsUsage.toggle()
         case .toggleContextPanel:

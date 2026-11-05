@@ -3,8 +3,8 @@ import Testing
 @testable import Feedback
 
 struct FeedbackMessageTests {
-    private func makeMessage(_ text: String) -> FeedbackMessage? {
-        FeedbackMessage(text: text, appVersion: "1.2.3", osVersion: "27.0.1")
+    private func makeMessage(_ text: String, appVersion: String = "1.2.3") -> FeedbackMessage? {
+        FeedbackMessage(text: text, appVersion: appVersion, osVersion: "27.0.1")
     }
 
     // AC-1
@@ -26,18 +26,19 @@ struct FeedbackMessageTests {
         #expect(makeMessage(String(repeating: "가", count: limit + 1)) == nil)
     }
 
-    // AC-1
-    @Test func limitedTextCutsAtLimitWithoutSplittingCharacters() {
+    // AC-1: 글자 수는 UTF-16 코드 단위로 센다. 이모지는 코드 단위가 둘이라 절반만 들어간다.
+    @Test func countsNonBMPCharactersAsTwoUnits() {
         let limit = FeedbackMessage.maximumTextLength
-        // 가족 이모지는 유니코드 스칼라 7개로 이루어진 글자 하나라서, 경계에서 반쪽으로 잘리면 안 된다.
-        let family = "👨‍👩‍👧‍👦"
-        let text = String(repeating: "a", count: limit - 3) + family
 
-        let limited = FeedbackMessage.limitedText(text)
+        #expect(makeMessage(String(repeating: "😀", count: limit / 2)) != nil)
+        #expect(makeMessage(String(repeating: "😀", count: limit / 2 + 1)) == nil)
+        #expect(FeedbackMessage.textLength(of: "😀") == 2)
+    }
 
-        #expect(limited == String(repeating: "a", count: limit - 3))
-        #expect(limited.unicodeScalars.count <= limit)
-        #expect(FeedbackMessage.limitedText("짧은 글") == "짧은 글")
+    // AC-1: 입력 창의 글자 수는 보낼 때 다듬는 것과 같은 기준이다.
+    @Test func textLengthIgnoresSurroundingWhitespace() {
+        #expect(FeedbackMessage.textLength(of: "  가나다 \n") == 3)
+        #expect(FeedbackMessage.textLength(of: "   ") == 0)
     }
 
     // AC-1
@@ -58,11 +59,22 @@ struct FeedbackMessageTests {
         #expect((allowedMentions?["parse"] as? [Any])?.isEmpty == true)
     }
 
-    // AC-1
-    @Test func contentStaysWithinDiscordLimitForWorstCaseInput() throws {
-        let message = try #require(makeMessage(String(repeating: "가", count: FeedbackMessage.maximumTextLength)))
+    // AC-1: 가장 긴 입력(한도까지 찬 이모지 글)도 푸터를 붙인 전체가 Discord 한도 안에 든다.
+    @Test(arguments: ["가", "😀"])
+    func contentStaysWithinDiscordLimitForWorstCaseInput(character: String) throws {
+        let unitsPerCharacter = character.utf16.count
+        let text = String(repeating: character, count: FeedbackMessage.maximumTextLength / unitsPerCharacter)
+        let message = try #require(makeMessage(text))
 
-        #expect(message.content.unicodeScalars.count <= 2000)
+        #expect(message.content.utf16.count <= FeedbackMessage.maximumContentLength)
+    }
+
+    // AC-1: 버전 문자열이 비정상적으로 길어서 전체가 한도를 넘으면 만들지 않는다.
+    @Test func rejectsWhenVersionFooterPushesContentOverLimit() {
+        let longVersion = String(repeating: "9", count: 600)
+
+        #expect(makeMessage(String(repeating: "가", count: FeedbackMessage.maximumTextLength), appVersion: longVersion) == nil)
+        #expect(makeMessage("짧은 글", appVersion: longVersion) != nil)
     }
 
     @Test func formatsVersionTexts() {

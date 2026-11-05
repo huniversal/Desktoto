@@ -21,13 +21,8 @@ public enum FeedbackPhase: Equatable, Sendable {
 @MainActor
 @Observable
 public final class FeedbackModel {
-    public var text: String {
-        // 제한을 넘는 입력(붙여넣기 포함)은 잘라서 받는다.
-        didSet {
-            let limitedText = FeedbackMessage.limitedText(text)
-            if limitedText != text { text = limitedText }
-        }
-    }
+    // 한도를 넘는 글(붙여넣기, 실패한 글 되돌리기)도 자르지 않고 그대로 둔다. 사용자가 직접 줄이도록 `isOverLimit`으로 알리고 보내지 못하게 한다.
+    public var text: String
     public private(set) var phase: FeedbackPhase = .editing
 
     @ObservationIgnored private let sender: any FeedbackSending
@@ -39,7 +34,15 @@ public final class FeedbackModel {
         self.sender = sender
         self.appVersion = appVersion
         self.osVersion = osVersion
-        self.text = FeedbackMessage.limitedText(text)
+        self.text = text
+    }
+
+    public var textLength: Int {
+        FeedbackMessage.textLength(of: text)
+    }
+
+    public var isOverLimit: Bool {
+        textLength > FeedbackMessage.maximumTextLength
     }
 
     public var canSend: Bool {
@@ -62,6 +65,7 @@ public final class FeedbackModel {
     }
 
     // 전송에 실패한 글을 이미 열려 있는 창에 되돌린다. 새로 쓰던 글이 있으면 그 앞에 붙여서 어느 쪽도 잃지 않는다.
+    // 합친 글이 한도를 넘으면 그대로 두고 `isOverLimit`으로 알린다.
     public func restore(failedText: String, failure: FeedbackFailure) {
         text = text.isEmpty ? failedText : "\(failedText)\n\n\(text)"
         phase = .failed(failure)

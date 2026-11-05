@@ -2,32 +2,32 @@ import Foundation
 
 // Discord에 보낼 의견 한 건. 본문을 다듬고 길이를 제한하며, 앱 버전과 macOS 버전을 푸터로 붙인다.
 public struct FeedbackMessage: Equatable, Sendable {
-    // Discord `content`는 2000자까지라서 푸터와 여유를 빼고 입력을 1500자로 제한한다. 글자 수는 유니코드 스칼라 기준이다.
+    // Discord `content`는 2000자까지다. 글자 수를 세는 기준이 확실하지 않아서 UTF-16 코드 단위로 보수적으로 센다.
+    // 이모지처럼 코드 단위가 둘인 글자는 그만큼 한도를 더 쓰지만, 한도를 넘겨 거절당하는 일은 없다.
     public static let maximumTextLength = 1500
+    public static let maximumContentLength = 2000
 
     public let text: String
     public let appVersion: String
     public let osVersion: String
 
-    // 앞뒤 공백을 지운 본문이 비어 있거나 제한을 넘으면 nil이다.
+    // 앞뒤 공백을 지운 본문이 비어 있거나 제한을 넘으면 nil이다. 버전까지 붙인 전체 길이가 한도를 넘어도 nil이다.
     public init?(text: String, appVersion: String, osVersion: String) {
-        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedText.isEmpty, trimmedText.unicodeScalars.count <= Self.maximumTextLength else { return nil }
+        let trimmedText = Self.trim(text)
+        guard !trimmedText.isEmpty, trimmedText.utf16.count <= Self.maximumTextLength else { return nil }
         self.text = trimmedText
         self.appVersion = appVersion
         self.osVersion = osVersion
+        guard content.utf16.count <= Self.maximumContentLength else { return nil }
     }
 
-    // 입력 중인 글을 제한 길이로 자른다. 글자(Character)를 쪼개지 않는다.
-    public static func limitedText(_ text: String) -> String {
-        var scalarCount = 0
-        var limited = ""
-        for character in text {
-            scalarCount += character.unicodeScalars.count
-            if scalarCount > maximumTextLength { break }
-            limited.append(character)
-        }
-        return limited
+    // 입력 창의 글자 수. 보낼 때 다듬는 것과 같은 기준(앞뒤 공백 제외)으로 센다.
+    public static func textLength(of text: String) -> Int {
+        trim(text).utf16.count
+    }
+
+    private static func trim(_ text: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     // Discord가 작은 글씨로 보여 주는 `-#` 줄에 버전을 적는다.
