@@ -9,11 +9,11 @@ struct UsageCardView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(Array(usages.enumerated()), id: \.element.tool) { index, usage in
+            ForEach(Array(usages.enumerated()), id: \.element.id) { index, usage in
                 if index > 0 {
                     RowDivider()
                 }
-                ToolUsageBlock(usage: usage, now: now)
+                ToolUsageBlock(usage: usage, title: PanelText.usageTitle(of: usage, among: usages), now: now)
             }
         }
         .glassCard()
@@ -22,12 +22,13 @@ struct UsageCardView: View {
 
 private struct ToolUsageBlock: View {
     let usage: ToolUsage
+    let title: String
     let now: Date
 
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.usageRow) {
             HStack(alignment: .firstTextBaseline) {
-                Text(usage.tool.rawValue)
+                Text(title)
                     .font(DSTypography.bodySemibold)
                 Spacer(minLength: PanelLayout.inlineSpacing)
                 if let staleText = usage.createStaleText(now: now) {

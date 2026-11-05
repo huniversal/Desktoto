@@ -19,12 +19,12 @@ public enum UsageParser {
         return UsageWindow(usedRatio: min(max(percent / 100, 0), 1), resetsAt: date)
     }
 
-    public static func claude(_ limits: JSONValue, desktop: Bool, updatedAt: Date?) -> ToolUsage? {
+    public static func claude(_ limits: JSONValue, desktop: Bool, account: String? = nil, updatedAt: Date?) -> ToolUsage? {
         let percent = desktop ? "utilization" : "used_percentage"
         let five = window(limits["five_hour"], percent: percent, reset: "resets_at", isoDate: desktop)
         let weekly = window(limits["seven_day"], percent: percent, reset: "resets_at", isoDate: desktop)
         guard five != nil || weekly != nil else { return nil }
-        return ToolUsage(tool: .claude, fiveHour: five, weekly: weekly, updatedAt: updatedAt)
+        return ToolUsage(tool: .claude, account: account, fiveHour: five, weekly: weekly, updatedAt: updatedAt)
     }
 
     public static func codex(_ limits: JSONValue, live: Bool, updatedAt: Date?) -> ToolUsage? {

@@ -1,8 +1,10 @@
 #!/bin/sh
 # 앱 번들(.app)을 만들고 ad-hoc 서명한다. 설치와 실행은 하지 않는다(install-app.sh 참고).
 # 사용법: sh scripts/build-app.sh
-# 환경 변수(모두 선택): APP_NAME, EXECUTABLE_NAME, BUNDLE_ID, VERSION, BUILD_NUMBER, RESOURCES_DIR
+# 환경 변수(모두 선택): APP_NAME, EXECUTABLE_NAME, BUNDLE_ID, VERSION, BUILD_NUMBER, RESOURCES_DIR, FEEDBACK_WEBHOOK_URL
 #   RESOURCES_DIR: 기본 Resources 폴더의 내용을 번들의 Contents/Resources에 복사한다.
+#   FEEDBACK_WEBHOOK_URL: 문의하기가 의견을 보낼 Discord webhook 주소. 있으면 Info.plist의 FeedbackWebhookURL에 넣는다.
+#     없으면 키를 넣지 않고, 그 빌드에서는 문의하기 메뉴 항목이 보이지 않는다. 주소는 저장소에 두지 않고 출력하지도 않는다.
 set -e
 cd "$(dirname "$0")/.."
 
@@ -39,6 +41,14 @@ sed \
   -e "s|__BUILD_NUMBER__|$(convert_to_plist_value "$BUILD_NUMBER")|g" \
   scripts/Info.plist > "$APP_DIR/Contents/Info.plist"
 plutil -lint "$APP_DIR/Contents/Info.plist"
+# 서명(4단계) 전에 넣어야 번들 검증이 유지된다. 값은 인자로만 넘기고 출력하지 않는다.
+if [ -n "${FEEDBACK_WEBHOOK_URL:-}" ]; then
+  plutil -insert FeedbackWebhookURL -string "$FEEDBACK_WEBHOOK_URL" "$APP_DIR/Contents/Info.plist"
+  plutil -lint "$APP_DIR/Contents/Info.plist"
+  echo "문의하기 webhook 주소를 번들에 넣었습니다."
+else
+  echo "FEEDBACK_WEBHOOK_URL이 없어 문의하기 항목이 없는 번들을 만듭니다."
+fi
 if [ -n "$RESOURCES_DIR" ]; then
   cp -R "$RESOURCES_DIR"/. "$APP_DIR/Contents/Resources/"
 fi

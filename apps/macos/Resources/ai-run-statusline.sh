@@ -10,6 +10,9 @@ session_id=$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)
 if [ -n "$session_id" ]; then
   dir="$HOME/.ai-run/status"
   mkdir -p "$dir"
+  # 계정을 구분할 정보는 상태 JSON을 고치지 않고 옆 파일에 둔다. 상태 JSON은 입력 그대로 보존한다.
+  # 계정마다 CLAUDE_CONFIG_DIR가 다르고, 지정하지 않으면 Claude Code의 기본 폴더(~/.claude)를 쓴다.
+  printf '%s' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}" > "$dir/$session_id.config-dir.tmp" && mv "$dir/$session_id.config-dir.tmp" "$dir/$session_id.config-dir"
   printf '%s' "$input" > "$dir/$session_id.json.tmp" && mv "$dir/$session_id.json.tmp" "$dir/$session_id.json"
 fi
 

@@ -126,15 +126,16 @@ struct UsageTests {
         await reader.refresh(minInterval: 0)
         #expect(launcher.launchCount == 1)
     }
-    @Test func onlyFiveNewestFilesAreCandidates() async {
+    @Test(arguments: [(40, 1), (41, 0)])
+    func onlyFortyNewestStatusFilesAreCandidates(fileCount: Int, expectedUsages: Int) async {
         let files = InMemoryFileSystem()
-        for index in 0..<6 {
+        for index in 0..<fileCount {
             let url = files.homeDirectory.appendingPathComponent(".ai-run/status/\(index).json")
             let text = index == 0 ? #"{"rate_limits":{"five_hour":{"used_percentage":50}}}"# : "broken"
             files.addFile(at: url, text: text, modifiedAt: now.addingTimeInterval(Double(index)))
         }
         let monitor = UsageMonitor(fileSystem: files, timeSource: FixedTimeSource(now: now))
-        #expect(await monitor.getUsages().isEmpty)
+        #expect(await monitor.getUsages().count == expectedUsages)
         await monitor.stop()
     }
 

@@ -3,6 +3,7 @@ import Boundaries
 import ClaudeIntegration
 import DesignSystem
 import Domain
+import Feedback
 import Foundation
 import MenuBarIcon
 import Preferences
@@ -35,6 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let sessionOpener: SessionOpener
     private let claudeIntegration: ClaudeIntegration
     private let updateMonitor: UpdateMonitor
+    // 빌드에 의견을 보낼 주소가 있을 때만 만든다. 없으면 문의하기 메뉴 항목이 없다.
+    private let feedbackWindowController: FeedbackWindowController?
     private let urlOpener = SystemURLOpener()
     private let notifier = NotificationSender()
     private let loginItem = LoginItem()
@@ -100,6 +103,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             resourceDirectory: Bundle.main.resourceURL ?? Bundle.main.bundleURL
         )
         updateMonitor = UpdateMonitor(settings: settings, fileSystem: fileSystem)
+        feedbackWindowController = AppBundle.isRunningAsApp
+            ? FeedbackWebhook(infoDictionary: Bundle.main.infoDictionary)
+                .map { webhook in
+                    FeedbackWindowController(sender: DiscordFeedbackSender(webhook: webhook), themeProvider: { settings.theme })
+                }
+            : nil
         panelController = PanelController(now: timeSource.now)
         iconController = MenuBarIconController(button: statusItem.button, colorMode: settings.colorMode)
         sleepPolicy = SleepPolicy(
@@ -222,7 +231,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 isLoginItemEnabled: loginItem.isEnabled,
                 isClaudeCodeInstalled: fileSystem.directoryExists(at: fileSystem.homeDirectory.appendingPathComponent(".claude")),
                 isClaudeConnected: isClaudeConnected,
-                updateNoticeTitle: updateMonitor.noticeTitle
+                updateNoticeTitle: updateMonitor.noticeTitle,
+                isFeedbackAvailable: feedbackWindowController != nil
             )
             statusItem.menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
             statusItem.button?.performClick(nil)
@@ -247,6 +257,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let pageURL = updateMonitor.availableUpdate?.release.pageURL {
                 _ = urlOpener.open(pageURL)
             }
+        case .showUsageGuide:
+            showUsageGuide()
+        case .showFeedback:
+            feedbackWindowController?.show(buttonWindow: statusItem.button?.window)
         case .toggleUsagePanel:
             settings.showsUsage.toggle()
         case .toggleContextPanel:
@@ -264,6 +278,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
         }
         syncPanelModel()
+    }
+
+    // 도구별로 사용자가 알아야 할 제약과 설정 방법을 알려 준다. 앱은 다른 앱의 설정을 바꾸지 않는다.
+    private func showUsageGuide() {
+        let alert = NSAlert()
+        alert.messageText = "사용 안내"
+        alert.informativeText = """
+        [cmux]
+        카드를 눌러도 탭으로 이동하지 않습니다.
+        cmux 설정 > 자동화에서 "소켓 제어 모드"를 "자동화 모드"로 바꾸면 이동합니다.
+
+        [Antigravity]
+        사용량(한도)은 표시되지 않습니다.
+        컨텍스트는 추정값이라 ~가 붙습니다.
+
+        [VS Code, Antigravity IDE]
+        카드를 누르면 IDE 앱이 앞으로 옵니다.
+        터미널 탭은 직접 찾아야 합니다.
+        """
+        alert.addButton(withTitle: "확인")
+        NSApp.activate()
+        alert.runModal()
     }
 
     // MARK: - 패널

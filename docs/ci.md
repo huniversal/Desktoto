@@ -86,7 +86,7 @@ sh scripts/install-app.sh
 > 주의: `install-app.sh`는 `~/Applications/<앱 이름>.app`을 지우고 덮어쓴다. 대상 경로에 번들 식별자가 다른 앱이 이미 있으면(예: 같은 이름 `Desktoto.app`으로 설치된 원본 `ai-run` 앱)
 > 아무것도 지우지 않고 오류로 중단한다. 이 기간에는 `build-app.sh`만 실행하고 `apps/macos/build/Desktoto.app`을 직접 연다.
 
-값은 환경 변수로 바꾼다: `APP_NAME`, `EXECUTABLE_NAME`, `BUNDLE_ID`, `VERSION`, `BUILD_NUMBER`, `RESOURCES_DIR`.
+값은 환경 변수로 바꾼다: `APP_NAME`, `EXECUTABLE_NAME`, `BUNDLE_ID`, `VERSION`, `BUILD_NUMBER`, `RESOURCES_DIR`, `FEEDBACK_WEBHOOK_URL`.
 `Info.plist`는 `__APP_NAME__` 같은 자리 표시자가 있는 템플릿이다. 앱 이름과 번들 식별자는 #2에서 확정했고(`Desktoto`, `com.huniverse.desktoto`),
 스크립트 기본값이 이 값이다. 원본 `ai-run` 앱(`com.huniverse.airun`)과 별개의 앱으로 취급되도록 원본과 다른 번들 식별자를 유지한다. `RESOURCES_DIR`를 지정하면 그 폴더가 번들의 `Contents/Resources`로 복사된다(훅 스크립트 포함은 #7).
 
@@ -97,7 +97,10 @@ sh scripts/install-app.sh
 
 1. `main`에서 태그를 만든다: `git tag v1.0.0 && git push origin v1.0.0`
 2. 워크플로가 `swift test`, 앱 패키징, zip 생성, SHA-256 체크섬 생성을 하고 GitHub Release에 올린다.
-3. 릴리스 노트는 자동 생성한다.
+3. 릴리스 노트는 자동 생성한 변경 내역 뒤에 [update-guide.md](../.github/release-notes/update-guide.md)를 붙여 만든다.
+   Homebrew와 dmg 유저의 업데이트 방법이 매 릴리스 노트에 들어간다. 단계 설명은 움직이는 GIF(`docs/images/release/update-brew.gif`, `update-dmg.gif`)이고,
+   주소가 `main` 브랜치의 raw 파일이라 이미지를 바꾼 PR이 `main`에 합쳐진 뒤부터 새 모습으로 보인다.
+   안내를 바꾸려면 update-guide.md나 `docs/images/release/update-source.html`을 고치고 `sh docs/images/release/build.sh`로 GIF를 다시 만든다(Chrome과 Python Pillow 필요).
 
 산출물은 `Desktoto-버전.zip`, `Desktoto.dmg`와 각각의 `.sha256` 파일이다. dmg는 `Desktoto.app`과 `응용 프로그램` 바로가기를 담고, 랜딩 페이지의 다운로드 버튼이 `releases/latest/download/Desktoto.dmg`로 항상 최신을 받도록 파일 이름에 버전을 넣지 않는다. Homebrew cask와 `update-tap`은 zip을 쓴다. 앱은 Apple Silicon(arm64) 전용이다. 서명은 ad-hoc이라 다운로드한 앱은 처음 실행할 때
 Gatekeeper 경고가 나오며, 공증은 하지 않는다. 릴리스 job만 저장소 쓰기 권한(`contents: write`)을 쓴다.
@@ -130,6 +133,26 @@ tap에 쓰는 권한은 Actions Secret `TAP_TOKEN`(fine-grained PAT)이다.
 
 만료되면 `update-tap`만 실패하고 앱 릴리스와 이미 설치한 사용자는 영향받지 않는다. 만료 전에 교체한다.
 첫 정식 릴리스 전까지 cask의 `version`은 자리표시 값(`0.0.0`)이라 설치할 수 없다.
+
+### 문의하기 webhook Secret
+
+앱의 `문의하기…`가 의견을 보내는 Discord webhook 주소를 Actions Secret `FEEDBACK_WEBHOOK_URL`에 두고, 릴리스 빌드가 `build-app.sh`로 앱의 `Info.plist`(`FeedbackWebhookURL`)에 넣는다.
+저장소가 공개라서 주소를 소스, 커밋, 문서에 적지 않는다.
+
+| 항목 | 값 |
+|---|---|
+| 값 | 의견을 받을 Discord 채널의 webhook 주소(`https://discord.com/api/webhooks/{id}/{token}`) |
+| 등록 방법 | Discord 채널 설정, 연동, 웹후크에서 만들고, Desktoto 저장소의 Settings, Secrets and variables, Actions에서 `FEEDBACK_WEBHOOK_URL`로 등록한다 |
+| 교체 방법 | Discord에서 기존 webhook을 삭제하고 새로 만든 뒤 Secret 값을 바꾸고 새 버전을 릴리스한다 |
+
+- 배포된 앱을 받은 사람은 `Info.plist`에서 이 주소를 읽을 수 있다. 채널에 스팸이 오면 위 방법으로 교체한다. 이때 이전 버전의 문의하기는 동작하지 않는다.
+- Secret이 비어 있으면 릴리스 로그에 경고(`::warning::`)를 남기고 문의하기 항목이 없는 앱을 릴리스한다. 릴리스는 실패하지 않는다.
+- PR을 검증하는 CI(`ci.yml`)는 Secret 없이 패키징하므로 번들에 주소가 없고 문의하기 항목이 보이지 않는다. `swift run`으로 실행해도 마찬가지다.
+- 로컬에서 문의하기를 확인할 때는 개인 테스트 채널의 webhook으로 번들을 만들고, 주소를 커밋하거나 공유하지 않는다.
+
+```bash
+FEEDBACK_WEBHOOK_URL='테스트 채널의 webhook 주소' sh apps/macos/scripts/build-app.sh
+```
 
 ## 로컬 확인
 

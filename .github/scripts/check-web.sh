@@ -51,8 +51,11 @@ read -r width height < <(od -An -tu1 -j16 -N8 "$WEB_DIR/og-v2.png" \
 DMG_URL='https://github.com/huniversal/Desktoto/releases/latest/download/Desktoto.dmg'
 require_pattern '<section id="install"' "설치 섹션(#install)이 없습니다"
 require_pattern '<a class="text" href="#install"' "헤더의 설치 링크(#install)가 없습니다"
-sed -n '/<header class="hero">/,/<\/header>/p' "$PAGE" | grep -Fq '<a class="btn" href="#install"' || fail "$PAGE: 히어로의 설치 섹션 바로 가기(#install)가 없습니다"
-sed -n '/<section id="install"/,/<\/section>/p' "$PAGE" | grep -Fq "href=\"$DMG_URL\"" || fail "$PAGE: 설치 섹션 안에 dmg 다운로드 링크가 없습니다: $DMG_URL"
+# 구역을 먼저 변수에 담는다. `sed | grep -q`는 grep이 먼저 끝나면 sed가 Broken pipe로 실패하고, pipefail 때문에 구역이 파이프 버퍼(4096바이트)보다 클 때 링크가 있어도 실패한다.
+hero_block=$(sed -n '/<header class="hero">/,/<\/header>/p' "$PAGE")
+install_block=$(sed -n '/<section id="install"/,/<\/section>/p' "$PAGE")
+grep -Fq '<a class="btn" href="#install"' <<<"$hero_block" || fail "$PAGE: 히어로의 설치 섹션 바로 가기(#install)가 없습니다"
+grep -Fq "href=\"$DMG_URL\"" <<<"$install_block" || fail "$PAGE: 설치 섹션 안에 dmg 다운로드 링크가 없습니다: $DMG_URL"
 grep -Fq 'brew install --cask huniversal/tap/desktoto' "$PAGE" || fail "$PAGE: Homebrew 설치 명령이 없습니다"
 
 # ai-run 시절 이름이 남아 있으면 실패한다.

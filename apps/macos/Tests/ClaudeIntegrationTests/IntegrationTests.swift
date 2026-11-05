@@ -19,6 +19,15 @@ struct IntegrationTests {
         }
     }
 
+    private func writeCount(_ files: InMemorySettingsFileSystem) -> Int {
+        files.operations.filter {
+            switch $0 {
+            case .write, .copy: true
+            case .read, .prefix: false
+            }
+        }.count
+    }
+
     private func isFailure(_ result: ClaudeIntegration.Result) -> Bool {
         if case .failed = result { return true }
         return false
@@ -43,6 +52,38 @@ struct IntegrationTests {
         #expect(backups.values.contains(original))
         #expect(backups.values.contains(connected))
         #expect(backups.keys.contains { $0.lastPathComponent.hasSuffix("-2") })
+    }
+
+    @Test func connectedUserGetsInstalledScriptsReplacedOnlyWhenBundleDiffers() async throws {
+        let files = InMemorySettingsFileSystem()
+        installResources(files)
+        let integration = service(files)
+        #expect(await integration.connect() == .connected)
+        let settingsAfterConnect = try #require(files.files[settings])
+        let installedStatus = home.appendingPathComponent(".ai-run/bin/\(ClaudeSettings.statusScript)")
+        let installedHook = home.appendingPathComponent(".ai-run/bin/\(ClaudeSettings.hookScript)")
+        let writesBefore = writeCount(files)
+        #expect(await integration.connect() == .alreadyConnected)
+        #expect(writeCount(files) == writesBefore)
+
+        files.setFile(Data("old status script".utf8), at: installedStatus)
+        #expect(await integration.connect() == .alreadyConnected)
+        #expect(files.files[installedStatus] == Data("synthetic \(ClaudeSettings.statusScript)".utf8))
+        #expect(files.files[installedHook] == Data("synthetic \(ClaudeSettings.hookScript)".utf8))
+        #expect(files.files[settings] == settingsAfterConnect)
+        #expect(!files.operations.contains { if case .copy = $0 { return true }; return false })
+    }
+
+    @Test func alreadyConnectedWithoutInstalledScriptsDoesNotCreateThem() async throws {
+        let source = InMemorySettingsFileSystem()
+        installResources(source)
+        #expect(await service(source).connect() == .connected)
+        let files = InMemorySettingsFileSystem()
+        installResources(files)
+        files.setFile(try #require(source.files[settings]), at: settings)
+        #expect(await service(files).connect() == .alreadyConnected)
+        #expect(files.files[home.appendingPathComponent(".ai-run/bin/\(ClaudeSettings.statusScript)")] == nil)
+        #expect(writeCount(files) == 0)
     }
 
     @Test func absentSettingsAreCreatedWithoutBackup() async {
@@ -174,7 +215,7 @@ struct IntegrationTests {
         let connected = try ClaudeSettings.connecting([:], hookPath: "/bin/ai-run-hook.sh", statusPath: "/bin/ai-run-statusline.sh", hasStatusSaver: { _ in false })
         files.setFile(try ClaudeSettings.serialize(connected), at: settings)
         #expect(await service(files).connect() == .alreadyConnected)
-        #expect(files.operations == [.read(settings)])
+        #expect(writeCount(files) == 0)
         var partial = connected
         partial.removeValue(forKey: "statusLine")
         files.setFile(try ClaudeSettings.serialize(partial), at: settings)

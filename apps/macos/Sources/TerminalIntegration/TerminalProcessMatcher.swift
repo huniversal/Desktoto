@@ -11,6 +11,8 @@ enum TerminalProcessMatcher {
         switch tool {
         case .claude: "claude"
         case .codex: "codex"
+        // 데스크탑 앱이라 터미널 프로세스와 맞추는 일이 없다. 모든 case를 다루기 위한 값이다.
+        case .antigravity: "antigravity"
         }
     }
 

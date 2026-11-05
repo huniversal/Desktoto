@@ -5,11 +5,11 @@ import Testing
 
 struct ScriptTests {
     /// 합성 입력만 보내고 프로세스의 HOME을 임시 폴더로 제한한다.
-    private func run(_ arguments: [String], input: String, home: URL) throws -> (output: String, status: Int32) {
+    private func run(_ arguments: [String], input: String, home: URL, extraEnvironment: [String: String] = [:]) throws -> (output: String, status: Int32) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         process.arguments = arguments
-        process.environment = ["HOME": home.path, "PATH": "/usr/bin:/bin:/usr/sbin:/sbin"]
+        process.environment = ["HOME": home.path, "PATH": "/usr/bin:/bin:/usr/sbin:/sbin"].merging(extraEnvironment) { _, extra in extra }
         let stdin = Pipe()
         let stdout = Pipe()
         process.standardInput = stdin
@@ -74,6 +74,20 @@ struct ScriptTests {
         let status = root.appendingPathComponent(".ai-run/status/synthetic-id.json")
         #expect(try String(contentsOf: status, encoding: .utf8) == input)
         #expect(!FileManager.default.fileExists(atPath: status.path + ".tmp"))
+    }
+
+    @Test func statusScriptRecordsConfigDirectoryBesideUntouchedStatusFile() throws {
+        let root = try temporaryIntegrationDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let script = integrationResources().appendingPathComponent("ai-run-statusline.sh").path
+        let input = #"{"session_id":"account-a"}"#
+        #expect(try run([script], input: input, home: root, extraEnvironment: ["CLAUDE_CONFIG_DIR": "/synthetic/claude-work"]).status == 0)
+        #expect(try run([script], input: #"{"session_id":"account-default"}"#, home: root).status == 0)
+        let status = root.appendingPathComponent(".ai-run/status")
+        #expect(try String(contentsOf: status.appendingPathComponent("account-a.config-dir"), encoding: .utf8) == "/synthetic/claude-work")
+        #expect(try String(contentsOf: status.appendingPathComponent("account-default.config-dir"), encoding: .utf8) == "\(root.path)/.claude")
+        #expect(try String(contentsOf: status.appendingPathComponent("account-a.json"), encoding: .utf8) == input)
+        #expect(!FileManager.default.fileExists(atPath: status.appendingPathComponent("account-a.config-dir.tmp").path))
     }
 
     @Test func noSessionStillRunsOriginalAndNoOriginalProducesNoOutput() throws {
