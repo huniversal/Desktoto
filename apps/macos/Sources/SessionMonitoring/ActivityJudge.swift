@@ -9,6 +9,8 @@ enum ActivityJudge {
         switch tool {
         case .claude: claudeSnapshot(records: records, modifiedAt: modifiedAt)
         case .codex: codexSnapshot(records: records, modifiedAt: modifiedAt)
+        // Antigravity는 기록 파일이 아니라 SQLite로 판정한다(AntigravityReader).
+        case .antigravity: nil
         }
     }
 

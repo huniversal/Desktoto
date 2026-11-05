@@ -38,6 +38,9 @@ public final class ProcessTerminalSessionChecker: TerminalSessionChecker {
             let target = TerminalProcessMatcher.normalizePath(workingDirectory)
             // 작업 폴더를 읽지 못한 프로세스가 있으면 판단할 수 없으므로 닫혔다고 보지 않는다.
             return !liveCodexDirectories(now: now).contains { $0 == nil || $0 == target }
+        case .antigravity:
+            // 터미널 세션이 아니라서 닫혔는지 판단하지 않는다.
+            return false
         }
     }
 
