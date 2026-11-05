@@ -1,0 +1,226 @@
+<!doctype html>
+<!-- 릴리스 노트의 업데이트 안내 GIF 원본. 주소 끝의 #brew,t=초 또는 #dmg,t=초로 그 시점의 한 프레임을 그린다.
+     애니메이션은 시간 t의 함수라서 같은 주소는 항상 같은 화면이다. 캡처와 GIF 조립은 같은 폴더의 build.sh가 한다.
+     화면 구성은 설명용 일러스트이며, 실제 macOS 창과 글자가 조금 다를 수 있다. -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #1d4fc4; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", sans-serif; }
+  .stage {
+    position: relative; width: 720px; height: 405px; overflow: hidden;
+    background: linear-gradient(180deg, #7dbcf2 0%, #3f86e8 60%, #2c66d8 100%);
+  }
+  .abs { position: absolute; }
+  .fade { opacity: 0; }
+
+  .menubar { left: 0; top: 0; width: 100%; height: 28px; background: rgba(255, 255, 255, 0.34); color: #1d1d1f; font-size: 12px; display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding-right: 16px; }
+  .menubar b { font-weight: 600; margin-right: auto; padding-left: 16px; }
+  #char { width: 30px; height: 22px; }
+  .body { position: absolute; left: 3px; top: 2px; width: 24px; height: 14px; background: #e8825a; border-radius: 3px; }
+  .eye { position: absolute; top: 7px; width: 3px; height: 4px; background: #2b2626; }
+  .leg { position: absolute; top: 16px; width: 3px; height: 5px; background: #e8825a; }
+  .tag { position: absolute; right: 8px; top: 34px; background: #f7f6f8; color: #25252b; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 600; box-shadow: 0 6px 18px rgba(0, 20, 80, 0.3); }
+
+  .menu { left: 540px; top: 32px; width: 176px; background: #f7f6f8; border-radius: 10px; padding: 6px; font-size: 13px; color: #25252b; box-shadow: 0 14px 34px rgba(0, 20, 80, 0.4), 0 0 0 0.5px rgba(0, 0, 0, 0.35); }
+  .menu span { display: block; padding: 6px 10px; border-radius: 6px; }
+  .menu hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.12); margin: 4px 0; }
+  .menu span.on { background: #2f6fe0; color: #fff; }
+
+  .term { left: 100px; top: 62px; width: 520px; height: 246px; background: #2b2626; border-radius: 12px; box-shadow: 0 18px 44px rgba(0, 20, 80, 0.5); font: 16px/1.6 ui-monospace, "SF Mono", Menlo, monospace; font-variant-ligatures: none; color: #ece8ea; padding: 40px 20px 0; }
+  .term:before { content: ""; position: absolute; left: 16px; top: 15px; width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; box-shadow: 20px 0 #febc2e, 40px 0 #28c840; }
+  .term .dim { color: rgba(236, 232, 234, 0.55); }
+  .blink { display: inline-block; width: 9px; height: 17px; background: #ece8ea; vertical-align: -3px; }
+
+  .win { left: 130px; top: 56px; width: 460px; height: 252px; background: #f7f6f8; border-radius: 12px; box-shadow: 0 18px 44px rgba(0, 20, 80, 0.5); color: #25252b; font-size: 13px; }
+  .win .title { height: 36px; text-align: center; line-height: 36px; font-weight: 600; border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
+  .win .title:before { content: ""; position: absolute; left: 16px; top: 12px; width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; box-shadow: 20px 0 #febc2e, 40px 0 #28c840; }
+  .icon { width: 84px; height: 84px; border-radius: 20px; }
+  .label { width: 120px; text-align: center; font-size: 13px; }
+  #app { background: #e8825a; z-index: 3; }
+  #folder { background: #6aa8f5; }
+  .arrow { left: 258px; top: 138px; width: 120px; height: 3px; background: repeating-linear-gradient(90deg, #8a8a92 0 8px, transparent 8px 14px); }
+
+  .dlg { left: 190px; top: 118px; width: 340px; background: #f7f6f8; border-radius: 14px; padding: 20px 20px 16px; text-align: center; color: #25252b; font-size: 14px; line-height: 1.5; box-shadow: 0 20px 50px rgba(0, 20, 80, 0.55), 0 0 0 0.5px rgba(0, 0, 0, 0.4); }
+  .dlg b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .btns { margin-top: 14px; display: flex; gap: 10px; justify-content: center; }
+  .btn { padding: 6px 18px; border-radius: 8px; background: #dcdce0; font-size: 13px; }
+  .btn.pri { background: #2f6fe0; color: #fff; }
+  .btn.hit { box-shadow: 0 0 0 3px rgba(47, 111, 224, 0.45); }
+
+  .cap { left: 0; bottom: 0; width: 100%; height: 66px; background: rgba(255, 255, 255, 0.94); color: #1d1d1f; padding: 14px 20px 0 62px; }
+  .cap .num { position: absolute; left: 18px; top: 14px; width: 30px; height: 30px; border-radius: 50%; background: #2f6fe0; color: #fff; text-align: center; line-height: 30px; font-weight: 700; font-size: 15px; }
+  .cap .t { font-size: 16px; font-weight: 700; }
+  .cap .s { font-size: 13px; color: #5f5f66; margin-top: 2px; }
+  .dots { position: absolute; right: 20px; top: 26px; display: flex; gap: 6px; }
+  .dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(29, 29, 31, 0.18); }
+  .dots i.on { background: #2f6fe0; }
+
+  #cursor { width: 22px; height: 26px; z-index: 9; left: 0; top: 0; }
+  #ripple { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #fff; z-index: 8; opacity: 0; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="abs menubar"><b>Finder</b><span>9:41</span><span id="charSlot" style="width:30px"></span></div>
+  <div class="abs" id="char" style="left:668px;top:3px">
+    <div class="body"></div><div class="eye" style="left:8px"></div><div class="eye" style="left:19px"></div>
+    <div class="leg" style="left:6px"></div><div class="leg" style="left:11px"></div><div class="leg" style="left:16px"></div><div class="leg" style="left:21px"></div>
+  </div>
+  <div class="abs tag fade" id="tag">새 버전으로 실행 중</div>
+
+  <div class="abs menu fade" id="menu"><span>로그인 시 실행</span><span>문의하기…</span><hr><span id="quit">Desktoto 종료</span></div>
+
+  <div class="abs term fade" id="term">
+    <div><span class="dim">$</span> <span id="cmd"></span><span class="blink" id="blink"></span></div>
+    <div class="dim fade" id="out1">==&gt; Upgrading desktoto</div>
+    <div class="dim fade" id="out2">==&gt; Moving App 'Desktoto.app' to /Applications</div>
+  </div>
+
+  <div class="abs win fade" id="win">
+    <div class="title">Desktoto</div>
+    <div class="abs arrow"></div>
+    <div class="abs icon" id="app" style="left:62px;top:82px"></div>
+    <div class="abs label" style="left:44px;top:174px">Desktoto</div>
+    <div class="abs icon" id="folder" style="left:312px;top:82px"></div>
+    <div class="abs label" style="left:294px;top:174px">응용 프로그램</div>
+  </div>
+
+  <div class="abs dlg fade" id="replace">
+    <b>"Desktoto" 항목이 이미 있어요</b>이 위치의 항목을 교체할까요?
+    <div class="btns"><span class="btn">중단</span><span class="btn pri" id="replaceBtn">교체</span></div>
+  </div>
+
+  <div class="abs dlg fade" id="block" style="top:104px">
+    <b>"Desktoto"이(가) 차단되었어요</b>시스템 설정의 보안 영역에서 열 수 있어요.
+    <div class="btns"><span class="btn pri" id="blockBtn">그래도 열기</span></div>
+  </div>
+
+  <div class="abs cap">
+    <div class="num" id="capNum">1</div>
+    <div class="t" id="capT"></div>
+    <div class="s" id="capS"></div>
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <div class="abs" id="ripple"></div>
+  <svg class="abs fade" id="cursor" viewBox="0 0 22 26"><path d="M2 1.5v19l4.6-4.4 3.2 7.2 3.6-1.6-3.2-7H17z" fill="#fff" stroke="#1d1d1f" stroke-width="1.6" stroke-linejoin="round"/></svg>
+</div>
+
+<script>
+  var CMD = "brew upgrade --cask desktoto";
+  var SCENES = {
+    brew: { length: 9.5, steps: [
+      { from: 0, t: "앱 종료", s: "메뉴바 캐릭터를 우클릭해 Desktoto 종료를 눌러요" },
+      { from: 3, t: "명령 실행", s: "터미널에 명령을 입력해요" },
+      { from: 6.5, t: "다시 열기", s: "응용 프로그램에서 Desktoto를 열면 새 버전이에요" } ] },
+    dmg: { length: 12.5, steps: [
+      { from: 0, t: "앱 종료", s: "메뉴바 캐릭터를 우클릭해 Desktoto 종료를 눌러요" },
+      { from: 3, t: "dmg 열기", s: "릴리스의 Desktoto.dmg를 받아 열어요" },
+      { from: 5.5, t: "덮어쓰기", s: "응용 프로그램 폴더로 끌어다 놓고 교체를 눌러요" },
+      { from: 9, t: "다시 열기", s: "경고가 뜨면 그래도 열기를 눌러요" } ] }
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function clamp(v) { return Math.max(0, Math.min(1, v)); }
+  function seg(t, a, b) { return clamp((t - a) / (b - a)); }
+  function ease(p) { return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; }
+  function lerp(a, b, p) { return a + (b - a) * p; }
+  function show(id, v) { $(id).style.opacity = v; }
+  function center(id) {
+    var r = $(id).getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  /* 커서 경로: [시각, 좌표] 목록을 시간 순서로 보간한다. 첫 시각 이전에는 숨긴다. */
+  function placeCursor(t, path) {
+    var cursor = $("cursor");
+    if (t < path[0].t || t > path[path.length - 1].t) { cursor.style.opacity = 0; return; }
+    var i = 0;
+    while (i < path.length - 2 && t > path[i + 1].t) i++;
+    var a = path[i], b = path[i + 1], p = ease(seg(t, a.t, b.t));
+    var x = lerp(a.x, b.x, p), y = lerp(a.y, b.y, p);
+    cursor.style.opacity = 1;
+    cursor.style.transform = "translate(" + x + "px," + y + "px)";
+    return { x: x, y: y };
+  }
+  function ripple(t, at, x, y) {
+    var r = $("ripple"), p = seg(t, at, at + 0.35);
+    if (p <= 0 || p >= 1) { r.style.opacity = 0; return; }
+    r.style.opacity = 1 - p;
+    r.style.transform = "translate(" + (x - 17) + "px," + (y - 17) + "px) scale(" + (0.5 + p) + ")";
+  }
+
+  /* 앱 종료 장면(두 안내가 같다): 캐릭터를 우클릭하고 종료를 누르면 캐릭터가 사라진다. */
+  function quitScene(t, cursorTail) {
+    var c = center("char"), q = center("quit");
+    var path = [{ t: 0, x: 380, y: 250 }, { t: 1, x: c.x, y: c.y }, { t: 1.25, x: c.x, y: c.y }, { t: 2.1, x: q.x, y: q.y }, { t: 2.3, x: q.x, y: q.y }].concat(cursorTail || []);
+    show("menu", t >= 1.15 && t < 2.35 ? 1 : 0);
+    $("quit").className = t >= 1.9 && t < 2.35 ? "on" : "";
+    $("char").style.opacity = t < 2.35 ? 1 : 0;
+    ripple(t, 1.0, c.x, c.y);
+    if (t >= 2.2) ripple(t, 2.2, q.x, q.y);
+    return path;
+  }
+
+  function popChar(t, at) {
+    var p = seg(t, at, at + 0.35), s = p < 1 ? 0.4 + 0.8 * p : 1;
+    $("char").style.opacity = p;
+    $("char").style.transform = "scale(" + (p < 1 ? s : 1) + ")";
+    show("tag", seg(t, at + 0.2, at + 0.5) * (1 - seg(t, at + 2.3, at + 2.6)));
+  }
+
+  function renderBrew(t) {
+    var path = quitScene(t, [{ t: 2.6, x: 380, y: 260 }, { t: 2.65, x: 380, y: 260 }]);
+    placeCursor(t, path);
+    show("term", seg(t, 3.0, 3.3) * (1 - seg(t, 6.5, 6.8)));
+    var typed = Math.floor(seg(t, 3.5, 5.4) * CMD.length);
+    $("cmd").textContent = CMD.slice(0, typed);
+    $("blink").style.opacity = t < 5.6 ? (Math.floor(t * 2.5) % 2 ? 0 : 1) : 0;
+    show("out1", t >= 5.7 ? 1 : 0);
+    show("out2", t >= 6.0 ? 1 : 0);
+    if (t >= 6.5) popChar(t, 6.9);
+  }
+
+  function renderDmg(t) {
+    var a = center("app"), f = center("folder"), rb = center("replaceBtn"), bb = center("blockBtn");
+    var path = quitScene(t, [{ t: 2.6, x: 380, y: 260 }, { t: 2.65, x: 380, y: 260 },
+      { t: 5.6, x: 380, y: 260 }, { t: 5.9, x: a.x, y: a.y }, { t: 6.2, x: a.x, y: a.y }, { t: 7.4, x: f.x, y: f.y }, { t: 7.7, x: f.x, y: f.y },
+      { t: 8.5, x: rb.x, y: rb.y }, { t: 8.75, x: rb.x, y: rb.y }, { t: 9.9, x: 380, y: 260 }, { t: 10.2, x: 380, y: 260 }, { t: 10.9, x: bb.x, y: bb.y }, { t: 11.2, x: bb.x, y: bb.y }]);
+    var pos = placeCursor(t, path);
+    show("win", seg(t, 3.0, 3.3) * (1 - seg(t, 8.8, 9.1)));
+    var drag = ease(seg(t, 6.2, 7.4));
+    $("app").style.transform = "translateX(" + 250 * drag + "px)";
+    $("app").style.opacity = t < 7.5 ? 1 : 0.0;
+    show("replace", seg(t, 7.5, 7.7) * (1 - seg(t, 8.8, 9.0)));
+    $("replaceBtn").className = "btn pri" + (t >= 8.5 && t < 8.95 ? " hit" : "");
+    if (t >= 8.75 && t < 9) ripple(t, 8.75, rb.x, rb.y);
+    show("block", seg(t, 9.3, 9.6) * (1 - seg(t, 11.3, 11.6)));
+    if (t >= 11.2) ripple(t, 11.2, bb.x, bb.y);
+    $("blockBtn").className = "btn pri" + (t >= 10.9 && t < 11.35 ? " hit" : "");
+    if (t >= 11.5) popChar(t, 11.7);
+    if (t < 9.1 && t >= 2.6) { /* 종료 직후부터 캐릭터는 숨겨 둔 상태 */ $("char").style.opacity = 0; }
+  }
+
+  function render(name, t) {
+    var scene = SCENES[name], current = 0;
+    $("char").style.transform = "none"; $("tag").style.opacity = 0; $("ripple").style.opacity = 0;
+    scene.steps.forEach(function (step, i) { if (t >= step.from) current = i; });
+    var step = scene.steps[current];
+    $("capNum").textContent = String(current + 1);
+    $("capT").textContent = step.t;
+    $("capS").textContent = step.s;
+    $("dots").innerHTML = scene.steps.map(function (_, i) { return '<i class="' + (i === current ? "on" : "") + '"></i>'; }).join("");
+    $("term").style.opacity = 0; $("win").style.opacity = 0; $("replace").style.opacity = 0; $("block").style.opacity = 0;
+    if (name === "brew") renderBrew(t); else renderDmg(t);
+  }
+
+  var parts = location.hash.replace("#", "").split(",");
+  var name = parts[0] || "brew", time = 0;
+  parts.forEach(function (part) { if (part.indexOf("t=") === 0) time = parseFloat(part.slice(2)); });
+  render(name, time);
+</script>
+</body>
+</html>
