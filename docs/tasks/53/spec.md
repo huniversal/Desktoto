@@ -4,7 +4,7 @@
 
 - 이슈: #53 / https://github.com/huniversal/Desktoto/issues/53
 - 브랜치: feat/terminal-cli-usage/#53
-- specRevision: 1
+- specRevision: 3
 - 대상 ai-run 원본: N/A (원본은 iTerm2, Terminal, Orca만 탭 이동을 지원하고 cmux 지원은 없다. 코드는 `apps/macos/Sources/TerminalIntegration/TerminalTabFocuser.swift`의 주석 "다른 터미널은 지원하지 않는다(원본 동작)"로 확인함)
 
 ## 목적
@@ -56,7 +56,8 @@
 
 - Claude Code와 Codex의 터미널 세션이 iTerm2, Terminal, cmux, Orca에서 컨텍스트와 토큰을 표시하는 현황을 위 표로 명세에 기록한다(작성 완료).
 - cmux에서 실행 중인 Claude와 Codex 세션 줄을 누르면 해당 cmux 작업 공간과 패널로 이동하고 cmux를 앞으로 가져온다.
-- cmux 소켓 접근이 막혀 있을 때의 처리(이동 실패로 보고)와 사용자 안내.
+- cmux 소켓 접근이 막혀 있을 때의 처리(이동 실패로 보고).
+- 우클릭 설정 메뉴의 "연동 안내…" 항목과 안내 창. 항상 보이며, 터미널과 앱별로 사용자가 알아야 할 제약과 설정 방법을 정리해 보여 준다(specRevision 3).
 - 새 로직의 단위 테스트.
 
 ### 제외
@@ -80,7 +81,11 @@
   - cmux CLI 실행 실패, 소켓 거부(`OK`가 아닌 출력), 빈 출력이면 false로 처리하고 앱은 죽지 않는다. 오류는 표준 출력에 나오지 않을 수 있어 "`OK`로 시작하지 않으면 실패"로 판정한다.
   - cmux 안에서 실행 중이 아닌 프로세스(다른 터미널)는 기존 경로를 쓴다.
   - 환경변수 값은 외부 입력이므로 UUID 정규식으로 검증한 뒤에만 명령 인자로 쓴다.
-- 사용자 안내: 소켓이 막혀 이동이 실패했을 때 어떻게 알릴지는 미결정이다.
+- 사용자 안내(specRevision 3): 설정 메뉴에 "연동 안내…" 항목을 항상 둔다. 누르면 안내 창이 뜬다. 앱은 다른 앱의 설정을 바꾸지 않고 방법만 알려 준다. 안내는 cmux 전용이 아니라 도구별 제약을 정리하는 자리이며, 다른 도구의 항목은 실측하고 합의한 뒤 추가한다.
+  - cmux: 세션 줄을 눌러도 cmux 탭으로 자동 이동하지 않는다. cmux 설정 > 자동화에서 "소켓 제어 모드"를 "자동화 모드"로 바꾸면 이동한다. 같은 macOS 사용자의 프로그램이 cmux를 제어할 수 있게 되는 설정이며, 컨텍스트와 토큰 표시는 이 설정 없이 동작한다.
+  - Antigravity: 한도(사용량 게이지)는 표시하지 못한다(#52에서 제외). 컨텍스트는 모델 이름으로 창 크기를 추정한 값이라 `~`를 붙여 표시한다.
+  - `apps/macos/Sources/Preferences/SettingsMenu.swift`: `SettingsAction.showIntegrationGuide`와 항상 보이는 항목. `apps/macos/Sources/Desktoto/AppDelegate.swift`: 항목을 누르면 안내 창을 띄운다. 외부 상태를 읽지 않으므로 새 경계나 모듈은 없다.
+  - specRevision 2에서 만들었던 조건부 표시(`CmuxSocketChecker`, `needsCmuxSetup`)는 사용자 의견으로 폐기했다. 설정을 마친 사용자에게도 안내를 볼 수 있어야 하고, 안내가 cmux 전용이 아니기 때문이다.
 
 ## 완료 조건
 
@@ -91,6 +96,8 @@
 - AC-5: cmux 소켓이 기본 모드이거나 환경 식별자를 읽지 못해도 앱이 죽지 않고 이동 실패(false)로 끝난다.
 - AC-6: iTerm2, Terminal, Orca의 기존 탭 이동과 Claude와 Codex 세션 표시가 바뀌지 않는다.
 - AC-7: 합성 데이터와 가짜 `ProcessRunner`로 단위 테스트가 있고 `swift build`와 `swift test`가 통과한다.
+- AC-8: 설정 메뉴에 "연동 안내…" 항목이 항상 보인다(cmux 설정 여부와 관계없이).
+- AC-9: 그 항목을 누르면 안내 창이 뜨고, cmux의 탭 이동 설정 방법과 Antigravity의 사용량(한도) 미지원이 적혀 있다.
 
 ## 검증 방법
 
@@ -102,20 +109,22 @@
 | AC-4 | 같은 폴더에서 cmux 작업 공간 두 개에 각각 `claude`를 실행하고 카드를 각각 클릭 | 누른 카드의 작업 공간으로 이동. 단위 테스트는 같은 폴더의 두 프로세스를 합성 |
 | AC-5 | 소켓 기본 모드에서 클릭, 환경 출력이 비었거나 UUID가 아닌 합성 입력, `cmux`가 `OK`가 아닌 출력을 내는 가짜 실행기로 단위 테스트 | 오류 없이 false |
 | AC-6 | 기존 `TerminalTabFocuserTests`, `SessionOpenerTests`, `OrcaTerminalSelectorTests`, `SessionMonitoring` 테스트 전체 | 변경 없이 통과 |
-| AC-7 | `cd apps/macos && swift build && swift test` | 통과. 새 테스트는 `Tests/TerminalIntegrationTests`에 추가 |
+| AC-7 | `cd apps/macos && swift build && swift test` | 통과. 새 테스트는 `Tests/TerminalIntegrationTests`와 `Tests/PreferencesTests`에 추가 |
+| AC-8 | 메뉴 항목 목록을 단위 테스트(항상 포함, 위치, 동작 값). 실제 앱 우클릭 메뉴 확인 | 항상 표시 |
+| AC-9 | 실제 앱에서 항목을 눌러 안내 창 확인 | cmux 설정 방법과 Antigravity 제약이 보임 |
 
 실제 앱 확인(AC-2, AC-3, AC-4)은 사용자가 로그인한 cmux와 Claude, Codex가 필요하다. 없으면 미검증으로 기록한다.
 
 ## 미결정 사항
 
-- 소켓이 막혀 이동이 실패했을 때의 안내 방식(알림, 메뉴 문구, 또는 안내 없음). 구현을 막지는 않지만 사용자 경험에 영향을 준다.
-- 이동 뒤 cmux 창이 맨 앞으로 오는지는 확인하지 못했다. 안 오면 `com.cmuxterm.app` 활성화 호출이 필요하며, 설계에는 이미 넣어 두었다.
-- 분할 패널이 여럿인 작업 공간에서 `focus-panel`이 의도한 패널에 포커스하는지.
-- 이슈 본문에 남아 있는 Gemini CLI와 Antigravity CLI 항목을 후속 이슈로 나눌지, 본문을 고칠지.
-- cmux 소켓 모드를 자동화 모드로 켜야 한다는 안내를 어디에 둘지(README, 설치 안내 페이지, 앱 안). 구현을 막지는 않는다.
+- (해결, specRevision 3) 소켓이 막혀 있을 때의 안내 방식: 설정 메뉴의 항상 보이는 "연동 안내…" 항목과 안내 창으로 정했다. 카드를 눌러 이동에 실패한 순간의 즉석 알림은 하지 않는다. 필요하면 후속으로 다룬다.
+- iTerm2, Terminal, Orca의 안내 항목. 필요한 설정(예: macOS 자동화 권한)을 실측하지 않았다. 실측한 뒤 안내에 추가한다. 구현을 막지는 않는다.
+- 안내 창의 문구는 초안이며 실제 화면을 보고 다듬는다.
 
 ## 주요 설계 변경
 
 | specRevision | 변경한 결정 | 이유 |
 |---|---|---|
 | 1 | 최초 작성. 범위를 Claude와 Codex의 터미널 환경으로 정하고, cmux 탭 이동을 `CMUX_SURFACE_ID`와 `cmux focus-panel`로 구현하는 설계 | 사용자가 Claude와 Codex부터 하기로 함(2026-11-05). cmux에서 세션 표시와 자동화 모드의 탭 이동을 실측으로 확인 |
+| 2 | 설정 메뉴에 "cmux 탭 이동 설정 방법…" 항목과 안내 창 추가(AC-8, AC-9). 안내 방식 미결정 해결 | 사용자가 직접 테스트해 이동을 확인한 뒤, 설정을 안 켠 사용자를 위한 안내를 메뉴에 넣자고 제안하고 합의(2026-11-05) |
+| 3 | 안내 항목을 cmux 전용 조건부 표시에서, 항상 보이는 "연동 안내…"로 변경. 내용은 cmux 탭 이동 설정과 Antigravity 사용량 미지원. `CmuxSocketChecker`와 `needsCmuxSetup` 폐기(AC-8, AC-9 변경) | 사용자가 설정을 마친 뒤에도 안내가 보여야 하고 다른 도구도 정리할 자리라고 정정(2026-11-05) |
