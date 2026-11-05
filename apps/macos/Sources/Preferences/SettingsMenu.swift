@@ -9,6 +9,7 @@ public enum SettingsAction: Equatable, Sendable {
     case toggleUpdateCheck
     case openUpdatePage
     case showUsageGuide
+    case showFeedback
     case toggleUsagePanel
     case toggleContextPanel
     case selectColorMode(ColorMode)
@@ -39,19 +40,23 @@ public struct SettingsMenuEnvironment: Sendable {
     public let isClaudeConnected: Bool
     // 새 버전이 있을 때만 값이 있다. 문구는 앱이 만들어 넘긴다(Preferences는 업데이트 확인 모듈을 모른다).
     public let updateNoticeTitle: String?
+    // 의견을 보낼 주소가 빌드에 들어 있을 때만 문의하기 항목을 보여 준다(개발, CI, 포크 빌드에는 없다).
+    public let isFeedbackAvailable: Bool
 
     public init(
         isRunningAsApp: Bool,
         isLoginItemEnabled: Bool,
         isClaudeCodeInstalled: Bool,
         isClaudeConnected: Bool,
-        updateNoticeTitle: String? = nil
+        updateNoticeTitle: String? = nil,
+        isFeedbackAvailable: Bool = false
     ) {
         self.isRunningAsApp = isRunningAsApp
         self.isLoginItemEnabled = isLoginItemEnabled
         self.isClaudeCodeInstalled = isClaudeCodeInstalled
         self.isClaudeConnected = isClaudeConnected
         self.updateNoticeTitle = updateNoticeTitle
+        self.isFeedbackAvailable = isFeedbackAvailable
     }
 }
 
@@ -77,6 +82,9 @@ public enum SettingsMenu {
         entries.append(.item(makeItem("업데이트 확인", isOn: settings.checksForUpdates, action: .toggleUpdateCheck)))
         // 도구별로 사용자가 알아야 할 제약과 설정 방법을 보여 준다. 항상 보인다.
         entries.append(.item(makeItem("사용 안내…", isOn: false, action: .showUsageGuide)))
+        if environment.isFeedbackAvailable {
+            entries.append(.item(makeItem("문의하기…", isOn: false, action: .showFeedback)))
+        }
         entries.append(.separator)
 
         // 보여줄 패널은 둘 다, 하나만, 아예 없이도 고를 수 있다.
