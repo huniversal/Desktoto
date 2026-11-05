@@ -94,13 +94,18 @@ jobs:
           if [ "$IS_PRERELEASE" = "true" ]; then
             flags+=(--prerelease)
           fi
+          # 자동 생성한 변경 내역 뒤에 유저용 업데이트 안내를 매번 붙인다.
+          notes_file="$RUNNER_TEMP/release-notes.md"
+          gh api -X POST "repos/$GH_REPO/releases/generate-notes" -f tag_name="$TAG_NAME" --jq .body > "$notes_file"
+          printf '\n\n' >> "$notes_file"
+          cat .github/release-notes/update-guide.md >> "$notes_file"
           gh release create "$TAG_NAME" \
             "apps/macos/build/$ZIP_NAME" \
             "apps/macos/build/$ZIP_NAME.sha256" \
             "apps/macos/build/Desktoto.dmg" \
             "apps/macos/build/Desktoto.dmg.sha256" \
             --title "$TAG_NAME" \
-            --generate-notes \
+            --notes-file "$notes_file" \
             "${flags[@]}"
 
   # 정식 릴리스가 올라간 뒤 Homebrew tap의 cask 버전과 해시를 갱신한다.
