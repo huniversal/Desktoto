@@ -99,6 +99,16 @@ jobs:
           gh api -X POST "repos/$GH_REPO/releases/generate-notes" -f tag_name="$TAG_NAME" --jq .body > "$notes_file"
           printf '\n\n' >> "$notes_file"
           cat .github/release-notes/update-guide.md >> "$notes_file"
+          # 프리릴리스는 Homebrew tap을 갱신하지 않으므로, brew upgrade로는 이 버전을 받을 수 없다는 점을 알려 준다.
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            printf '\n> [!WARNING]\n> 이 릴리스는 프리릴리스라 Homebrew로 받을 수 없어요. 위의 Homebrew 명령은 최신 정식 버전을 설치해요. 이 버전은 `Desktoto.dmg`로 설치해 주세요.\n' >> "$notes_file"
+          fi
+          # 안내의 이미지는 main 브랜치의 파일을 가리킨다. 아직 main에 없으면 노트에서 이미지가 깨지므로 미리 알린다(릴리스는 막지 않는다).
+          for image_url in $(grep -o 'https://raw.githubusercontent.com/[^)]*' .github/release-notes/update-guide.md); do
+            if ! curl -fsSI "$image_url" > /dev/null; then
+              echo "::warning::업데이트 안내 이미지를 찾을 수 없습니다(main에 아직 없을 수 있음): $image_url"
+            fi
+          done
           gh release create "$TAG_NAME" \
             "apps/macos/build/$ZIP_NAME" \
             "apps/macos/build/$ZIP_NAME.sha256" \

@@ -3,6 +3,7 @@
 Chrome(헤드리스)으로 시간 t마다 한 프레임을 캡처하고, Pillow로 모든 프레임이 같은 팔레트를 쓰게 줄여 GIF 한 장으로 묶는다.
 같은 팔레트를 쓰면 프레임 사이의 깜빡임과 용량이 줄어든다.
 """
+import hashlib
 import os
 import subprocess
 import sys
@@ -16,7 +17,7 @@ CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 FPS = 10
 WIDTH, HEIGHT = 720, 405
 LAST_FRAME_HOLD_MS = 1800
-LENGTHS = {"brew": 9.5, "dmg": 12.5}
+LENGTHS = {"brew": 9.5, "dmg": 14.5}
 KEY_COLORS = ["#e8825a", "#2f6fe0", "#2b2626", "#ff5f57", "#febc2e", "#28c840", "#dcdce0"]
 
 
@@ -37,12 +38,23 @@ def capture(source: Path, name: str, index: int, workdir: Path) -> Path:
     return out
 
 
+def invalidate_stale_frames(source: Path, workdir: Path) -> None:
+    """FRAMES_DIR에 남은 프레임이 지금의 원본과 렌더 설정으로 만든 것인지 확인하고, 다르면 지운다."""
+    key = hashlib.sha256(source.read_bytes() + f"{FPS},{WIDTH},{HEIGHT}".encode()).hexdigest()
+    key_file = workdir / ".cache-key"
+    if not key_file.exists() or key_file.read_text() != key:
+        for stale in workdir.glob("*.png"):
+            stale.unlink()
+        key_file.write_text(key)
+
+
 def build(source: Path, name: str, destination: Path) -> None:
     count = int(LENGTHS[name] * FPS)
     keep = os.environ.get("FRAMES_DIR")
     with tempfile.TemporaryDirectory() as temp:
         workdir = Path(keep) if keep else Path(temp)
         workdir.mkdir(parents=True, exist_ok=True)
+        invalidate_stale_frames(source, workdir)
         # 같은 프로필을 동시에 쓰면 Chrome이 충돌하므로 프레임 번호를 4로 나눈 나머지별로 묶어 순서대로 캡처한다.
         groups = [[i for i in range(count) if i % 4 == lane] for lane in range(4)]
 

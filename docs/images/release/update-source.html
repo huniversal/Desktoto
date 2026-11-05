@@ -50,6 +50,10 @@
   .btn.pri { background: #2f6fe0; color: #fff; }
   .btn.hit { box-shadow: 0 0 0 3px rgba(47, 111, 224, 0.45); }
 
+  .set { top: 100px; height: 140px; }
+  .set .row { display: flex; align-items: center; gap: 14px; padding: 30px 24px; font-size: 14px; }
+  .set .row b { font-size: 15px; }
+  .set .row span:nth-child(2) { flex: 1; }
   .cap { left: 0; bottom: 0; width: 100%; height: 66px; background: rgba(255, 255, 255, 0.94); color: #1d1d1f; padding: 14px 20px 0 62px; }
   .cap .num { position: absolute; left: 18px; top: 14px; width: 30px; height: 30px; border-radius: 50%; background: #2f6fe0; color: #fff; text-align: center; line-height: 30px; font-weight: 700; font-size: 15px; }
   .cap .t { font-size: 16px; font-weight: 700; }
@@ -93,9 +97,14 @@
     <div class="btns"><span class="btn">중단</span><span class="btn pri" id="replaceBtn">교체</span></div>
   </div>
 
-  <div class="abs dlg fade" id="block" style="top:104px">
-    <b>"Desktoto"이(가) 차단되었어요</b>시스템 설정의 보안 영역에서 열 수 있어요.
-    <div class="btns"><span class="btn pri" id="blockBtn">그래도 열기</span></div>
+  <div class="abs dlg fade" id="block" style="top:112px">
+    <b>"Desktoto"이(가) 열리지 않음</b>Apple이 악성 코드가 없음을 확인할 수 없어요.
+    <div class="btns"><span class="btn pri" id="doneBtn">완료</span><span class="btn">휴지통으로 이동</span></div>
+  </div>
+
+  <div class="abs win set fade" id="settings">
+    <div class="title">개인정보 보호 및 보안</div>
+    <div class="row"><b>보안</b><span>"Desktoto"이(가) 차단되었어요</span><span class="btn pri" id="openBtn">그래도 열기</span></div>
   </div>
 
   <div class="abs cap">
@@ -116,11 +125,11 @@
       { from: 0, t: "앱 종료", s: "메뉴바 캐릭터를 우클릭해 Desktoto 종료를 눌러요" },
       { from: 3, t: "명령 실행", s: "터미널에 명령을 입력해요" },
       { from: 6.5, t: "다시 열기", s: "응용 프로그램에서 Desktoto를 열면 새 버전이에요" } ] },
-    dmg: { length: 12.5, steps: [
+    dmg: { length: 14.5, steps: [
       { from: 0, t: "앱 종료", s: "메뉴바 캐릭터를 우클릭해 Desktoto 종료를 눌러요" },
       { from: 3, t: "dmg 열기", s: "릴리스의 Desktoto.dmg를 받아 열어요" },
       { from: 5.5, t: "덮어쓰기", s: "응용 프로그램 폴더로 끌어다 놓고 교체를 눌러요" },
-      { from: 9, t: "다시 열기", s: "경고가 뜨면 그래도 열기를 눌러요" } ] }
+      { from: 9, t: "다시 열기", s: "경고가 뜨면 완료를 누르고, 시스템 설정에서 그래도 열기를 눌러요" } ] }
   };
 
   function $(id) { return document.getElementById(id); }
@@ -185,11 +194,12 @@
   }
 
   function renderDmg(t) {
-    var a = center("app"), f = center("folder"), rb = center("replaceBtn"), bb = center("blockBtn");
+    var a = center("app"), f = center("folder"), rb = center("replaceBtn"), dn = center("doneBtn"), op = center("openBtn");
     var path = quitScene(t, [{ t: 2.6, x: 380, y: 260 }, { t: 2.65, x: 380, y: 260 },
       { t: 5.6, x: 380, y: 260 }, { t: 5.9, x: a.x, y: a.y }, { t: 6.2, x: a.x, y: a.y }, { t: 7.4, x: f.x, y: f.y }, { t: 7.7, x: f.x, y: f.y },
-      { t: 8.5, x: rb.x, y: rb.y }, { t: 8.75, x: rb.x, y: rb.y }, { t: 9.9, x: 380, y: 260 }, { t: 10.2, x: 380, y: 260 }, { t: 10.9, x: bb.x, y: bb.y }, { t: 11.2, x: bb.x, y: bb.y }]);
-    var pos = placeCursor(t, path);
+      { t: 8.5, x: rb.x, y: rb.y }, { t: 8.75, x: rb.x, y: rb.y }, { t: 9.9, x: dn.x, y: dn.y }, { t: 10.3, x: dn.x, y: dn.y },
+      { t: 11.9, x: op.x, y: op.y }, { t: 12.2, x: op.x, y: op.y }]);
+    placeCursor(t, path);
     show("win", seg(t, 3.0, 3.3) * (1 - seg(t, 8.8, 9.1)));
     var drag = ease(seg(t, 6.2, 7.4));
     $("app").style.transform = "translateX(" + 250 * drag + "px)";
@@ -197,11 +207,13 @@
     show("replace", seg(t, 7.5, 7.7) * (1 - seg(t, 8.8, 9.0)));
     $("replaceBtn").className = "btn pri" + (t >= 8.5 && t < 8.95 ? " hit" : "");
     if (t >= 8.75 && t < 9) ripple(t, 8.75, rb.x, rb.y);
-    show("block", seg(t, 9.3, 9.6) * (1 - seg(t, 11.3, 11.6)));
-    if (t >= 11.2) ripple(t, 11.2, bb.x, bb.y);
-    $("blockBtn").className = "btn pri" + (t >= 10.9 && t < 11.35 ? " hit" : "");
-    if (t >= 11.5) popChar(t, 11.7);
-    if (t < 9.1 && t >= 2.6) { /* 종료 직후부터 캐릭터는 숨겨 둔 상태 */ $("char").style.opacity = 0; }
+    show("block", seg(t, 9.3, 9.6) * (1 - seg(t, 10.5, 10.8)));
+    $("doneBtn").className = "btn pri" + (t >= 10.0 && t < 10.5 ? " hit" : "");
+    if (t >= 10.3 && t < 10.7) ripple(t, 10.3, dn.x, dn.y);
+    show("settings", seg(t, 10.9, 11.2) * (1 - seg(t, 12.5, 12.8)));
+    $("openBtn").className = "btn pri" + (t >= 11.9 && t < 12.5 ? " hit" : "");
+    if (t >= 12.2 && t < 12.6) ripple(t, 12.2, op.x, op.y);
+    if (t >= 12.9) popChar(t, 12.9);
   }
 
   function render(name, t) {
@@ -213,7 +225,7 @@
     $("capT").textContent = step.t;
     $("capS").textContent = step.s;
     $("dots").innerHTML = scene.steps.map(function (_, i) { return '<i class="' + (i === current ? "on" : "") + '"></i>'; }).join("");
-    $("term").style.opacity = 0; $("win").style.opacity = 0; $("replace").style.opacity = 0; $("block").style.opacity = 0;
+    $("term").style.opacity = 0; $("win").style.opacity = 0; $("replace").style.opacity = 0; $("block").style.opacity = 0; $("settings").style.opacity = 0;
     if (name === "brew") renderBrew(t); else renderDmg(t);
   }
 
