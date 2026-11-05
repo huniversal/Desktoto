@@ -4,7 +4,7 @@
 
 - 이슈: #56 / https://github.com/huniversal/Desktoto/issues/56
 - 브랜치: feat/feedback/#56
-- specRevision: 1
+- specRevision: 2
 - 대상 ai-run 원본: N/A (원본에 없는 새 기능이다)
 
 ## 목적
@@ -48,7 +48,7 @@
   - Discord webhook: 서버 없이 앱에서 한 번 POST하면 끝나고, 알림이 바로 와서 확인이 빠르다.
   - URL 주입: 저장소가 public이라 소스와 커밋에 URL을 두지 않는다. `build-app.sh`가 환경 변수 `FEEDBACK_WEBHOOK_URL`이 있을 때만 `plutil -insert`로 `Info.plist`의 `FeedbackWebhookURL` 키에 넣는다. 서명(ad-hoc)은 그 뒤에 하므로 번들 검증이 유지된다. 스크립트는 값을 출력하지 않는다. 릴리스 워크플로는 Secret을 이 환경 변수로 넘긴다.
   - URL 검증: `https://discord.com/api/webhooks/`로 시작하는 값만 받는다. 키가 없거나 빈 값, 다른 호스트면 기능이 없는 것으로 본다(메뉴 숨김). 번들이 잘못 만들어져도 임의의 주소로 사용자 글을 보내지 않기 위함이다.
-  - 전송 본문: Discord webhook JSON의 `content`에 사용자 글과 구분선, `Desktoto 버전, macOS 버전`을 담는다. `allowed_mentions`의 `parse`를 빈 배열로 보내 사용자가 `@everyone` 같은 멘션을 써도 채널에서 알림이 울리지 않게 한다. Discord `content`의 2000자 제한을 넘지 않도록 사용자 입력은 1500자까지로 제한한다. 앞뒤 공백은 지우고, 비어 있으면 보낼 수 없다.
+  - 전송 본문: Discord webhook JSON의 `content`에 사용자 글, 빈 줄, Discord의 작은 글씨 줄(`-# Desktoto 버전, macOS 버전`)을 담는다. JSON 키 순서는 고정한다. `allowed_mentions`의 `parse`를 빈 배열로 보내 사용자가 `@everyone` 같은 멘션을 써도 채널에서 알림이 울리지 않게 한다. Discord `content`의 2000자 제한을 넘지 않도록 사용자 입력은 1500자까지로 제한한다. 앞뒤 공백은 지우고, 비어 있으면 보낼 수 없다.
   - 버전: 앱 버전은 번들의 `CFBundleShortVersionString`, macOS 버전은 `ProcessInfo.operatingSystemVersion`에서 읽는다. 둘 다 순수 함수에 값을 넘겨 테스트한다.
   - 안내 문구: 창에 "앱 버전과 macOS 버전이 함께 전송돼요. 답장은 드리지 못해요." 정도를 보여 준다(정확한 문구는 구현 때 정한다).
   - 릴리스에서 Secret이 비어 있으면 빌드는 통과하되 Actions 경고(`::warning::`)를 남긴다. 기능이 없는 릴리스가 조용히 나가는 것을 알리기 위함이다.
@@ -94,3 +94,4 @@
 | specRevision | 변경한 결정 | 이유 |
 |---|---|---|
 | 1 | 최초 설계 | 이슈 #56의 Tasks와 사용자와 합의한 방향(Discord webhook, 설정 메뉴 입력 창, Secret을 통한 빌드 시 주입, 앱 버전과 macOS 버전 포함, 단방향). 모듈 구성, 본문 형식, 1500자 제한, 멘션 차단, URL 검증은 이 명세에서 제안하는 세부 설계이며 검토가 필요하다 |
+| 2 | 푸터를 구분선 대신 Discord 작은 글씨 줄(`-#`)로 바꾸고, 취소하면 전송 단계를 입력 상태로 되돌리며, 전송 단계를 버튼을 누른 즉시 바꿔 연타로 인한 중복 전송을 막음, JSON 키 순서 고정 | 구현 중 정한 세부 동작. Discord는 구분선(`---`)을 그리지 않고 글자 그대로 보여 준다. 영향받는 AC: AC-1, AC-4 |
