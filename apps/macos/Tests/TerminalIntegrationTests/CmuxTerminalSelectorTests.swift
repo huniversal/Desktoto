@@ -13,6 +13,13 @@ struct CmuxTerminalSelectorTests {
         #expect(CmuxTerminalSelector.parseSurfaceID(fromEnvironmentOutput: output) == surfaceID)
     }
 
+    // AC-4: 명령 인자에 다른 패널의 식별자 모양 토큰이 있어도, 출력 끝의 환경 변수 값을 읽는다.
+    @Test func prefersTheEnvironmentValueOverLookalikeArguments() {
+        let otherSurfaceID = "11111111-2222-3333-4444-555555555555"
+        let output = "1332 s004 S+ 0:01.20 claude --note CMUX_SURFACE_ID=\(otherSurfaceID) HOME=/Users/me CMUX_SURFACE_ID=\(surfaceID)"
+        #expect(CmuxTerminalSelector.parseSurfaceID(fromEnvironmentOutput: output) == surfaceID)
+    }
+
     // AC-5
     @Test func rejectsMissingOrMalformedSurfaceID() {
         #expect(CmuxTerminalSelector.parseSurfaceID(fromEnvironmentOutput: "") == nil)
