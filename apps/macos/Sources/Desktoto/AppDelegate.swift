@@ -247,6 +247,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let pageURL = updateMonitor.availableUpdate?.release.pageURL {
                 _ = urlOpener.open(pageURL)
             }
+        case .showUsageGuide:
+            showUsageGuide()
         case .toggleUsagePanel:
             settings.showsUsage.toggle()
         case .toggleContextPanel:
@@ -264,6 +266,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
         }
         syncPanelModel()
+    }
+
+    // 도구별로 사용자가 알아야 할 제약과 설정 방법을 알려 준다. 앱은 다른 앱의 설정을 바꾸지 않는다.
+    private func showUsageGuide() {
+        let alert = NSAlert()
+        alert.messageText = "사용 안내"
+        alert.informativeText = """
+        [cmux]
+        카드를 눌러도 탭으로 이동하지 않습니다.
+        cmux 설정 > 자동화에서 "소켓 제어 모드"를 "자동화 모드"로 바꾸면 이동합니다.
+
+        [Antigravity]
+        사용량(한도)은 표시되지 않습니다.
+        컨텍스트는 추정값이라 ~가 붙습니다.
+
+        [VS Code, Antigravity IDE]
+        카드를 누르면 IDE 앱이 앞으로 옵니다.
+        터미널 탭은 직접 찾아야 합니다.
+        """
+        alert.addButton(withTitle: "확인")
+        NSApp.activate()
+        alert.runModal()
     }
 
     // MARK: - 패널
