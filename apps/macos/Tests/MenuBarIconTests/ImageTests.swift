@@ -61,10 +61,10 @@ private func createImage(_ frame: IconFrame, _ appearance: IconAppearance = Icon
     #expect(image.size.height == 22)
     // 폭은 높이와 같은 비율(42칸 대 20칸)이다.
     #expect(abs(image.size.width - 22.0 / 20.0 * 42.0) < 0.001)
-    let bitmap = try #require(createBitmap(image))
-    #expect(bitmap.pixelsHigh == 44)
-    // 폭은 소수라서 비트맵은 가장 가까운 정수 픽셀이다(1픽셀 이내).
-    #expect(abs(CGFloat(bitmap.pixelsWide) - image.size.width * testScale) <= 1)
+    // 이미지가 품은 원래 비트맵의 픽셀 수를 본다. 폭이 정수가 아니면 화면 배율에 따라 다시 그려지므로 NSImage를 다시 그려 읽지 않는다.
+    let representation = try #require(image.representations.first)
+    #expect(representation.pixelsHigh == 44)
+    #expect(abs(CGFloat(representation.pixelsWide) - image.size.width * testScale) <= 1)
 }
 
 @MainActor @Test func pointHeightScalesTheWholeCanvas() {
