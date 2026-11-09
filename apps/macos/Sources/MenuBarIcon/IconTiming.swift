@@ -8,6 +8,10 @@ public enum IconTiming {
     public static let runningFrameInterval: TimeInterval = 1.0 / 24.0
     public static let sleepFrameCount = 6
     public static let sleepFrameInterval: TimeInterval = 0.6
+    /// 낚시 모습이 바뀌었는지 확인하는 주기. 모습이 바뀔 때만 이미지를 바꾸므로 메뉴바 갱신은 늘지 않는다.
+    public static let fishingTickInterval: TimeInterval = 0.05
+    /// 정해진 장면이 되풀이되는 쉬는 일에서 장면이 바뀌었는지 확인하는 주기
+    public static let restTickInterval: TimeInterval = 0.1
     public static let fireworkFrameCount = 24
     /// 표정(깜빡임, 하품 등)을 확인하는 주기. 표정이 바뀔 때만 이미지를 바꾸므로 메뉴바 갱신은 늘지 않는다.
     public static let behaviorInterval: TimeInterval = 0.05

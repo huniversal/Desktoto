@@ -17,6 +17,9 @@ public final class IconImageSet {
     private var gazing: [NSImage]
     /// 표정 이미지는 자주 쓰이지 않는 조합이 많아서 처음 필요할 때 한 번만 그려 둔다.
     private var expressions: [ExpressionKey: NSImage] = [:]
+    /// 낚시 모습도 조합이 많아서 처음 필요할 때 한 번만 그려 둔다.
+    private var fishing: [FishingFrame: NSImage] = [:]
+    private var restFrames: [RestFrame: NSImage] = [:]
     private var running: [NSImage]
     private var sleeping: [NSImage]
 
@@ -46,6 +49,8 @@ public final class IconImageSet {
         guard newAppearance != appearance else { return false }
         appearance = newAppearance
         expressions = [:]
+        fishing = [:]
+        restFrames = [:]
         (standing, gazing, running, sleeping) = Self.createImages(appearance: newAppearance, makeImage: makeImage)
         return true
     }
@@ -58,6 +63,16 @@ public final class IconImageSet {
             if let cached = expressions[key] { return cached }
             let created = makeImage(frame, appearance)
             expressions[key] = created
+            return created
+        case .fishing(let fishingFrame):
+            if let cached = fishing[fishingFrame] { return cached }
+            let created = makeImage(frame, appearance)
+            fishing[fishingFrame] = created
+            return created
+        case .rest(let restFrame):
+            if let cached = restFrames[restFrame] { return cached }
+            let created = makeImage(frame, appearance)
+            restFrames[restFrame] = created
             return created
         case .standing:
             return standing

@@ -9,6 +9,10 @@ public enum IconFrame: Equatable, Sendable {
     case expression(EyeExpression, GazeDirection)
     case running(phase: Int)
     case sleeping(frame: Int)
+    /// 쉬는 동안 메뉴바에서 낚시하는 모습
+    case fishing(FishingFrame)
+    /// 쉬는 동안 하는 일 중 정해진 장면이 되풀이되는 것(스파클라, 음악, 음료, 별똥별, 비, 비눗방울)
+    case rest(RestFrame)
 }
 
 /// 한 가지 색으로 칠하는 사각형. 장면은 이 목록을 순서대로 칠한 결과다.
@@ -55,6 +59,22 @@ enum IconScene {
                 return character + badgePieces(.unseenDone, characterOriginX: originX)
             }
             return character + sleepMarkPieces(frame: sleepFrame, badgeX: BadgeGrid.originX(characterOriginX: originX))
+
+        case .fishing(let fishingFrame):
+            let character = FishingPieces.pieces(frame: fishingFrame, bodyColor: bodyColor)
+            // 잠든 모습처럼 확인하지 않은 완료 점만 보여 준다.
+            if appearance.hasUnseenDone {
+                return character + badgePieces(.unseenDone, characterOriginX: FishingPieces.originX)
+            }
+            return character
+
+        case .rest(let restFrame):
+            let scene = RestScenes.pieces(frame: restFrame, bodyColor: bodyColor)
+            // 잠든 모습처럼 확인하지 않은 완료 점만 보여 준다.
+            if appearance.hasUnseenDone {
+                return scene + badgePieces(.unseenDone, characterOriginX: CharacterGrid.standingOriginX)
+            }
+            return scene
         }
     }
 
@@ -69,7 +89,7 @@ enum IconScene {
     }
 
     // 그리는 순서는 다리, 팔, 몸통, 입, 눈이다.
-    private static func characterPieces(
+    static func characterPieces(
         pose: LegPose,
         gaze: GazeDirection = .center,
         expression: EyeExpression = .open,

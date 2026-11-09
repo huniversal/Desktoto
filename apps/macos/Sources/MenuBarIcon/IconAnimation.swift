@@ -6,23 +6,37 @@ public enum IconSchedule: Equatable, Sendable {
     case running
     /// 잠듦 주기로 z를 바꾼다.
     case sleeping
+    /// 낚시 모습을 짧은 주기로 확인한다.
+    case fishing
+    /// 정해진 장면이 되풀이되는 쉬는 일(스파클라, 음악 등). 장면이 바뀌었는지 짧은 주기로 확인한다.
+    case resting
     /// 타이머 없이 서 있는 모습을 보여 준다.
     case still
 
-    public init(isRunning: Bool, hasFirework: Bool, isSleeping: Bool) {
+    public init(isRunning: Bool, hasFirework: Bool, rest: IconRest?) {
         if isRunning || hasFirework {
             self = .running
-        } else if isSleeping {
+        } else if rest == .sleeping {
             self = .sleeping
+        } else if rest == .fishing {
+            self = .fishing
+        } else if rest != nil {
+            self = .resting
         } else {
             self = .still
         }
+    }
+
+    public init(isRunning: Bool, hasFirework: Bool, isSleeping: Bool) {
+        self.init(isRunning: isRunning, hasFirework: hasFirework, rest: isSleeping ? .sleeping : nil)
     }
 
     public var interval: TimeInterval? {
         switch self {
         case .running: return IconTiming.runningFrameInterval
         case .sleeping: return IconTiming.sleepFrameInterval
+        case .fishing: return IconTiming.fishingTickInterval
+        case .resting: return IconTiming.restTickInterval
         case .still: return nil
         }
     }

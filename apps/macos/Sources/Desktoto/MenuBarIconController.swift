@@ -6,7 +6,8 @@ import MenuBarIcon
 struct IconState: Equatable {
     var runningCount = 0
     var isWaiting = false
-    var isSleeping = false
+    /// 쉬는 중이면 무엇을 하는지. 2분 동안 캐릭터를 누르지 않으면 정해진다.
+    var rest: IconRest?
     var hasUnseenDone = false
     var colorMode: ColorMode = .white
 }
@@ -20,6 +21,15 @@ final class MenuBarIconController {
     private var state: IconState
     private var animationTimer: Timer?
     private var sleepTimer: Timer?
+    private var fishing = FishingSession()
+    private var fishingTimer: Timer?
+    private var lastFishingTick: TimeInterval = 0
+    private var shownFishingFrame: FishingFrame?
+    /// 스파클라, 음악 같은 정해진 장면의 쉬는 일
+    private var restTimer: Timer?
+    private var restActivity: IconRest?
+    private var restStartedAt: TimeInterval = 0
+    private var shownRestFrame: RestFrame?
     private var gazePosition = GazePosition.center
     private var gazeDirection = GazeDirection.center
     private var gazeTarget = GazeDirection.center
@@ -59,18 +69,36 @@ final class MenuBarIconController {
             hasUnseenDone: state.hasUnseenDone,
             isWaiting: state.isWaiting
         ))
-        switch IconSchedule(isRunning: state.runningCount > 0, hasFirework: animation.hasFirework, isSleeping: state.isSleeping) {
+        switch IconSchedule(isRunning: state.runningCount > 0, hasFirework: animation.hasFirework, rest: state.rest) {
         case .running:
             stopSleepAnimation()
+            stopFishingAnimation()
+            stopRestAnimation()
             stopGazing()
             if animationTimer == nil { startAnimation() }
         case .sleeping:
             if animationTimer != nil { stopAnimation() }
+            stopFishingAnimation()
+            stopRestAnimation()
             stopGazing()
             startSleepAnimation()
+        case .fishing:
+            if animationTimer != nil { stopAnimation() }
+            stopSleepAnimation()
+            stopRestAnimation()
+            stopGazing()
+            startFishingAnimation()
+        case .resting:
+            if animationTimer != nil { stopAnimation() }
+            stopSleepAnimation()
+            stopFishingAnimation()
+            stopGazing()
+            if let activity = state.rest { startRestAnimation(activity) }
         case .still:
             if animationTimer != nil { stopAnimation() }
             stopSleepAnimation()
+            stopFishingAnimation()
+            stopRestAnimation()
             startGazing()
             showGaze()
         }
@@ -192,6 +220,70 @@ final class MenuBarIconController {
         sleepTimer?.invalidate()
         sleepTimer = nil
         animation.resetSleeping()
+        button?.image = images.image(for: .standing)
+    }
+
+    // 낚시는 규칙이 시간에 따라 모습을 정하고, 모습이 바뀔 때만 메뉴바 이미지를 바꾼다. 깨면 서 있는 모습으로 되돌린다.
+    private func startFishingAnimation() {
+        guard fishingTimer == nil else { return }
+        fishing = FishingSession()
+        lastFishingTick = ProcessInfo.processInfo.systemUptime
+        shownFishingFrame = nil
+        showFishingFrame()
+        fishingTimer = Timer.scheduledTimer(withTimeInterval: IconTiming.fishingTickInterval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.tickFishing() }
+        }
+    }
+
+    private func tickFishing() {
+        let now = ProcessInfo.processInfo.systemUptime
+        fishing.update(deltaTime: now - lastFishingTick, random: { Double.random(in: 0...1) })
+        lastFishingTick = now
+        showFishingFrame()
+    }
+
+    private func showFishingFrame() {
+        let frame = fishing.frame
+        guard frame != shownFishingFrame else { return }
+        shownFishingFrame = frame
+        button?.image = images.image(for: .fishing(frame))
+    }
+
+    private func stopFishingAnimation() {
+        guard fishingTimer != nil else { return }
+        fishingTimer?.invalidate()
+        fishingTimer = nil
+        shownFishingFrame = nil
+        button?.image = images.image(for: .standing)
+    }
+
+    // 정해진 장면이 되풀이되는 쉬는 일은 쉬기 시작한 뒤 지난 시간으로 장면을 정하고, 장면이 바뀔 때만 이미지를 바꾼다.
+    private func startRestAnimation(_ activity: IconRest) {
+        if restTimer != nil, restActivity == activity { return }
+        stopRestAnimation()
+        restActivity = activity
+        restStartedAt = ProcessInfo.processInfo.systemUptime
+        shownRestFrame = nil
+        showRestFrame()
+        restTimer = Timer.scheduledTimer(withTimeInterval: IconTiming.restTickInterval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.showRestFrame() }
+        }
+    }
+
+    private func showRestFrame() {
+        guard let restActivity else { return }
+        let elapsed = ProcessInfo.processInfo.systemUptime - restStartedAt
+        guard let frame = RestTimeline.frame(activity: restActivity, elapsed: elapsed), frame != shownRestFrame else { return }
+        shownRestFrame = frame
+        button?.image = images.image(for: .rest(frame))
+    }
+
+    private func stopRestAnimation() {
+        guard restTimer != nil else { return }
+        restTimer?.invalidate()
+        restTimer = nil
+        restActivity = nil
+        shownRestFrame = nil
         button?.image = images.image(for: .standing)
     }
 
