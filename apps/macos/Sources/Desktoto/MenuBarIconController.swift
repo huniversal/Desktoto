@@ -20,6 +20,18 @@ final class MenuBarIconController {
     private var state: IconState
     private var animationTimer: Timer?
     private var sleepTimer: Timer?
+    private var gazePosition = GazePosition.center
+    private var gazeDirection = GazeDirection.center
+    private var gazeTarget = GazeDirection.center
+    private var gazeTimer: Timer?
+    private var behavior = MenuBarIconController.createBehavior()
+    private var behaviorTimer: Timer?
+    private var displayedExpression = EyeExpression.open
+    private var lastMousePoint: NSPoint?
+    private var lastMouseTime: TimeInterval = 0
+    private var mouseSpeed: Double = 0
+    private var globalMouseMonitor: Any?
+    private var localMouseMonitor: Any?
 
     init(button: NSStatusBarButton?, colorMode: ColorMode) {
         self.button = button
@@ -47,18 +59,118 @@ final class MenuBarIconController {
             hasUnseenDone: state.hasUnseenDone,
             isWaiting: state.isWaiting
         ))
-
         switch IconSchedule(isRunning: state.runningCount > 0, hasFirework: animation.hasFirework, isSleeping: state.isSleeping) {
         case .running:
             stopSleepAnimation()
+            stopGazing()
             if animationTimer == nil { startAnimation() }
         case .sleeping:
             if animationTimer != nil { stopAnimation() }
+            stopGazing()
             startSleepAnimation()
         case .still:
             if animationTimer != nil { stopAnimation() }
             stopSleepAnimation()
-            button?.image = images.image(for: .standing)
+            startGazing()
+            showGaze()
+        }
+    }
+
+    private static func createBehavior() -> IdleBehavior {
+        IdleBehavior(now: ProcessInfo.processInfo.systemUptime, blinkDelay: Double.random(in: IdleBehavior.blinkDelayRange))
+    }
+
+    // 하품은 정면을 보고, 나머지 표정은 지금 보는 방향을 유지한다.
+    private func showGaze() {
+        if case .yawn = displayedExpression {
+            button?.image = images.image(for: .expression(displayedExpression, .center))
+        } else {
+            button?.image = images.image(for: .expression(displayedExpression, gazeDirection))
+        }
+    }
+
+    // 대기 중일 때만 마우스를 따라 본다. 방향이 바뀔 때만 이미지를 바꿔 메뉴바 갱신을 최소로 한다.
+    private func startGazing() {
+        guard globalMouseMonitor == nil else { return }
+        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] _ in
+            MainActor.assumeIsolated { self?.updateGaze() }
+        }
+        behavior = Self.createBehavior()
+        behaviorTimer = Timer.scheduledTimer(withTimeInterval: IconTiming.behaviorInterval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.tickBehavior() }
+        }
+        localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
+            MainActor.assumeIsolated { self?.updateGaze() }
+            return event
+        }
+    }
+
+    private func stopGazing() {
+        gazeTimer?.invalidate()
+        gazeTimer = nil
+        behaviorTimer?.invalidate()
+        behaviorTimer = nil
+        displayedExpression = .open
+        lastMousePoint = nil
+        mouseSpeed = 0
+        gazeTarget = .center
+        gazePosition = .center
+        if let globalMouseMonitor { NSEvent.removeMonitor(globalMouseMonitor) }
+        if let localMouseMonitor { NSEvent.removeMonitor(localMouseMonitor) }
+        globalMouseMonitor = nil
+        localMouseMonitor = nil
+        gazeDirection = .center
+    }
+
+    // 마우스는 목표만 정한다. 실제 시선은 타이머가 한 단계씩 따라가고, 목표에 닿으면 타이머가 멈춘다.
+    private func updateGaze() {
+        guard let frame = button?.window?.frame else { return }
+        let mouse = NSEvent.mouseLocation
+        trackMouseSpeed(at: mouse)
+        gazeTarget = GazeDirection.make(offsetX: mouse.x - frame.midX, offsetY: mouse.y - frame.midY)
+        guard gazeTimer == nil, !gazePosition.hasReached(gazeTarget) else { return }
+        gazeTimer = Timer.scheduledTimer(withTimeInterval: IconTiming.gazeFrameInterval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.tickGaze() }
+        }
+    }
+
+    // 마우스 속도(pt/초)를 이동 평균으로 구한다. 오래 멈췄다가 움직이면 그 간격은 속도로 보지 않는다.
+    private func trackMouseSpeed(at point: NSPoint) {
+        let now = ProcessInfo.processInfo.systemUptime
+        defer {
+            lastMousePoint = point
+            lastMouseTime = now
+        }
+        guard let lastMousePoint, now - lastMouseTime < 0.2, now > lastMouseTime else {
+            mouseSpeed = 0
+            behavior.mouseMoved(speed: 0, now: now)
+            return
+        }
+        let instant = hypot(point.x - lastMousePoint.x, point.y - lastMousePoint.y) / (now - lastMouseTime)
+        mouseSpeed = mouseSpeed * 0.5 + instant * 0.5
+        behavior.mouseMoved(speed: mouseSpeed, now: now)
+    }
+
+    private func tickBehavior() {
+        let expression = behavior.tick(
+            now: ProcessInfo.processInfo.systemUptime,
+            nextBlinkDelay: Double.random(in: IdleBehavior.blinkDelayRange)
+        )
+        guard expression != displayedExpression else { return }
+        displayedExpression = expression
+        showGaze()
+    }
+
+    private func tickGaze() {
+        gazePosition = gazePosition.eased(toward: gazeTarget)
+        let direction = gazePosition.direction
+        if direction != gazeDirection {
+            gazeDirection = direction
+            showGaze()
+        }
+        if gazePosition.hasReached(gazeTarget) {
+            gazeTimer?.invalidate()
+            gazeTimer = nil
         }
     }
 

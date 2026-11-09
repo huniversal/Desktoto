@@ -9,6 +9,10 @@ public enum IconTiming {
     public static let sleepFrameCount = 6
     public static let sleepFrameInterval: TimeInterval = 0.6
     public static let fireworkFrameCount = 24
+    /// 표정(깜빡임, 하품 등)을 확인하는 주기. 표정이 바뀔 때만 이미지를 바꾸므로 메뉴바 갱신은 늘지 않는다.
+    public static let behaviorInterval: TimeInterval = 0.05
+    /// 시선이 목표를 따라가는 주기. 달리기와 같은 초당 24번이다.
+    public static let gazeFrameInterval: TimeInterval = 1.0 / 24.0
 }
 
 /// 프레임 번호를 0 이상 count 미만으로 감싼다. 음수도 안전하게 처리한다.

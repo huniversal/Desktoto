@@ -3,6 +3,10 @@ import CoreGraphics
 /// 메뉴바에 보여 줄 모습. 달리기와 잠듦의 번호는 한 바퀴 안으로 감긴다.
 public enum IconFrame: Equatable, Sendable {
     case standing
+    /// 대기 중에 마우스 쪽을 바라보는 모습. 정면(.center)은 .standing과 같은 그림이다.
+    case gazing(GazeDirection)
+    /// 대기 중에 표정이 바뀐 모습. 표정이 .open이면 .gazing과 같은 그림이다.
+    case expression(EyeExpression, GazeDirection)
     case running(phase: Int)
     case sleeping(frame: Int)
 }
@@ -23,6 +27,17 @@ enum IconScene {
         case .standing:
             let originX = CharacterGrid.standingOriginX
             return characterPieces(pose: .standing, bodyColor: bodyColor, originX: originX, originY: CharacterGrid.maxBobHeight)
+                + badgePieces(appearance.badge, characterOriginX: originX)
+
+        case .gazing(let direction):
+            let originX = CharacterGrid.standingOriginX
+            return characterPieces(pose: .standing, gaze: direction, bodyColor: bodyColor, originX: originX, originY: CharacterGrid.maxBobHeight)
+                + badgePieces(appearance.badge, characterOriginX: originX)
+
+        case .expression(let expression, let direction):
+            let originX = CharacterGrid.standingOriginX
+            return sparkPieces(for: expression)
+                + characterPieces(pose: .standing, gaze: direction, expression: expression, bodyColor: bodyColor, originX: originX, originY: CharacterGrid.maxBobHeight)
                 + badgePieces(appearance.badge, characterOriginX: originX)
 
         case .running(let phase):
@@ -53,12 +68,25 @@ enum IconScene {
         return sparks + [IconPiece(rect: flash.rect, color: IconPalette.fireworkFlash.with(alpha: flash.alpha))]
     }
 
-    // 그리는 순서는 다리, 팔, 몸통, 눈이다.
-    private static func characterPieces(pose: LegPose, bodyColor: IconColor, originX: CGFloat, originY: CGFloat) -> [IconPiece] {
-        let rects = CharacterGrid.rects(for: pose)
+    // 그리는 순서는 다리, 팔, 몸통, 입, 눈이다.
+    private static func characterPieces(
+        pose: LegPose,
+        gaze: GazeDirection = .center,
+        expression: EyeExpression = .open,
+        bodyColor: IconColor,
+        originX: CGFloat,
+        originY: CGFloat
+    ) -> [IconPiece] {
+        let rects = CharacterGrid.rects(for: pose, gaze: gaze, expression: expression)
         let bodyRects = rects.legs + rects.arms + [rects.body]
         return bodyRects.map { IconPiece(rect: $0.offsetBy(x: originX, y: originY), color: bodyColor) }
-            + rects.eyes.map { IconPiece(rect: $0.offsetBy(x: originX, y: originY), color: IconPalette.eye) }
+            + (rects.mouth + rects.eyes).map { IconPiece(rect: $0.offsetBy(x: originX, y: originY), color: IconPalette.eye) }
+    }
+
+    /// 어지러울 때만 있다. 캐릭터보다 먼저 그려서 뒤에서 반짝이게 한다.
+    private static func sparkPieces(for expression: EyeExpression) -> [IconPiece] {
+        guard case .dizzy(let phase) = expression else { return [] }
+        return DizzySparks.rects(phase: phase).map { IconPiece(rect: $0, color: IconPalette.dizzySpark) }
     }
 
     private static func speedLinePieces(originX: CGFloat, originY: CGFloat) -> [IconPiece] {

@@ -16,13 +16,14 @@ struct FireworkFlash: Equatable, Sendable {
 /// 세션이 끝났을 때 캐릭터 뒤에서 터지는 작은 폭죽의 한 프레임(약 1초, 24프레임).
 /// 캔버스 가운데에서 알갱이들이 사방으로 퍼지며 작아지고 투명해진다.
 struct FireworkFrame: Equatable, Sendable {
-    static let sparkCount = 14
+    static let sparkCount = 24
     static let centerY: CGFloat = 9
     /// 캐릭터(폭 24칸)가 캔버스 가운데를 가리므로, 몸통 밖(양옆)까지 닿아야 불꽃이 보인다.
     static let reaches: [CGFloat] = [19, 15, 11]
     /// 몸통 뒤에 가려지는 안쪽은 건너뛰고 몸통 가장자리 근처에서 시작한다.
     static let startRadius: CGFloat = 8
-    static let verticalScale: CGFloat = 0.5
+    /// 세로로 덜 눌러서 양옆의 높이를 더 채운다.
+    static let verticalScale: CGFloat = 0.9
 
     let sparks: [FireworkSpark]
     let flash: FireworkFlash?
@@ -35,7 +36,7 @@ struct FireworkFrame: Equatable, Sendable {
         let eased = 1 - pow(1 - progress, 2)
         let alpha = max(0, 1 - pow(progress, 2.4))
         let centerX = CharacterGrid.canvasWidth / 2
-        let sparkSize: CGFloat = progress < 0.45 ? 3 : (progress < 0.8 ? 2 : 1)
+        let sparkSize: CGFloat = progress < 0.45 ? 4 : (progress < 0.8 ? 3 : 2)
 
         sparks = (0..<Self.sparkCount).map { index in
             let angle = 2 * CGFloat.pi * CGFloat(index) / CGFloat(Self.sparkCount) + 0.3

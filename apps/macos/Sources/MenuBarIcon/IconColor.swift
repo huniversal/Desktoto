@@ -36,6 +36,8 @@ enum IconPalette {
     static let question = IconColor.calibrated(red: 1.00, green: 0.80, blue: 0.35, alpha: 1)
     /// 확인하지 않은 완료 점. 패널 카드의 점(DSColor.finishedDot)과 같은 값이다.
     static let doneDot = IconColor.calibrated(red: 0.68, green: 0.52, blue: 1.00, alpha: 1)
+    /// 어지러울 때 반짝이는 별. 승인 대기 물음표와 비슷한 계열이지만 더 옅은 노랑이고, 자리가 달라 구분된다.
+    static let dizzySpark = IconColor.calibrated(red: 1.00, green: 0.93, blue: 0.50, alpha: 1)
     static let sleepZ = IconColor.gray(white: 1, alpha: 0.85)
     static let fireworkFlash = IconColor.gray(white: 1, alpha: 1)
     static let fireworkSparks: [IconColor] = [

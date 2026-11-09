@@ -73,32 +73,32 @@ import Testing
 @Test func fireworkStartsWithFlashAndFullSparks() {
     let frame = FireworkFrame(frame: 0)
 
-    #expect(frame.sparks.count == 14)
+    #expect(frame.sparks.count == FireworkFrame.sparkCount)
     #expect(frame.sparks.allSatisfy { $0.alpha == 1 })
-    #expect(frame.sparks.allSatisfy { $0.rect.width == 3 })
+    #expect(frame.sparks.allSatisfy { $0.rect.width == 4 })
     #expect(frame.flash == FireworkFlash(rect: UnitRect(19, 7, 4, 4), alpha: 1))
 
     // 첫 알갱이: 각도 0.3, 반지름 8(아직 퍼지지 않음), 중심 (21, 9)
     let first = frame.sparks[0].rect
-    #expect(abs(first.x - (21 + cos(0.3) * 8 - 1.5)) < 1e-9)
-    #expect(abs(first.y - (9 + sin(0.3) * 8 * 0.5 - 1.5)) < 1e-9)
+    #expect(abs(first.x - (21 + cos(0.3) * 8 - 2)) < 1e-9)
+    #expect(abs(first.y - (9 + sin(0.3) * 8 * FireworkFrame.verticalScale - 2)) < 1e-9)
 }
 
 @Test func fireworkFadesOutCompletelyAtTheLastFrame() {
     let frame = FireworkFrame(frame: IconTiming.fireworkFrameCount - 1)
 
     #expect(frame.sparks.allSatisfy { $0.alpha == 0 })
-    #expect(frame.sparks.allSatisfy { $0.rect.width == 1 })
+    #expect(frame.sparks.allSatisfy { $0.rect.width == 2 })
     #expect(frame.flash == nil)
 }
 
 @Test func fireworkSparkSizeShrinksAtThresholds() {
     func size(at frame: Int) -> CGFloat { FireworkFrame(frame: frame).sparks[0].rect.width }
 
-    #expect(size(at: 10) == 3)
-    #expect(size(at: 11) == 2)
-    #expect(size(at: 18) == 2)
-    #expect(size(at: 19) == 1)
+    #expect(size(at: 10) == 4)
+    #expect(size(at: 11) == 3)
+    #expect(size(at: 18) == 3)
+    #expect(size(at: 19) == 2)
 }
 
 @Test func fireworkFlashLastsOnlyTheFirstFifthOfTheFrames() {
@@ -115,5 +115,5 @@ import Testing
         return abs(centerX)
     }
     #expect(distance(late[0]) > distance(early[0]))
-    #expect(early.map(\.colorIndex) == (0..<14).map { $0 % 5 })
+    #expect(early.map(\.colorIndex) == (0..<FireworkFrame.sparkCount).map { $0 % 5 })
 }
