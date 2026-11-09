@@ -41,8 +41,8 @@ private let fast = IdleBehavior.fastSpeed + 1
         CharacterGrid.rects(for: .standing, expression: .yawn(phase: $0)).mouth[0].height
     }
 
-    #expect(heights.first == heights.last)
-    #expect(heights.max() == 3)
+    // 입이 벌어졌다가 닫힌다.
+    #expect(heights == [1, 2, 3, 3, 2, 1])
     #expect(CharacterGrid.rects(for: .standing, expression: .yawn(phase: 2)).eyes == CharacterGrid.closedEyeRects)
 }
 
@@ -142,16 +142,19 @@ private let fast = IdleBehavior.fastSpeed + 1
 
 @Test func briefFastBurstsDoNotAddUpToDizziness() {
     var behavior = IdleBehavior(now: 0, blinkDelay: 100)
-    // 빠르게 한 번 움직이고 오래 쉬기를 반복하면 어지러움이 쌓이지 않는다.
-    (0..<10).forEach { round in
+    // 빠르게 한 번 움직이고 오래 쉬기를 반복하면 어지러움이 쌓이지 않는다. 빠르게 움직인 시간이 모두 2초(1.5초 초과)여도 마찬가지다.
+    (0..<20).forEach { round in
         let start = Double(round) * 3
         behavior.mouseMoved(speed: fast, now: start)
         behavior.mouseMoved(speed: fast, now: start + 0.1)
+        // 움직이는 동안에도 어지럽지 않다.
+        #expect(behavior.tick(now: start + 0.1, nextBlinkDelay: 100) != .dizzy(phase: 0))
+        #expect(behavior.tick(now: start + 0.1, nextBlinkDelay: 100) != .dizzy(phase: 1))
         behavior.tick(now: start + 2, nextBlinkDelay: 100)
     }
 
-    #expect(behavior.tick(now: 30, nextBlinkDelay: 100) != .dizzy(phase: 0))
-    #expect(behavior.tick(now: 30, nextBlinkDelay: 100) != .dizzy(phase: 1))
+    #expect(behavior.tick(now: 80, nextBlinkDelay: 100) != .dizzy(phase: 0))
+    #expect(behavior.tick(now: 80, nextBlinkDelay: 100) != .dizzy(phase: 1))
 }
 
 @Test func leavingTheMouseAloneMakesTheCharacterYawnOnce() {

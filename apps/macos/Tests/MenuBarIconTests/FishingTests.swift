@@ -166,18 +166,42 @@ private func simulatedFishingFrames() -> [FishingFrame] {
     return frames
 }
 
-@Test func fishingPiecesStayInsideTheCanvasExceptAFishRisingFromBelow() {
+/// 올라오는 물고기의 칸인지. 몸, 눈, 테두리 색으로 가른다.
+private func isFishPiece(_ piece: IconPiece) -> Bool {
+    piece.color == IconPalette.fishBody
+        || piece.color == IconPalette.fishEye
+        || piece.color == IconPalette.whiteBody.with(alpha: 0.5)
+}
+
+@Test func fishingPiecesStayInsideTheCanvasExceptTheFishStillRisingFromBelow() {
     simulatedFishingFrames().forEach { frame in
+        let isReeling = frame.hasFish && frame.lineLength > Int(FishingSession.reeledLineLength)
         FishingPieces.pieces(frame: frame, bodyColor: IconPalette.whiteBody).forEach { piece in
             let rect = piece.rect
             #expect(rect.x >= 0)
             #expect(rect.y >= 0)
             #expect(rect.x + rect.width <= CharacterGrid.canvasWidth)
-            // 끌어올리는 물고기는 아래쪽에서 올라오므로 처음에는 아래가 캔버스 밖에 있다.
-            if !frame.hasFish {
+            // 아래쪽에서 올라오는 중인 물고기만 아래가 캔버스 밖에 있을 수 있다. 다 올라온 뒤(보여줌)에는 테두리까지 모두 안에 있다.
+            if !(isReeling && isFishPiece(piece)) {
                 #expect(rect.y + rect.height <= CharacterGrid.canvasHeight)
             }
         }
+    }
+}
+
+@Test func theFullyRaisedFishAndItsOutlineStayInsideTheCanvas() {
+    var session = FishingSession()
+    session.update(deltaTime: FishingSession.firstWait + FishingSession.biteDuration + FishingSession.reelDuration + 0.1, random: middle)
+    #expect(session.phase == .showing)
+
+    let pieces = FishingPieces.pieces(frame: session.frame, bodyColor: IconPalette.whiteBody)
+
+    #expect(pieces.contains { isFishPiece($0) })
+    pieces.forEach { piece in
+        #expect(piece.rect.x >= 0)
+        #expect(piece.rect.y >= 0)
+        #expect(piece.rect.x + piece.rect.width <= CharacterGrid.canvasWidth)
+        #expect(piece.rect.y + piece.rect.height <= CharacterGrid.canvasHeight)
     }
 }
 

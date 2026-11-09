@@ -53,6 +53,20 @@ private func createImage(_ frame: IconFrame, _ appearance: IconAppearance = Icon
     }
 }
 
+@MainActor @Test func imageSetUsesTheDefault22PointHeightWhenNoHeightIsGiven() throws {
+    let imageSet = IconImageSet(appearance: IconAppearance(), scale: testScale)
+    let image = imageSet.image(for: .standing)
+
+    #expect(IconImageSet.defaultPointHeight == 22)
+    #expect(image.size.height == 22)
+    // 폭은 높이와 같은 비율(42칸 대 20칸)이다.
+    #expect(abs(image.size.width - 22.0 / 20.0 * 42.0) < 0.001)
+    let bitmap = try #require(createBitmap(image))
+    #expect(bitmap.pixelsHigh == 44)
+    // 폭은 소수라서 비트맵은 가장 가까운 정수 픽셀이다(1픽셀 이내).
+    #expect(abs(CGFloat(bitmap.pixelsWide) - image.size.width * testScale) <= 1)
+}
+
 @MainActor @Test func pointHeightScalesTheWholeCanvas() {
     let image = IconRenderer.image(frame: .standing, appearance: IconAppearance(), scale: testScale, pointHeight: 40)
 

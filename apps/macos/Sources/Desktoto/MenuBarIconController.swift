@@ -104,30 +104,36 @@ final class MenuBarIconController {
         }
     }
 
+    /// 눌러서 끄는 동안에는 mouseMoved가 오지 않으므로 드래그도 같은 움직임으로 본다.
+    private static let pointerMovementEvents: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
+
     private static func createBehavior() -> IdleBehavior {
         IdleBehavior(now: ProcessInfo.processInfo.systemUptime, blinkDelay: Double.random(in: IdleBehavior.blinkDelayRange))
     }
 
     // 하품은 정면을 보고, 나머지 표정은 지금 보는 방향을 유지한다.
     private func showGaze() {
+        let image: NSImage
         if case .yawn = displayedExpression {
-            button?.image = images.image(for: .expression(displayedExpression, .center))
+            image = images.image(for: .expression(displayedExpression, .center))
         } else {
-            button?.image = images.image(for: .expression(displayedExpression, gazeDirection))
+            image = images.image(for: .expression(displayedExpression, gazeDirection))
         }
+        // 이미 같은 이미지가 보이면 다시 넣지 않는다. 이미지를 바꿀 때마다 시스템이 메뉴바 스냅샷을 다시 만든다.
+        if button?.image !== image { button?.image = image }
     }
 
     // 대기 중일 때만 마우스를 따라 본다. 방향이 바뀔 때만 이미지를 바꿔 메뉴바 갱신을 최소로 한다.
     private func startGazing() {
         guard globalMouseMonitor == nil else { return }
-        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] _ in
+        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: Self.pointerMovementEvents) { [weak self] _ in
             MainActor.assumeIsolated { self?.updateGaze() }
         }
         behavior = Self.createBehavior()
         behaviorTimer = Timer.scheduledTimer(withTimeInterval: IconTiming.behaviorInterval, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tickBehavior() }
         }
-        localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
+        localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: Self.pointerMovementEvents) { [weak self] event in
             MainActor.assumeIsolated { self?.updateGaze() }
             return event
         }

@@ -42,7 +42,7 @@ public struct FishingSession: Sendable {
     static let legSwingInterval: TimeInterval = 1.4
     static let sparkleInterval: TimeInterval = 0.25
     public static let restLineLength: CGFloat = 4
-    public static let reeledLineLength: CGFloat = 2
+    public static let reeledLineLength: CGFloat = 1
 
     public private(set) var phase = FishingPhase.waiting
     /// 지금 단계에 들어온 뒤 지난 시간(초)

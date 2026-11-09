@@ -59,6 +59,9 @@ public struct IdleBehavior: Sendable {
         guard speed >= Self.fastSpeed else { return }
         if let lastFastAt, now - lastFastAt <= Self.fastGap {
             fastDuration += now - lastFastAt
+        } else {
+            // 오래 쉬었다가 다시 빨라지면 새 움직임이다. 이전 움직임의 시간을 이어 받지 않는다.
+            fastDuration = 0
         }
         lastFastAt = now
     }
