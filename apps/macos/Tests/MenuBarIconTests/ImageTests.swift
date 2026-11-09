@@ -53,7 +53,7 @@ private func createImage(_ frame: IconFrame, _ appearance: IconAppearance = Icon
     }
 }
 
-@MainActor @Test func imageSetUsesTheDefault22PointHeightWhenNoHeightIsGiven() throws {
+@MainActor @Test func imageSetUsesTheDefault22PointHeightWhenNoHeightIsGiven() {
     let imageSet = IconImageSet(appearance: IconAppearance(), scale: testScale)
     let image = imageSet.image(for: .standing)
 
@@ -61,10 +61,8 @@ private func createImage(_ frame: IconFrame, _ appearance: IconAppearance = Icon
     #expect(image.size.height == 22)
     // 폭은 높이와 같은 비율(42칸 대 20칸)이다.
     #expect(abs(image.size.width - 22.0 / 20.0 * 42.0) < 0.001)
-    // 이미지가 품은 원래 비트맵의 픽셀 수를 본다. 폭이 정수가 아니면 화면 배율에 따라 다시 그려지므로 NSImage를 다시 그려 읽지 않는다.
-    let representation = try #require(image.representations.first)
-    #expect(representation.pixelsHigh == 44)
-    #expect(abs(CGFloat(representation.pixelsWide) - image.size.width * testScale) <= 1)
+    // 비트맵 픽셀 수는 여기서 확인하지 않는다. 폭이 정수가 아니면 AppKit이 화면 배율에 따라 다시 그려서 환경마다 값이 달라진다.
+    // 정수 높이에서의 비트맵 크기는 위의 `everyStateUsesTheSameCanvasSizeAndBitmap`가 확인한다.
 }
 
 @MainActor @Test func pointHeightScalesTheWholeCanvas() {
