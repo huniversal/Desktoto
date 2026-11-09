@@ -4,7 +4,7 @@
 
 - 이슈: #61 / https://github.com/huniversal/Desktoto/issues/61
 - 브랜치: `feat/character-behavior/#61`
-- specRevision: 1
+- specRevision: 2
 - 대상 ai-run 원본:
   - `~/Desktop/ai-run/Sources/AiRun/SpriteRenderer.swift`: 격자, 포즈, 잠듦, 폭죽 (크기와 폭죽이 원본과 달라진다)
   - `~/Desktop/ai-run/Sources/AiRun/AppDelegate.swift`: 잠듦 판정과 타이머(`handlePollTick`의 잠듦 계산, `startSleepAnimation`)와 상태 아이콘 갱신(`applyIconState`)
@@ -40,11 +40,12 @@
   - 스파클라, 음악(헤드폰과 음표), 음료(김이 오르는 컵), 별똥별, 비(우산과 빗방울), 비눗방울: 정해진 장면이 한 칸에 0.2초씩 되풀이
 - 쉬는 동작은 기존 아이콘 칸(42x20칸) 안에서만 그린다. 모든 그림은 기존 캐릭터와 같은 1pt 칸 픽셀로 새로 그리고, 외부 캐릭터 이미지를 쓰지 않는다.
 - 확인하지 않은 완료 점은 졸음처럼 쉬는 동작에서도 보여 준다.
-- 단위 테스트, `docs/architecture.md`와 `docs/reverse/menubar-icon.md` 갱신, README와 랜딩 페이지(`apps/web/index.html`)의 "졸음 10분" 설명 수정
+- 단위 테스트, `docs/architecture.md`와 `docs/reverse/menubar-icon.md` 갱신
 
 ### 제외
 
 - 셔틀콕 미니게임과 메뉴바 아이콘 쓸어내기(#62)
+- README와 랜딩 페이지(`apps/web/index.html`)의 "졸음 10분" 설명 수정(사용자가 별도 이슈로 만들 예정)
 - 캐릭터를 누르는 동작 자체의 변경(패널 열기와 닫기, 우클릭 메뉴는 그대로)
 - 쉬는 동작 추가 후보(풍선, 눈 내림 등), 쉬는 시간을 설정 화면에서 바꾸는 기능
 - 소리, 알림, 새 설정 항목, 원본 소스 변경, 배포와 CI 변경
@@ -89,7 +90,7 @@
 - AC-12: 스파클라(40칸), 음악(16칸), 음료(24칸), 별똥별(40칸), 비(8칸), 비눗방울(40칸)이 한 칸 0.2초로 되풀이된다.
 - AC-13: 쉬는 동작의 모든 그림은 캔버스(42x20칸) 안에 있다(올라오는 물고기 제외). 확인하지 않은 완료 점은 쉬는 동작에서도 보인다.
 - AC-14: 쉬는 동작은 아이콘 칸 크기를 바꾸지 않아 다른 메뉴바 아이콘을 밀지 않고, 이미지는 장면이 바뀔 때만 교체한다.
-- AC-15: README, 랜딩 페이지의 졸음 설명과 `docs/architecture.md`, `docs/reverse/menubar-icon.md`가 새 동작을 반영한다.
+- AC-15: `docs/architecture.md`와 `docs/reverse/menubar-icon.md`가 새 동작과 원본과 달라진 점을 반영한다.
 - AC-16: `swift build`와 `swift test`가 통과한다.
 
 ## 검증 방법
@@ -104,7 +105,7 @@
 | AC-10, AC-11 | `swift test`: `FishingTests`, `SceneTests`. 실행 캡처 | 낚시 단계 시간, 눈 모양, 줄과 물고기 상태 통과, 캡처로 모습 확인 |
 | AC-12, AC-13 | `swift test`: `RestSceneTests` | 장면 수와 되풀이, 캔버스 범위, 몸통 유지, 완료 점 유지 통과. 장면별 캡처로 모습 확인 |
 | AC-14 | 실행 후 쉬는 동작 중 메뉴바 아이콘 위치 육안 확인 | 다른 아이콘이 움직이지 않는다 |
-| AC-15 | 문서 diff 검토, 링크 확인 | "졸음 10분"이 남아 있지 않고 새 규칙이 적혀 있다 |
+| AC-15 | 문서 diff 검토, 링크 확인 | 두 문서에 새 규칙과 달라진 점이 적혀 있다 |
 | AC-16 | `cd apps/macos && swift build && swift test` | 빌드와 테스트 통과 |
 
 ## 미결정 사항
@@ -118,3 +119,4 @@
 | specRevision | 변경한 결정 | 이유 |
 |---|---|---|
 | 1 | 최초 설계 | 사용자와 합의한 작업 범위 (실험 워크트리의 완성된 구현을 기준으로 작성) |
+| 2 | README와 랜딩 페이지 문구 수정을 범위에서 제외, AC-15 조정 | 사용자가 문구 수정을 별도 이슈로 만들겠다고 함 |
