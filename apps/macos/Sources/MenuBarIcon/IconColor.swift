@@ -36,7 +36,20 @@ enum IconPalette {
     static let question = IconColor.calibrated(red: 1.00, green: 0.80, blue: 0.35, alpha: 1)
     /// 확인하지 않은 완료 점. 패널 카드의 점(DSColor.finishedDot)과 같은 값이다.
     static let doneDot = IconColor.calibrated(red: 0.68, green: 0.52, blue: 1.00, alpha: 1)
+    /// 어지러울 때 반짝이는 별. 승인 대기 물음표와 비슷한 계열이지만 더 옅은 노랑이고, 자리가 달라 구분된다.
+    static let dizzySpark = IconColor.calibrated(red: 1.00, green: 0.93, blue: 0.50, alpha: 1)
     static let sleepZ = IconColor.gray(white: 1, alpha: 0.85)
+    /// 낚시 모자(윗부분, 띠, 챙), 낚싯대, 줄, 바늘
+    static let hatCrown = IconColor.calibrated(red: 0.85, green: 0.70, blue: 0.42, alpha: 1)
+    static let hatBrim = IconColor.calibrated(red: 0.78, green: 0.60, blue: 0.31, alpha: 1)
+    static let hatBand = IconColor.calibrated(red: 0.48, green: 0.32, blue: 0.19, alpha: 1)
+    static let rod = IconColor.calibrated(red: 0.62, green: 0.42, blue: 0.24, alpha: 1)
+    static let fishingLine = IconColor.gray(white: 1, alpha: 0.9)
+    static let fishingHook = IconColor.gray(white: 0.8, alpha: 1)
+    static let fishBody = IconColor.gray(white: 0.03, alpha: 1)
+    static let fishEye = IconColor.gray(white: 1, alpha: 1)
+    static let fishingBubble = IconColor.calibrated(red: 0.93, green: 0.22, blue: 0.22, alpha: 1)
+    static let fishingSparkle = IconColor.calibrated(red: 1.00, green: 0.82, blue: 0.25, alpha: 1)
     static let fireworkFlash = IconColor.gray(white: 1, alpha: 1)
     static let fireworkSparks: [IconColor] = [
         .calibrated(red: 1.00, green: 0.62, blue: 0.78, alpha: 1),

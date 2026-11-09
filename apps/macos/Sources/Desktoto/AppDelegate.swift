@@ -51,7 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var unseenFinishedIDs: Set<String> = []
     private var runningCount = 0
     private var isWaiting = false
-    private var isSleeping = false
+    private var rest: IconRest?
 
     private var isPanelOpen = false
     // 패널을 여는 중에 닫았다가 다시 열 때, 먼저 시작한 열기가 뒤늦게 창을 띄우지 않게 한다.
@@ -305,6 +305,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - 패널
 
     @objc private func handleStatusItemClick() {
+        // 캐릭터를 누르면 졸거나 낚시하던 것을 멈추고 2분을 처음부터 다시 센다.
+        sleepPolicy.noteClick(now: timeSource.now)
+        if rest != nil {
+            rest = nil
+            applyIconState()
+        }
         if NSApp.currentEvent?.type == .rightMouseUp {
             showSettingsMenu()
             return
@@ -456,11 +462,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let result = pollTracker.advance(states: states, waitingKinds: waitingKinds)
         runningCount = result.runningCount
         isWaiting = result.isWaiting
-        isSleeping = sleepPolicy.isSleeping(
+        rest = sleepPolicy.rest(
             now: timeSource.now,
             isBusy: runningCount > 0 || isWaiting,
             hasFinished: !result.finishedIDs.isEmpty,
-            hasFirework: iconController.hasFirework
+            hasFirework: iconController.hasFirework,
+            random: { Double.random(in: 0..<1) }
         )
 
         if !result.finishedIDs.isEmpty { handleSessionsFinished(ids: result.finishedIDs) }
@@ -498,7 +505,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         iconController.apply(IconState(
             runningCount: runningCount,
             isWaiting: isWaiting,
-            isSleeping: isSleeping,
+            rest: rest,
             hasUnseenDone: !unseenFinishedIDs.isEmpty,
             colorMode: settings.colorMode
         ))

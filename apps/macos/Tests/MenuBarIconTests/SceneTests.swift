@@ -129,9 +129,9 @@ private func pieces(_ frame: IconFrame, colorMode: ColorMode = .white, hasUnseen
     let first = IconScene.fireworkPieces(frame: 0)
     let last = IconScene.fireworkPieces(frame: 23)
 
-    #expect(first.count == 15)
+    #expect(first.count == FireworkFrame.sparkCount + 1)
     #expect(first.last?.color == .gray(white: 1, alpha: 1))
-    #expect(last.count == 14)
+    #expect(last.count == FireworkFrame.sparkCount)
     #expect(last.allSatisfy { piece in
         if case .calibrated(_, _, _, let alpha) = piece.color { return alpha == 0 }
         return false
