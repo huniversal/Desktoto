@@ -130,9 +130,7 @@ final class MenuBarIconController {
             MainActor.assumeIsolated { self?.updateGaze() }
         }
         behavior = Self.createBehavior()
-        behaviorTimer = Timer.scheduledTimer(withTimeInterval: IconTiming.behaviorInterval, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.tickBehavior() }
-        }
+        behaviorTimer = Self.makeCommonModeTimer(interval: IconTiming.behaviorInterval) { [weak self] in self?.tickBehavior() }
         localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: Self.pointerMovementEvents) { [weak self] event in
             MainActor.assumeIsolated { self?.updateGaze() }
             return event
@@ -163,9 +161,7 @@ final class MenuBarIconController {
         trackMouseSpeed(at: mouse)
         gazeTarget = GazeDirection.make(offsetX: mouse.x - frame.midX, offsetY: mouse.y - frame.midY)
         guard gazeTimer == nil, !gazePosition.hasReached(gazeTarget) else { return }
-        gazeTimer = Timer.scheduledTimer(withTimeInterval: IconTiming.gazeFrameInterval, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.tickGaze() }
-        }
+        gazeTimer = Self.makeCommonModeTimer(interval: IconTiming.gazeFrameInterval) { [weak self] in self?.tickGaze() }
     }
 
     // 마우스 속도(pt/초)를 이동 평균으로 구한다. 오래 멈췄다가 움직이면 그 간격은 속도로 보지 않는다.
@@ -185,7 +181,18 @@ final class MenuBarIconController {
         behavior.mouseMoved(speed: mouseSpeed, now: now)
     }
 
+    /// 메뉴나 드래그 같은 이벤트 추적 중에도 도는 타이머. 기본 모드에만 등록하면 그동안 시선이 멈춘다.
+    private static func makeCommonModeTimer(interval: TimeInterval, tick: @escaping @MainActor () -> Void) -> Timer {
+        let timer = Timer(timeInterval: interval, repeats: true) { _ in
+            MainActor.assumeIsolated { tick() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        return timer
+    }
+
     private func tickBehavior() {
+        // 이벤트 추적 루프 안에서는 로컬 모니터가 움직임을 받지 못할 수 있어서, 위치가 바뀌었으면 직접 확인한다.
+        if NSEvent.mouseLocation != lastMousePoint { updateGaze() }
         let expression = behavior.tick(
             now: ProcessInfo.processInfo.systemUptime,
             nextBlinkDelay: Double.random(in: IdleBehavior.blinkDelayRange)
