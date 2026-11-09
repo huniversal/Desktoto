@@ -237,7 +237,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
             let menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
             // 미니게임(실험): 설정 메뉴 맨 위에 시작 항목을 둔다.
-            let gameItem = NSMenuItem(title: "셔틀콕 게임 (ESC로 종료)", action: #selector(handleGameMenuClick), keyEquivalent: "")
+            let gameItem = NSMenuItem(title: "셔틀콕 게임", action: #selector(handleGameMenuClick), keyEquivalent: "")
             gameItem.target = self
             menu.insertItem(gameItem, at: 0)
             menu.insertItem(.separator(), at: 1)
