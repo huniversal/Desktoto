@@ -334,3 +334,15 @@ private func pieces(_ frame: IconFrame, colorMode: ColorMode = .white, hasUnseen
     #expect(IconScene.backdrop(frame: .idle(clip: 2, frame: 0), appearance: appearance) == BackdropPlacement(scene: .gate, grassShift: nil))
     #expect(IconTiming.runningFrameInterval(for: .hachiware) == IconTiming.runningFrameInterval * 2)
 }
+
+@Test func waitingQuestionMarkIsRed() {
+    // 승인 대기 물음표는 빨간색이다(빨강이 크고 초록, 파랑은 작다).
+    guard case .calibrated(let red, let green, let blue, _) = IconPalette.question else {
+        Issue.record("물음표 색이 calibrated 색이 아니다")
+        return
+    }
+    #expect(red > 0.9)
+    #expect(green < 0.3)
+    #expect(blue < 0.3)
+    #expect(pieces(.standing, isWaiting: true).contains { $0.color == IconPalette.question })
+}
