@@ -7,6 +7,14 @@ public enum ColorMode: String, Sendable {
     case color
 }
 
+// 메뉴바에 보여 줄 캐릭터. 저장된 값은 rawValue이고, 기본값은 claude다.
+public enum IconCharacter: String, CaseIterable, Sendable {
+    case claude
+    case chiikawa
+    case hachiware
+    case usagi
+}
+
 // 패널의 테마. 시스템은 macOS의 라이트와 다크 설정을 따른다.
 public enum Theme: String, CaseIterable, Sendable {
     case light

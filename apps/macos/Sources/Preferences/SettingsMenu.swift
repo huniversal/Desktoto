@@ -13,6 +13,7 @@ public enum SettingsAction: Equatable, Sendable {
     case toggleUsagePanel
     case toggleContextPanel
     case selectColorMode(ColorMode)
+    case selectCharacter(IconCharacter)
     case selectTheme(Theme)
     case selectGlassStyle(GlassStyle)
     case quit
@@ -96,6 +97,9 @@ public enum SettingsMenu {
             makeItem("흰색", isOn: settings.colorMode == .white, action: .selectColorMode(.white)),
             makeItem("컬러", isOn: settings.colorMode == .color, action: .selectColorMode(.color))
         ]))
+        entries.append(.submenu(title: "캐릭터", items: IconCharacter.allCases.map { character in
+            makeItem(character.menuTitle, isOn: settings.iconCharacter == character, action: .selectCharacter(character))
+        }))
         entries.append(.submenu(title: "테마", items: Theme.allCases.map { theme in
             makeItem(theme.menuTitle, isOn: settings.theme == theme, action: .selectTheme(theme))
         }))
@@ -127,6 +131,17 @@ private extension GlassStyle {
         case .regular: "보통"
         case .slightlyTinted: "조금 진하게"
         case .tinted: "틴트"
+        }
+    }
+}
+
+private extension IconCharacter {
+    var menuTitle: String {
+        switch self {
+        case .claude: "Claude"
+        case .chiikawa: "치이카와"
+        case .hachiware: "하치와레"
+        case .usagi: "우사기"
         }
     }
 }

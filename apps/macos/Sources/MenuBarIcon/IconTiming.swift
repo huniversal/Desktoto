@@ -1,3 +1,4 @@
+import DesignSystem
 import Foundation
 
 /// 프레임 수와 갱신 주기. 근거는 docs/reverse/menubar-icon.md의 "갱신 주기와 24fps의 근거"에 있다.
@@ -6,6 +7,18 @@ public enum IconTiming {
     public static let runningFrameCount = 24
     /// 메뉴바 이미지를 바꿀 때마다 시스템이 스냅샷을 다시 만들어서, 초당 24번으로 제한한다.
     public static let runningFrameInterval: TimeInterval = 1.0 / 24.0
+    /// 캐릭터별 달리기 갱신 주기. 하치와레만 원본 춤 속도에 맞춰 절반 속도(초당 12번)로 돈다.
+    public static func runningFrameInterval(for character: IconCharacter) -> TimeInterval {
+        switch character {
+        // 하치와레 춤은 원본 GIF(22장, 100ms)와 비슷한 빠르기가 되도록 절반 속도로 돈다.
+        case .hachiware: runningFrameInterval * 2
+        case .claude, .chiikawa, .usagi: runningFrameInterval
+        }
+    }
+    /// 그림 캐릭터가 대기 중에 움직일 때의 갱신 주기. 원본 GIF 간격(100ms)의 절반으로 잘게 나눠 숨쉬는 움직임을 부드럽게 한다.
+    public static let idleFrameInterval: TimeInterval = 0.05
+    /// 대기 클립 하나를 바꾸기 전에 최소한 돌리는 칸 수(4초). 짧은 클립은 여러 번 반복된다.
+    public static let idleMinimumClipSteps = 80
     public static let sleepFrameCount = 6
     public static let sleepFrameInterval: TimeInterval = 0.6
     /// 낚시 모습이 바뀌었는지 확인하는 주기. 모습이 바뀔 때만 이미지를 바꾸므로 메뉴바 갱신은 늘지 않는다.

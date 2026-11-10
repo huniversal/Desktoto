@@ -46,6 +46,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let gameHost = GameHost()
     private let panelController: PanelController
     private let iconController: MenuBarIconController
+    // NSSound는 재생이 끝나기 전에 해제되면 멈추므로 들고 있는다.
+    private var finishSound: NSSound?
 
     private var pollTracker = PollTracker()
     private var sleepPolicy: SleepPolicy
@@ -111,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             : nil
         panelController = PanelController(now: timeSource.now)
-        iconController = MenuBarIconController(button: statusItem.button, colorMode: settings.colorMode)
+        iconController = MenuBarIconController(button: statusItem.button, colorMode: settings.colorMode, character: settings.iconCharacter)
         sleepPolicy = SleepPolicy(
             startedAt: timeSource.now,
             idleSeconds: SleepPolicy.idleSeconds(environment: ProcessInfo.processInfo.environment)
@@ -275,6 +277,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .selectColorMode(let colorMode):
             // 막대 색은 패널이 모델로 바꾸고, 캐릭터는 이미지를 다시 만들어서 바로 바꾼다.
             settings.colorMode = colorMode
+            applyIconState()
+        case .selectCharacter(let character):
+            settings.iconCharacter = character
             applyIconState()
         case .selectTheme(let theme):
             settings.theme = theme
@@ -499,9 +504,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         await sendNotifications(finishedNotices + waitingNotices)
     }
 
+    // 치이카와, 하치와레, 우사기를 고르면 번들에 넣은 각자의 소리를, 그 외에는 기본 Glass를 낸다. 파일이 없으면(앱 번들이 아닐 때) Glass로 돌아간다.
+    private func playFinishSound() {
+        let soundName: String?
+        switch settings.iconCharacter {
+        case .chiikawa: soundName = "chiikawa-done"
+        case .hachiware: soundName = "hachiware-done"
+        case .usagi: soundName = "usagi-done"
+        case .claude: soundName = nil
+        }
+        if let soundName,
+           let soundURL = Bundle.main.url(forResource: soundName, withExtension: "mp3"),
+           let sound = NSSound(contentsOf: soundURL, byReference: true) {
+            finishSound = sound
+            sound.play()
+            return
+        }
+        NSSound(named: "Glass")?.play()
+    }
+
     // 소리는 한 번만 낸다. 패널을 보고 있으면 점 대신 카드를 바로 강조한다.
     private func handleSessionsFinished(ids: [String]) {
-        NSSound(named: "Glass")?.play()
+        playFinishSound()
         iconController.startFirework()
         ids.forEach { id in
             if isPanelOpen {
@@ -527,7 +551,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             isWaiting: isWaiting,
             rest: rest,
             hasUnseenDone: !unseenFinishedIDs.isEmpty,
-            colorMode: settings.colorMode
+            colorMode: settings.colorMode,
+            character: settings.iconCharacter
         ))
     }
 }
