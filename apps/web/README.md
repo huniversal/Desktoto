@@ -5,6 +5,8 @@
 | 파일 | 역할 |
 | --- | --- |
 | `index.html` | 랜딩 페이지 본문 (스타일과 스크립트 포함) |
+| `chiikawa-banner.webp` | 히어로 위 이벤트 배너(새 캐릭터 소식) 그림 |
+| `characters/` | 캐릭터 소개의 작업 중, 대기 중 그림. 앱의 `CharacterArtData.swift` 프레임으로 만든 애니메이션 webp, 첫 프레임(`-still`), 캐릭터별 메뉴바 배경(`-bg`) |
 | `og-source.html` | 링크 미리보기 이미지의 원본. 1200x630으로 캡처해 `og-v2.png`로 쓴다 |
 | `og-v2.png` | 링크 미리보기 이미지 |
 | `favicon.svg` | 파비콘 원본. `favicon.ico`와 `apple-touch-icon.png`는 같은 그림으로 만든다 |
