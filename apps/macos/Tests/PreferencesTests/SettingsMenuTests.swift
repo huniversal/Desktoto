@@ -54,8 +54,10 @@ struct SettingsMenuTests {
 
         #expect(titles(of: entries) == [
             "로그인 시 자동 실행", "알림 보내기", "Codex 연동", "Claude 연동", "업데이트 확인", "사용 안내…", "-",
-            "표시할 패널", "색상", "테마", "Liquid Glass", "-", "Desktoto 종료"
+            "표시할 패널", "색상", "캐릭터", "테마", "Liquid Glass", "-", "Desktoto 종료"
         ])
+        #expect(submenuItems("캐릭터", in: entries).map(\.title) == ["Claude", "치이카와", "하치와레", "우사기"])
+        #expect(submenuItems("캐릭터", in: entries).map(\.action) == [.selectCharacter(.claude), .selectCharacter(.chiikawa), .selectCharacter(.hachiware), .selectCharacter(.usagi)])
         #expect(submenuItems("표시할 패널", in: entries).map(\.title) == ["사용량", "컨텍스트"])
         #expect(submenuItems("색상", in: entries).map(\.title) == ["흰색", "컬러"])
         #expect(submenuItems("테마", in: entries).map(\.title) == ["라이트", "다크", "시스템 설정에 맞춤"])
@@ -72,7 +74,7 @@ struct SettingsMenuTests {
 
         #expect(titles(of: available) == [
             "로그인 시 자동 실행", "알림 보내기", "Codex 연동", "Claude 연동", "업데이트 확인", "사용 안내…", "문의하기…", "-",
-            "표시할 패널", "색상", "테마", "Liquid Glass", "-", "Desktoto 종료"
+            "표시할 패널", "색상", "캐릭터", "테마", "Liquid Glass", "-", "Desktoto 종료"
         ])
         #expect(!titles(of: unavailable).contains("문의하기…"))
         guard case .item(let feedback) = available[6] else {

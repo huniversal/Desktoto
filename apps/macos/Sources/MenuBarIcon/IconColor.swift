@@ -32,11 +32,11 @@ enum IconPalette {
     static let colorfulBody = IconColor.srgb(red: CGFloat(0xDD) / 255, green: CGFloat(0x8B) / 255, blue: CGFloat(0x70) / 255, alpha: 1)
     static let eye = IconColor.gray(white: 0.05, alpha: 1)
     static let speedLine = IconColor.gray(white: 0.8, alpha: 0.9)
-    /// 승인 대기 물음표. 눈에 띄도록 완료 점과 다른 호박색을 쓴다.
-    static let question = IconColor.calibrated(red: 1.00, green: 0.80, blue: 0.35, alpha: 1)
+    /// 승인 대기 물음표. 사람이 해야 할 일이라 바로 눈에 띄도록 빨간색을 쓴다(원본은 호박색).
+    static let question = IconColor.calibrated(red: 1.00, green: 0.23, blue: 0.19, alpha: 1)
     /// 확인하지 않은 완료 점. 패널 카드의 점(DSColor.finishedDot)과 같은 값이다.
     static let doneDot = IconColor.calibrated(red: 0.68, green: 0.52, blue: 1.00, alpha: 1)
-    /// 어지러울 때 반짝이는 별. 승인 대기 물음표와 비슷한 계열이지만 더 옅은 노랑이고, 자리가 달라 구분된다.
+    /// 어지러울 때 반짝이는 별. 옅은 노랑이라 빨간 승인 대기 물음표와 구분된다.
     static let dizzySpark = IconColor.calibrated(red: 1.00, green: 0.93, blue: 0.50, alpha: 1)
     static let sleepZ = IconColor.gray(white: 1, alpha: 0.85)
     /// 낚시 모자(윗부분, 띠, 챙), 낚싯대, 줄, 바늘

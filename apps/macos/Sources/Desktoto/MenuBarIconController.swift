@@ -10,13 +10,14 @@ struct IconState: Equatable {
     var rest: IconRest?
     var hasUnseenDone = false
     var colorMode: ColorMode = .white
+    var character: IconCharacter = .claude
 }
 
 /// 메뉴바 아이콘의 이미지와 애니메이션 타이머를 소유한다.
 @MainActor
 final class MenuBarIconController {
     private let button: NSStatusBarButton?
-    private let images: IconImageSet
+    private var images: IconImageSet
     private var animation = IconAnimation()
     private var state: IconState
     private var animationTimer: Timer?
@@ -44,15 +45,44 @@ final class MenuBarIconController {
     private var mouseSpeed: Double = 0
     private var globalMouseMonitor: Any?
     private var localMouseMonitor: Any?
+    /// 그림 캐릭터의 대기 클립 타이머와 재생 위치
+    private var idleTimer: Timer?
+    private var idlePlayback = IdlePlayback()
 
-    init(button: NSStatusBarButton?, colorMode: ColorMode) {
+    init(button: NSStatusBarButton?, colorMode: ColorMode, character: IconCharacter) {
         self.button = button
-        state = IconState(colorMode: colorMode)
-        images = IconImageSet(
-            appearance: IconAppearance(colorMode: colorMode),
-            scale: NSScreen.main?.backingScaleFactor ?? 2
-        )
+        state = IconState(colorMode: colorMode, character: character)
+        images = Self.createImageSet(appearance: IconAppearance(colorMode: colorMode, character: character))
         button?.image = images.image(for: .standing)
+    }
+
+    /// 그림 캐릭터(치이카와, 하치와레, 우사기)는 메뉴바가 허용하는 가장 큰 높이로 그린다. Claude는 픽셀 격자가 틀어지지 않게 기본 높이로 둔다.
+    private static func pointHeight(for character: IconCharacter) -> CGFloat {
+        switch character {
+        case .claude: IconImageSet.defaultPointHeight
+        case .chiikawa, .hachiware, .usagi: maxMenuBarHeight()
+        }
+    }
+
+    /// 그림 캐릭터 위와 아래에 비워 두는 여백(pt)
+    private static let verticalMargin: CGFloat = 1
+
+    /// 메뉴바 높이. 노치가 있는 화면은 NSStatusBar가 알려 주는 두께(22pt)보다 메뉴바가 훨씬 높아서(약 38pt) 화면에서 직접 잰다.
+    private static func maxMenuBarHeight() -> CGFloat {
+        let systemThickness = NSStatusBar.system.thickness
+        guard let screen = NSScreen.main else { return systemThickness }
+        return max(systemThickness, screen.frame.maxY - screen.visibleFrame.maxY)
+    }
+
+    private static func createImageSet(appearance: IconAppearance) -> IconImageSet {
+        let margin = appearance.character == .claude ? 0 : verticalMargin
+        return IconImageSet(
+            appearance: appearance,
+            scale: NSScreen.main?.backingScaleFactor ?? 2,
+            pointHeight: pointHeight(for: appearance.character),
+            topMargin: margin,
+            bottomMargin: margin
+        )
     }
 
     var hasFirework: Bool {
@@ -66,33 +96,48 @@ final class MenuBarIconController {
     /// 확인하지 않은 완료나 승인 대기 여부가 바뀌면 이미지를 다시 만들고, 상태에 맞게 애니메이션을 켜고 끈다.
     func apply(_ newState: IconState) {
         state = newState
-        images.update(appearance: IconAppearance(
+        let appearance = IconAppearance(
             colorMode: state.colorMode,
             hasUnseenDone: state.hasUnseenDone,
-            isWaiting: state.isWaiting
-        ))
+            isWaiting: state.isWaiting,
+            character: state.character
+        )
+        // 캐릭터가 바뀌면 이미지 높이도 달라지므로 이미지 묶음을 새로 만들고, 돌고 있는 타이머는 새 캐릭터의 주기로 다시 만든다.
+        if appearance.character != images.appearance.character {
+            images = Self.createImageSet(appearance: appearance)
+            if animationTimer != nil { startAnimation() }
+            stopIdleAnimation()
+        } else {
+            images.update(appearance: appearance)
+        }
         guard !isGameMode else { return }
 
-        switch IconSchedule(isRunning: state.runningCount > 0, hasFirework: animation.hasFirework, rest: state.rest) {
+        // 그림 캐릭터는 쉬는 동작을 하지 않고 대기 클립만 돌린다.
+        let rest = images.hasIdleAnimation ? nil : state.rest
+        switch IconSchedule(isRunning: state.runningCount > 0, hasFirework: animation.hasFirework, rest: rest) {
         case .running:
+            stopIdleAnimation()
             stopSleepAnimation()
             stopFishingAnimation()
             stopRestAnimation()
             stopGazing()
             if animationTimer == nil { startAnimation() }
         case .sleeping:
+            stopIdleAnimation()
             if animationTimer != nil { stopAnimation() }
             stopFishingAnimation()
             stopRestAnimation()
             stopGazing()
             startSleepAnimation()
         case .fishing:
+            stopIdleAnimation()
             if animationTimer != nil { stopAnimation() }
             stopSleepAnimation()
             stopRestAnimation()
             stopGazing()
             startFishingAnimation()
         case .resting:
+            stopIdleAnimation()
             if animationTimer != nil { stopAnimation() }
             stopSleepAnimation()
             stopFishingAnimation()
@@ -103,8 +148,13 @@ final class MenuBarIconController {
             stopSleepAnimation()
             stopFishingAnimation()
             stopRestAnimation()
-            startGazing()
-            showGaze()
+            if images.hasIdleAnimation {
+                stopGazing()
+                startIdleAnimation()
+            } else {
+                startGazing()
+                showGaze()
+            }
         }
     }
 
@@ -122,6 +172,7 @@ final class MenuBarIconController {
             stopFishingAnimation()
             stopRestAnimation()
             stopGazing()
+            stopIdleAnimation()
             button?.image = NSImage(size: images.image(for: .standing).size)
         } else {
             apply(state)
@@ -236,6 +287,35 @@ final class MenuBarIconController {
         }
     }
 
+    // 대기 중에 움직이는 그림 캐릭터는 50ms 타이머로 대기 클립을 돌리고, 몇 초마다 다른 클립으로 무작위로 바꾼다.
+    // 이미지는 미리 그려 두어서 꺼내 쓰기만 한다.
+    private func startIdleAnimation() {
+        guard idleTimer == nil else {
+            showIdleFrame()
+            return
+        }
+        idlePlayback = IdlePlayback(clip: Int.random(in: 0..<max(1, images.idleClipCount)))
+        showIdleFrame()
+        idleTimer = Timer.scheduledTimer(withTimeInterval: IconTiming.idleFrameInterval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.tickIdle() }
+        }
+    }
+
+    private func tickIdle() {
+        var generator = SystemRandomNumberGenerator()
+        idlePlayback.advance(stepCount: images.idleStepCount(clip: idlePlayback.clip), clipCount: images.idleClipCount, using: &generator)
+        showIdleFrame()
+    }
+
+    private func showIdleFrame() {
+        button?.image = images.idleImage(clip: idlePlayback.clip, step: idlePlayback.step)
+    }
+
+    private func stopIdleAnimation() {
+        idleTimer?.invalidate()
+        idleTimer = nil
+    }
+
     // 잠든 동안에는 z가 천천히 떠오르도록 느린 타이머만 돌린다. 깨면 stopSleepAnimation이 서 있는 모습으로 되돌린다.
     private func startSleepAnimation() {
         guard sleepTimer == nil else { return }
@@ -323,7 +403,7 @@ final class MenuBarIconController {
 
     private func startAnimation() {
         animationTimer?.invalidate()
-        animationTimer = Timer.scheduledTimer(withTimeInterval: IconTiming.runningFrameInterval, repeats: true) { [weak self] _ in
+        animationTimer = Timer.scheduledTimer(withTimeInterval: IconTiming.runningFrameInterval(for: state.character), repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tickRunning() }
         }
     }
@@ -336,7 +416,11 @@ final class MenuBarIconController {
         } else {
             button?.image = images.image(for: tick.frame)
         }
-        if tick.shouldStop { stopAnimation() }
+        if tick.shouldStop {
+            stopAnimation()
+            // 폭죽이 끝나 멈춘 뒤에도 그림 캐릭터는 대기 클립을 다시 돌린다.
+            if images.hasIdleAnimation { startIdleAnimation() }
+        }
     }
 
     private func stopAnimation() {

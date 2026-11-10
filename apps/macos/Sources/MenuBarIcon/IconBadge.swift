@@ -24,11 +24,13 @@ public struct IconAppearance: Equatable, Sendable {
     public var colorMode: ColorMode
     public var hasUnseenDone: Bool
     public var isWaiting: Bool
+    public var character: IconCharacter
 
-    public init(colorMode: ColorMode = .white, hasUnseenDone: Bool = false, isWaiting: Bool = false) {
+    public init(colorMode: ColorMode = .white, hasUnseenDone: Bool = false, isWaiting: Bool = false, character: IconCharacter = .claude) {
         self.colorMode = colorMode
         self.hasUnseenDone = hasUnseenDone
         self.isWaiting = isWaiting
+        self.character = character
     }
 
     var badge: IconBadge {
