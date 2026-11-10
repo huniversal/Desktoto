@@ -55,8 +55,11 @@ final class RallyScene: GameScene {
 
     func update(deltaTime: TimeInterval, now: TimeInterval, mouse: CGPoint) {
         guard var current = game else { return }
+        let wasOver = current.phase == .over
         current.update(deltaTime: deltaTime, racket: mouse, random: { Double.random(in: 0...1) })
         game = current
+        // 끝나는 순간에 바로 저장한다. 게임 오버 화면에서 앱을 종료하거나 비정상 종료돼도 기록이 남는다.
+        if !wasOver, current.phase == .over { saveBestScore(current.bestScore) }
         render(current, racket: mouse, now: now)
     }
 
@@ -65,14 +68,16 @@ final class RallyScene: GameScene {
     }
 
     func end() {
-        if let best = game?.bestScore {
-            UserDefaults.standard.set(best, forKey: Self.bestScoreKey)
-        }
+        if let best = game?.bestScore { saveBestScore(best) }
         game = nil
         [scoreLayer, messageLayer, racketLayer, spriteLayer, shuttleLayer].forEach {
             $0.removeAllAnimations()
             $0.removeFromSuperlayer()
         }
+    }
+
+    private func saveBestScore(_ bestScore: Int) {
+        UserDefaults.standard.set(bestScore, forKey: Self.bestScoreKey)
     }
 
     // MARK: - 레이어
