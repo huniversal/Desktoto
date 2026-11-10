@@ -43,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let loginItem = LoginItem()
     private let fileSystem: any FileSystem
     private let menuBuilder = SettingsMenuBuilder()
+    private let gameHost = GameHost()
     private let panelController: PanelController
     private let iconController: MenuBarIconController
 
@@ -234,7 +235,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 updateNoticeTitle: updateMonitor.noticeTitle,
                 isFeedbackAvailable: feedbackWindowController != nil
             )
-            statusItem.menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
+            let menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
+            // 미니게임(실험): 설정 메뉴 맨 위에 시작 항목을 둔다.
+            let gameItem = NSMenuItem(title: "셔틀콕 게임", action: #selector(handleGameMenuClick), keyEquivalent: "")
+            gameItem.target = self
+            menu.insertItem(gameItem, at: 0)
+            menu.insertItem(.separator(), at: 1)
+            statusItem.menu = menu
             statusItem.button?.performClick(nil)
             statusItem.menu = nil
         }
@@ -303,6 +310,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - 패널
+
+    @objc private func handleGameMenuClick() {
+        closePanel()
+        startGame(RallyScene())
+    }
+
+    /// 게임을 시작한다. 시작되면 메뉴바의 실제 캐릭터는 숨기고, 끝나면 되돌린다.
+    private func startGame(_ scene: any GameScene) {
+        gameHost.onFinish = { [weak self] in self?.iconController.setGameMode(false) }
+        if gameHost.start(scene: scene, buttonWindow: statusItem.button?.window, colorMode: settings.colorMode) {
+            iconController.setGameMode(true)
+        }
+    }
 
     @objc private func handleStatusItemClick() {
         // 캐릭터를 누르면 졸거나 낚시하던 것을 멈추고 2분을 처음부터 다시 센다.

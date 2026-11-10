@@ -85,6 +85,7 @@ apps/macos/
 | `Feedback` | 문의하기: 의견 본문 구성(길이 제한, 버전 푸터, 멘션 차단), 빌드에 주입된 Discord webhook 주소 검증, 전송, 입력 창 상태(`FeedbackModel`)와 View | `DesignSystem` | #56 | 없음(새 기능) |
 | `MenuBarIcon` | 캐릭터 격자, 프레임 계산, 상태에서 보여 줄 프레임 선택과 진행(졸음, 낚시, 스파클라 등 쉬는 일 여덟 가지 포함), 이미지 그리기와 비트맵 묶음 | `Domain`, `DesignSystem` | #9 | `SpriteRenderer`, `AppDelegate`의 아이콘 갱신 |
 | `SessionPanel` | 패널 View, 패널 모델, 투명 패널 창과 위치 계산 | `Domain`, `DesignSystem` | #10 | `SessionPanelView`, `AppDelegate`의 `GlassPanel` |
+| `MiniGame` | 셔틀콕 랠리 규칙(`RallyGame`)과 셔틀콕 그림. 창, 메뉴바 비우기, ESC 종료는 `Desktoto`의 `GameHost`가 맡고 게임별 화면은 `GameScene`(`RallyScene`)이 맡는다(실험) | 없음 | 없음(실험) | 없음(새 기능) |
 | `Desktoto` | 진입점, 오케스트레이션(감시 타이머, 상태에서 UI로 전달, 알림 트리거, 세션 열기, 시작 시 연동), 우클릭 메뉴 | 위 모듈 중 `CZstd`, `TestSupport`를 제외한 모두 | #11 | `AppDelegate`, `main` |
 | `CZstd` | 벤더링한 zstd 해독부 (C) | 없음 | #6 | `Sources/CZstd` |
 | `TestSupport` | 테스트용 가짜 구현 | `Boundaries` | 전체 | 없음 |

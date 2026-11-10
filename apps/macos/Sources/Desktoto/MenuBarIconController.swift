@@ -37,6 +37,8 @@ final class MenuBarIconController {
     private var behavior = MenuBarIconController.createBehavior()
     private var behaviorTimer: Timer?
     private var displayedExpression = EyeExpression.open
+    /// 미니게임 중에는 실제 캐릭터를 빈 이미지로 바꾸고, 같은 모양의 캐릭터가 오버레이에서 달린다.
+    private var isGameMode = false
     private var lastMousePoint: NSPoint?
     private var lastMouseTime: TimeInterval = 0
     private var mouseSpeed: Double = 0
@@ -69,6 +71,8 @@ final class MenuBarIconController {
             hasUnseenDone: state.hasUnseenDone,
             isWaiting: state.isWaiting
         ))
+        guard !isGameMode else { return }
+
         switch IconSchedule(isRunning: state.runningCount > 0, hasFirework: animation.hasFirework, rest: state.rest) {
         case .running:
             stopSleepAnimation()
@@ -106,6 +110,23 @@ final class MenuBarIconController {
 
     /// 눌러서 끄는 동안에는 mouseMoved가 오지 않으므로 드래그도 같은 움직임으로 본다.
     private static let pointerMovementEvents: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
+
+    /// 게임이 시작되면 메뉴바 캐릭터를 같은 폭의 빈 이미지로 바꿔 자리를 지키고, 끝나면 지금 상태대로 되돌린다.
+    func setGameMode(_ isOn: Bool) {
+        guard isOn != isGameMode else { return }
+        isGameMode = isOn
+        if isOn {
+            animationTimer?.invalidate()
+            animationTimer = nil
+            stopSleepAnimation()
+            stopFishingAnimation()
+            stopRestAnimation()
+            stopGazing()
+            button?.image = NSImage(size: images.image(for: .standing).size)
+        } else {
+            apply(state)
+        }
+    }
 
     private static func createBehavior() -> IdleBehavior {
         IdleBehavior(now: ProcessInfo.processInfo.systemUptime, blinkDelay: Double.random(in: IdleBehavior.blinkDelayRange))

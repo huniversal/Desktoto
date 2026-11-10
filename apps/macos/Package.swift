@@ -32,6 +32,8 @@ let package = Package(
         // UI 모듈은 Boundaries를 쓰지 않는다.
         .target(name: "MenuBarIcon", dependencies: ["Domain", "DesignSystem"]),
         .target(name: "SessionPanel", dependencies: ["Domain", "DesignSystem"]),
+        // 메뉴바 캐릭터가 셔틀콕을 쳐 보내는 미니게임(실험). 규칙과 그림만 있고 창은 Desktoto 앱이 띄운다.
+        .target(name: "MiniGame"),
 
         .target(name: "TestSupport", dependencies: ["Boundaries"]),
 
@@ -40,7 +42,7 @@ let package = Package(
             dependencies: [
                 "Domain", "Boundaries", "DesignSystem",
                 "SessionMonitoring", "UsageMonitoring", "ClaudeIntegration", "TerminalIntegration", "Preferences", "UpdateCheck", "Feedback",
-                "MenuBarIcon", "SessionPanel"
+                "MenuBarIcon", "SessionPanel", "MiniGame"
             ]
         ),
 
@@ -56,7 +58,8 @@ let package = Package(
         .testTarget(name: "FeedbackTests", dependencies: ["Feedback"]),
         .testTarget(name: "SessionPanelTests", dependencies: ["SessionPanel", "Domain", "DesignSystem"]),
         .testTarget(name: "TerminalIntegrationTests", dependencies: ["TerminalIntegration", "Domain", "Boundaries", "TestSupport"]),
-        .testTarget(name: "MenuBarIconTests", dependencies: ["MenuBarIcon", "DesignSystem"])
+        .testTarget(name: "MenuBarIconTests", dependencies: ["MenuBarIcon", "DesignSystem"]),
+        .testTarget(name: "MiniGameTests", dependencies: ["MiniGame"])
     ],
     swiftLanguageModes: [.v6]
 )
