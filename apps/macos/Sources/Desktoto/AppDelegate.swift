@@ -46,8 +46,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let gameHost = GameHost()
     private let panelController: PanelController
     private let iconController: MenuBarIconController
-    // NSSound는 재생이 끝나기 전에 해제되면 멈추므로 들고 있는다.
-    private var finishSound: NSSound?
+    // NSSound는 재생이 끝나기 전에 해제되면 멈추므로 들고 있는다. 완료와 승인 대기가 동시에 나도 서로 끊지 않게 따로 둔다.
+    private var characterSounds: [CharacterSoundMoment: NSSound] = [:]
 
     private var pollTracker = PollTracker()
     private var sleepPolicy: SleepPolicy
@@ -496,7 +496,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         if !result.finishedIDs.isEmpty { handleSessionsFinished(ids: result.finishedIDs) }
-        if !result.newWaitingKinds.isEmpty { NSSound(named: "Ping")?.play() }
+        if !result.newWaitingKinds.isEmpty { playCharacterSound(.waiting) }
         applyIconState()
 
         let finishedNotices = result.finishedIDs.map { (sessionID: $0, body: NotificationText.finishedBody) }
@@ -504,28 +504,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         await sendNotifications(finishedNotices + waitingNotices)
     }
 
-    // 치이카와, 하치와레, 우사기를 고르면 번들에 넣은 각자의 소리를, 그 외에는 기본 Glass를 낸다. 파일이 없으면(앱 번들이 아닐 때) Glass로 돌아간다.
-    private func playFinishSound() {
-        let soundName: String?
-        switch settings.iconCharacter {
-        case .chiikawa: soundName = "chiikawa-done"
-        case .hachiware: soundName = "hachiware-done"
-        case .usagi: soundName = "usagi-done"
-        case .claude: soundName = nil
+    /// 캐릭터 소리를 내는 때. 작업이 끝났을 때와 승인 대기가 새로 생겼을 때다.
+    private enum CharacterSoundMoment {
+        case finished
+        case waiting
+
+        /// 번들 소리 파일 이름의 끝부분(예: chiikawa-done.mp3)
+        var fileSuffix: String {
+            switch self {
+            case .finished: "done"
+            case .waiting: "wait"
+            }
         }
-        if let soundName,
-           let soundURL = Bundle.main.url(forResource: soundName, withExtension: "mp3"),
+
+        /// 그림 캐릭터의 소리를 찾지 못했을 때나 Claude일 때 내는 시스템 소리
+        var systemSoundName: NSSound.Name {
+            switch self {
+            case .finished: "Glass"
+            case .waiting: "Ping"
+            }
+        }
+    }
+
+    // 치이카와, 하치와레, 우사기를 고르면 번들에 넣은 각자의 소리를, Claude는 시스템 소리를 낸다.
+    // 파일이 없으면(앱 번들이 아닐 때) 시스템 소리로 돌아간다.
+    private func playCharacterSound(_ moment: CharacterSoundMoment) {
+        let character = settings.iconCharacter
+        if character != .claude,
+           let soundURL = Bundle.main.url(forResource: "\(character.rawValue)-\(moment.fileSuffix)", withExtension: "mp3"),
            let sound = NSSound(contentsOf: soundURL, byReference: true) {
-            finishSound = sound
+            characterSounds[moment] = sound
             sound.play()
             return
         }
-        NSSound(named: "Glass")?.play()
+        NSSound(named: moment.systemSoundName)?.play()
     }
 
     // 소리는 한 번만 낸다. 패널을 보고 있으면 점 대신 카드를 바로 강조한다.
     private func handleSessionsFinished(ids: [String]) {
-        playFinishSound()
+        playCharacterSound(.finished)
         iconController.startFirework()
         ids.forEach { id in
             if isPanelOpen {
