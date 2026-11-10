@@ -172,10 +172,10 @@
   }
   .event-banner[hidden] { display: none; }
   .event-banner .eb-copy { position: relative; z-index: 1; display: grid; gap: 12px; justify-items: start; padding-bottom: 24px; max-width: 46%; }
-  .event-banner .eb-badge { position: relative; display: inline-block; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; color: var(--eb-pill); background: #fff; padding: 3px 12px; border-radius: 999px; }
+  .event-banner .eb-badge { position: relative; display: inline-block; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; color: var(--eb-ink); background: #fff; padding: 3px 12px; border-radius: 999px; }
   .event-banner .eb-badge::after { content: ""; position: absolute; left: 14px; bottom: -5px; width: 9px; height: 9px; background: #fff; transform: rotate(45deg); }
   .event-banner .eb-title { margin: 2px 0 0; font-family: "Jua", var(--font-body); font-size: clamp(1.25rem, 3vw, 2rem); font-weight: 400; line-height: 1.4; letter-spacing: -0.02em; }
-  .event-banner .eb-link { display: inline-block; font-family: "Jua", var(--font-body); font-size: clamp(0.95rem, 1.6vw, 1.1rem); font-weight: 400; color: #fff; background: var(--eb-pill); padding: 8px 18px; border-radius: 999px; text-decoration: none; transition: transform 0.15s, filter 0.2s; }
+  .event-banner .eb-link { display: inline-block; font-family: "Jua", var(--font-body); font-size: clamp(0.95rem, 1.6vw, 1.1rem); font-weight: 400; color: var(--eb-ink); background: var(--eb-pill); padding: 8px 18px; border-radius: 999px; text-decoration: none; transition: transform 0.15s, filter 0.2s; }
   .event-banner .eb-link:hover { filter: brightness(1.05); transform: translateY(-1px); }
   .event-banner .eb-art { position: absolute; right: -8px; bottom: -2px; width: auto; height: 92%; max-width: 62%; object-fit: contain; object-position: right bottom; display: block; transform-origin: bottom center; animation: eb-peek 0.8s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
   .event-banner .eb-credit { position: absolute; left: clamp(20px, 4vw, 40px); bottom: 8px; font-size: 0.68rem; color: rgba(58, 42, 48, 0.55); }
@@ -453,7 +453,7 @@
   .how-steps h4 { margin: 0; font-size: 1.1rem; }
   .how-steps ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: how; }
   .how-steps li { counter-increment: how; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; color: var(--muted); }
-  .how-steps li::before { content: counter(how); width: 24px; height: 24px; border-radius: 50%; background: #ff8a95; color: #fff; font-size: 0.8rem; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
+  .how-steps li::before { content: counter(how); width: 24px; height: 24px; border-radius: 50%; background: #ff8a95; color: #3a2a30; font-size: 0.8rem; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
   .how-steps b { color: var(--fg); font-weight: 600; }
   .how-stage { border-radius: 20px; background: var(--wallpaper); min-height: 230px; display: grid; place-items: center; padding: 24px 16px; overflow: hidden; }
   .how-menu { position: relative; width: 150px; margin-right: 96px; transform: scale(1.2); }
