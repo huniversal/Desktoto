@@ -11,6 +11,7 @@ public final class AppSettings {
         static let showsUsage = "showsUsagePanel"
         static let showsContext = "showsContextPanel"
         static let colorMode = "colorMode"
+        static let iconCharacter = "iconCharacter"
         static let sendsNotifications = "sendsNotifications"
         static let glassStyle = "glassStyle"
         static let theme = "theme"
@@ -30,6 +31,10 @@ public final class AppSettings {
     }
     public var colorMode: ColorMode {
         didSet { defaults.set(colorMode.rawValue, forKey: Key.colorMode) }
+    }
+    // 메뉴바에 보여 줄 캐릭터. 저장된 값이 없거나 알 수 없으면 claude다.
+    public var iconCharacter: IconCharacter {
+        didSet { defaults.set(iconCharacter.rawValue, forKey: Key.iconCharacter) }
     }
     public var theme: Theme {
         didSet { defaults.set(theme.rawValue, forKey: Key.theme) }
@@ -66,6 +71,7 @@ public final class AppSettings {
         showsUsage = Self.readBool(defaults, forKey: Key.showsUsage) ?? true
         showsContext = Self.readBool(defaults, forKey: Key.showsContext) ?? true
         colorMode = defaults.string(forKey: Key.colorMode).flatMap(ColorMode.init(rawValue:)) ?? .white
+        iconCharacter = defaults.string(forKey: Key.iconCharacter).flatMap(IconCharacter.init(rawValue:)) ?? .claude
         theme = defaults.string(forKey: Key.theme).flatMap(Theme.init(rawValue:)) ?? .system
         glassStyle = defaults.string(forKey: Key.glassStyle).flatMap(GlassStyle.init(rawValue:)) ?? .regular
         sendsNotifications = Self.readBool(defaults, forKey: Key.sendsNotifications) ?? true

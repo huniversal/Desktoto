@@ -23,7 +23,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
   /* Layout concept: 흰 캐릭터가 달리는 메뉴바와 유리 패널을 노을빛 바탕화면 위에 올린 무대(stage)를 중심으로, 나머지는 조용한 한 줄짜리 문장과 표로 구성한다. */
   :root {
@@ -159,6 +159,48 @@
   /* 히어로 */
   .hero { padding-block: 20px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; justify-items: start; }
   .hero .lead { margin-top: 4px; }
+
+  /* 이벤트 배너: 새 캐릭터 소식. 공식 사이트 상단처럼 단색 분홍 위로 캐릭터가 아래에서 고개를 내민다. */
+  .event-banner {
+    --eb-bg: #f6c1cf;
+    --eb-ink: #3a2a30;
+    --eb-pill: #ff8a95;
+    position: relative; width: 100%; box-sizing: border-box;
+    display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; min-height: 240px;
+    padding: 24px 0 0 clamp(20px, 4vw, 40px); border-radius: 28px;
+    background: var(--eb-bg); color: var(--eb-ink); overflow: hidden; margin-bottom: 12px;
+  }
+  .event-banner[hidden] { display: none; }
+  .event-banner .eb-copy { position: relative; z-index: 1; display: grid; gap: 12px; justify-items: start; padding-bottom: 24px; max-width: 46%; }
+  .event-banner .eb-badge { position: relative; display: inline-block; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; color: var(--eb-ink); background: #fff; padding: 3px 12px; border-radius: 999px; }
+  .event-banner .eb-badge::after { content: ""; position: absolute; left: 14px; bottom: -5px; width: 9px; height: 9px; background: #fff; transform: rotate(45deg); }
+  .event-banner .eb-title { margin: 2px 0 0; font-family: "Jua", var(--font-body); font-size: clamp(1.25rem, 3vw, 2rem); font-weight: 400; line-height: 1.4; letter-spacing: -0.02em; }
+  .event-banner .eb-link { display: inline-block; font-family: "Jua", var(--font-body); font-size: clamp(0.95rem, 1.6vw, 1.1rem); font-weight: 400; color: var(--eb-ink); background: var(--eb-pill); padding: 8px 18px; border-radius: 999px; text-decoration: none; transition: transform 0.15s, filter 0.2s; }
+  .event-banner .eb-link:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  .event-banner .eb-art { position: absolute; right: -8px; bottom: -2px; width: auto; height: 92%; max-width: 62%; object-fit: contain; object-position: right bottom; display: block; transform-origin: bottom center; animation: eb-peek 0.8s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+  .event-banner .eb-credit { position: absolute; left: clamp(20px, 4vw, 40px); bottom: 8px; font-size: 0.68rem; color: rgba(58, 42, 48, 0.55); }
+  .event-banner .eb-close { position: absolute; z-index: 2; top: 12px; right: 12px; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.85); color: var(--eb-ink); font-size: 0.9rem; line-height: 1; cursor: pointer; transition: transform 0.15s, background 0.2s; }
+  .event-banner .eb-close:hover { background: #fff; transform: rotate(90deg); }
+  .event-banner .eb-close:active { transform: scale(0.9); }
+  .event-banner .eb-confetti { position: absolute; pointer-events: none; width: 8px; height: 8px; border-radius: 2px; animation: eb-twinkle 2.6s ease-in-out infinite; }
+  .event-banner .c1 { left: 46%; top: 22px; background: #fff3a6; transform: rotate(20deg); }
+  .event-banner .c2 { left: 38%; bottom: 40px; background: #a8dcf0; animation-delay: 0.9s; }
+  .event-banner .c3 { right: 64px; top: 30px; background: #fff; border-radius: 50%; animation-delay: 1.6s; }
+  .event-banner .c4 { left: 30%; top: 40px; width: 6px; height: 6px; background: #ff8a95; animation-delay: 0.4s; }
+  .event-banner.closing { animation: eb-out 0.28s ease-in forwards; }
+  @keyframes eb-peek { 0% { transform: translateY(40%); } 100% { transform: none; } }
+  @keyframes eb-twinkle { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+  @keyframes eb-out { to { transform: translateY(-8px) scale(0.98); opacity: 0; } }
+  @media (max-width: 600px) {
+    .event-banner { grid-template-columns: minmax(0, 1fr); padding: 22px 0 0; text-align: left; }
+    .event-banner .eb-copy { padding: 0 20px 4px; max-width: none; }
+    .event-banner .eb-art { position: static; justify-self: center; width: 100%; height: auto; max-width: 100%; }
+    .event-banner .eb-credit { left: auto; right: 56px; bottom: auto; top: 22px; }
+    .event-banner .c3 { top: auto; right: 40px; bottom: 150px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .event-banner .eb-art, .event-banner .eb-confetti, .event-banner.closing { animation: none; }
+  }
   .cta { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
   .nav-icon { display: inline-flex; padding: 4px; border-radius: 8px; color: var(--muted); transition: color 0.2s; }
   .nav-icon:hover { color: var(--fg); }
@@ -388,6 +430,39 @@
   .state h3 { padding-inline: 6px; }
   .state p { padding-inline: 6px; color: var(--muted); font-size: 0.96rem; }
 
+  /* 캐릭터 고르기: 상태 카드와 같은 카드 모양에, 그림 배경만 배너와 같은 분홍을 쓴다. */
+  .chars { margin-top: 72px; scroll-margin-top: 96px; }
+  .chars h3.chars-title { font-size: clamp(1.3rem, 2.6vw, 1.7rem); }
+  .chars .chars-lead { margin-top: 10px; color: var(--muted); }
+  .char-list { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
+  .char-card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 14px 14px 20px; display: grid; gap: 14px; }
+  .char-poses { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* 그림 배경은 앱 메뉴바와 같은 캐릭터별 장면(들판, 가게 앞, 숲)이다. 캐릭터는 아래쪽 땅에 선다. */
+  .char-pose { position: relative; margin: 0; background: #cfe3c0 center bottom / cover no-repeat; border-radius: 12px; height: 140px; display: grid; place-items: end center; padding: 0 6px 10px; overflow: hidden; }
+  .char-card.chiikawa .char-pose { background-image: url("characters/chiikawa-bg.webp"); }
+  .char-card.hachiware .char-pose { background-image: url("characters/hachiware-bg.webp"); }
+  .char-card.usagi .char-pose { background-image: url("characters/usagi-bg.webp"); }
+  .char-pose img { max-height: 88px; width: auto; display: block; }
+  .char-pose figcaption { position: absolute; top: 8px; left: 8px; font-size: 0.74rem; font-weight: 500; color: #3a2a30; background: rgba(255, 255, 255, 0.82); padding: 2px 9px; border-radius: 999px; }
+  .char-card h4 { margin: 0; padding-inline: 6px; font-size: 1.05rem; }
+  /* 캐릭터 바꾸는 법: 왼쪽 단계 안내, 오른쪽 우클릭 메뉴 모형. 메뉴 모양은 기능 섹션 모형(.fv-menu, .mi)을 다시 쓴다. */
+  .char-card { transition: border-color 0.3s, box-shadow 0.3s; }
+  .char-card.picked { border-color: #ff8a95; box-shadow: 0 0 0 2px #ff8a95; }
+  .how { margin-top: 20px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+  .how-steps { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 24px 26px; display: grid; gap: 14px; align-content: center; }
+  .how-steps h4 { margin: 0; font-size: 1.1rem; }
+  .how-steps ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: how; }
+  .how-steps li { counter-increment: how; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; color: var(--muted); }
+  .how-steps li::before { content: counter(how); width: 24px; height: 24px; border-radius: 50%; background: #ff8a95; color: #3a2a30; font-size: 0.8rem; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
+  .how-steps b { color: var(--fg); font-weight: 600; }
+  .how-stage { border-radius: 20px; background: var(--wallpaper); min-height: 230px; display: grid; place-items: center; padding: 24px 16px; overflow: hidden; }
+  .how-menu { position: relative; width: 150px; margin-right: 96px; transform: scale(1.2); }
+  .how-menu .fv-sub { top: 40px; display: block; }
+  .how-menu .mi { cursor: default; }
+  .how-menu .mi:hover:not(.on) { background: none; color: inherit; }
+  @media (max-width: 720px) { .how { grid-template-columns: minmax(0, 1fr); } }
+  .chars-notice { margin-top: 20px; font-size: 0.8rem; line-height: 1.7; color: var(--muted); }
+
   /* 기능: 상태 카드와 같은 카드에, 히어로 데모와 같은 배경과 유리 패널로 앱 화면을 작게 보여 준다. */
   .fgrid { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
   .fv { aspect-ratio: 1 / 0.9; border-radius: 12px; background: var(--wallpaper); display: grid; place-items: center; padding: 18px; overflow: hidden; }
@@ -460,6 +535,20 @@
 
 <div class="wrap">
   <header class="hero">
+    <aside class="event-banner" id="eventBanner" aria-label="새 캐릭터 소식" data-i18n-aria="banner.aria">
+      <div class="eb-copy">
+        <span class="eb-badge">NEW</span>
+        <p class="eb-title" data-i18n="banner.title">치이카와, 하치와레, 우사기가<br>메뉴바에 놀러 왔어요!</p>
+        <a class="eb-link" href="#characters" data-i18n="banner.link">메뉴바에서 캐릭터를 골라 보세요 →</a>
+      </div>
+      <img class="eb-art" src="chiikawa-banner.webp" width="640" height="262" alt="손을 흔드는 치이카와, 하치와레, 우사기" data-i18n-alt="banner.alt">
+      <small class="eb-credit">©nagano</small>
+      <button type="button" class="eb-close" aria-label="배너 닫기" data-i18n-aria="banner.close">✕</button>
+      <span class="eb-confetti c1" aria-hidden="true"></span>
+      <span class="eb-confetti c2" aria-hidden="true"></span>
+      <span class="eb-confetti c3" aria-hidden="true"></span>
+      <span class="eb-confetti c4" aria-hidden="true"></span>
+    </aside>
     <h1 data-i18n="hero.title">AI가 일하는 동안,<br>메뉴바에서 지켜보세요.</h1>
     <p class="lead" data-i18n="hero.lead"><span class="ln">Desktoto는 AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.</span><span class="ln">작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.</span></p>
     <div class="cta">
@@ -507,6 +596,79 @@
         <h3 data-i18n="states.sleep.title">졸음</h3>
         <p data-i18n="states.sleep.body">10분 동안 아무 활동이 없으면 캐릭터가 눈을 감고 졸아요. 새 작업이 시작되면 바로 깨요.</p>
       </article>
+    </div>
+    <div class="chars" id="characters">
+      <h3 class="chars-title" data-i18n="chars.title">메뉴바 캐릭터도 고를 수 있어요.</h3>
+      <p class="chars-lead" data-i18n="chars.lead">메뉴바에서 달리는 캐릭터를 Claude, 치이카와, 하치와레, 우사기 중에 골라 바꿀 수 있어요.</p>
+      <div class="char-list">
+      <article class="char-card chiikawa">
+        <div class="char-poses">
+          <figure class="char-pose">
+            <picture><source srcset="characters/chiikawa-run-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/chiikawa-run.webp" width="111" height="120" alt="" loading="lazy"></picture>
+            <figcaption data-i18n="chars.run">작업 중</figcaption>
+          </figure>
+          <figure class="char-pose">
+            <picture><source srcset="characters/chiikawa-idle-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/chiikawa-idle.webp" width="109" height="96" alt="" loading="lazy"></picture>
+            <figcaption data-i18n="chars.idle">대기 중</figcaption>
+          </figure>
+        </div>
+        <h4 data-i18n="chars.chiikawa">치이카와</h4>
+      </article>
+      <article class="char-card hachiware">
+        <div class="char-poses">
+          <figure class="char-pose">
+            <picture><source srcset="characters/hachiware-run-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/hachiware-run.webp" width="98" height="96" alt="" loading="lazy"></picture>
+            <figcaption data-i18n="chars.run">작업 중</figcaption>
+          </figure>
+          <figure class="char-pose">
+            <picture><source srcset="characters/hachiware-idle-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/hachiware-idle.webp" width="99" height="96" alt="" loading="lazy"></picture>
+            <figcaption data-i18n="chars.idle">대기 중</figcaption>
+          </figure>
+        </div>
+        <h4 data-i18n="chars.hachiware">하치와레</h4>
+      </article>
+      <article class="char-card usagi">
+        <div class="char-poses">
+          <figure class="char-pose">
+            <picture><source srcset="characters/usagi-run-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/usagi-run.webp" width="60" height="96" alt="" loading="lazy"></picture>
+            <figcaption data-i18n="chars.run">작업 중</figcaption>
+          </figure>
+          <figure class="char-pose">
+            <picture><source srcset="characters/usagi-idle-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/usagi-idle.webp" width="97" height="96" alt="" loading="lazy"></picture>
+            <figcaption data-i18n="chars.idle">대기 중</figcaption>
+          </figure>
+        </div>
+        <h4 data-i18n="chars.usagi">우사기</h4>
+      </article>
+      </div>
+      <div class="how">
+        <div class="how-steps">
+          <h4 data-i18n="how.title">캐릭터 바꾸는 법</h4>
+          <ol>
+            <li><span data-i18n="how.1">메뉴바의 <b>Desktoto 아이콘을 우클릭</b>해요.</span></li>
+            <li><span data-i18n="how.2">메뉴에서 <b>캐릭터</b>에 마우스를 올려요.</span></li>
+            <li><span data-i18n="how.3">원하는 캐릭터를 고르면 <b>바로 바뀌어요</b>.</span></li>
+          </ol>
+        </div>
+        <div class="how-stage" aria-hidden="true">
+          <div class="how-menu">
+            <div class="fv-menu">
+              <div class="mi sub"><span></span><span data-i18n="fv.m5">표시할 패널</span></div>
+              <div class="mi sub"><span></span><span data-i18n="fv.m6">색상</span></div>
+              <div class="mi sub on"><span></span><span data-i18n="how.menu">캐릭터</span></div>
+              <div class="mi sub"><span></span><span data-i18n="fv.m7">테마</span></div>
+              <div class="mi sub"><span></span><span>Liquid Glass</span></div>
+            </div>
+            <div class="fv-sub">
+              <div class="mi" data-pick="claude"><span></span><span>Claude</span></div>
+              <div class="mi checked" data-pick="chiikawa"><span></span><span data-i18n="chars.chiikawa">치이카와</span></div>
+              <div class="mi" data-pick="hachiware"><span></span><span data-i18n="chars.hachiware">하치와레</span></div>
+              <div class="mi" data-pick="usagi"><span></span><span data-i18n="chars.usagi">우사기</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="chars-notice" data-i18n="chars.notice">치이카와, 하치와레, 우사기는 나가노(©nagano)의 캐릭터예요. Desktoto의 캐릭터 그림은 비상업 팬 메이드 작품이며 공식 제품과 관계가 없어요. 권리자의 요청이나 문제가 생기면 바로 내리거나 고칠게요.</p>
     </div>
   </section>
 
@@ -1207,6 +1369,9 @@
     "hero.title": "While AI works,<br>watch it from your menu bar.",
     "hero.lead": "<span class=\"ln\">Desktoto shows the status of your AI agent sessions as a small character in the menu bar.</span><span class=\"ln\">See when a task has finished, or when it's waiting for you, without opening a window.</span>",
     "hero.cta1": "Go to download",
+    "banner.aria": "New characters", "banner.close": "Close banner", "banner.alt": "Chiikawa, Hachiware and Usagi waving",
+    "banner.title": "Chiikawa, Hachiware and Usagi<br>just moved into your menu bar!",
+    "banner.link": "Pick your character in the menu bar →",
     "problem.eyebrow": "The problem", "problem.title": "Run several sessions, and things slip by.",
     "problem.1": "You work in another window and only notice a task finished long after it did.",
     "problem.2": "An approval prompt is open and the AI is stuck, but you don't know and keep waiting.",
@@ -1216,6 +1381,15 @@
     "states.done.title": "Fireworks", "states.done.body": "A task has finished. Small fireworks go off behind the character and a macOS notification arrives.",
     "states.wait.title": "Question mark", "states.wait.body": "A session needs your approval or an answer. A question mark appears while anything is waiting for you.",
     "states.sleep.title": "Dozing off", "states.sleep.body": "After 10 minutes with no activity, the character closes its eyes and dozes off. It wakes up as soon as a new task starts.",
+    "chars.title": "You can pick your menu bar character, too.",
+    "chars.lead": "Switch the character running in your menu bar between Claude, Chiikawa, Hachiware and Usagi.",
+    "how.title": "How to switch characters", "how.menu": "Character",
+    "how.1": "<b>Right-click the Desktoto icon</b> in the menu bar.",
+    "how.2": "Hover over <b>Character</b> in the menu.",
+    "how.3": "Pick a character and it <b>switches right away</b>.",
+    "chars.run": "Working", "chars.idle": "Idle",
+    "chars.chiikawa": "Chiikawa", "chars.hachiware": "Hachiware", "chars.usagi": "Usagi",
+    "chars.notice": "Chiikawa, Hachiware and Usagi are characters by nagano (©nagano). The character art in Desktoto is a non-commercial fan work and is not affiliated with any official product. If the rights holder asks or any issue comes up, we will remove or change it right away.",
     "states.dot.title": "Purple dot", "states.dot.body": "There's a finished task you haven't looked at yet. The dot goes away once you open the panel.",
     "features.eyebrow": "Features", "features.title": "Only what you need to see.",
     "f1.title": "Every session in one panel", "f1.body": "Shows the title, context usage and a bar. The model and token count appear only when you hover. Sessions that need approval or an answer rise to the top.",
@@ -1253,6 +1427,30 @@
     "footer.2": "The character is a fan creation inspired by the Claude Code mascot. Claude is a trademark of Anthropic and Codex is a trademark of OpenAI. Desktoto is not an official product of either company."
   };
 
+  (function () {
+    var banner = document.getElementById("eventBanner");
+    banner.querySelector(".eb-close").addEventListener("click", function () {
+      // 닫은 상태는 저장하지 않는다. 페이지에 다시 들어오면 배너가 또 보인다.
+      if (reduceMotion) { banner.hidden = true; return; }
+      banner.classList.add("closing");
+      setTimeout(function () { banner.hidden = true; }, 280); // 닫힘 애니메이션(0.28초)이 끝나면 숨긴다.
+    });
+  })();
+
+  /* 캐릭터 바꾸는 법: 메뉴 모형의 체크를 차례로 옮기고, 같은 캐릭터 카드를 강조한다. */
+  (function () {
+    var picks = [].slice.call(document.querySelectorAll(".how-menu [data-pick]"));
+    function pick(index) {
+      var name = picks[index].getAttribute("data-pick");
+      picks.forEach(function (row, n) { row.classList.toggle("checked", n === index); });
+      document.querySelectorAll(".char-card").forEach(function (card) { card.classList.toggle("picked", card.classList.contains(name)); });
+    }
+    var current = 1;
+    pick(current);
+    if (reduceMotion) return;
+    setInterval(function () { current = (current + 1) % picks.length; pick(current); }, 1800);
+  })();
+
   function getInitialLang() {
     try {
       var saved = localStorage.getItem("desktoto-lang");
@@ -1277,6 +1475,10 @@
     document.querySelectorAll("[data-i18n-aria]").forEach(function (el) {
       if (el.dataset.koAria === undefined) el.dataset.koAria = el.getAttribute("aria-label");
       el.setAttribute("aria-label", next === "en" ? EN[el.getAttribute("data-i18n-aria")] : el.dataset.koAria);
+    });
+    document.querySelectorAll("[data-i18n-alt]").forEach(function (el) {
+      if (el.dataset.koAlt === undefined) el.dataset.koAlt = el.getAttribute("alt");
+      el.setAttribute("alt", next === "en" ? EN[el.getAttribute("data-i18n-alt")] : el.dataset.koAlt);
     });
     document.querySelectorAll("[data-st]").forEach(function (el) { el.textContent = STAGE_TEXT[next][el.getAttribute("data-st")]; });
     document.querySelectorAll("[data-st-label]").forEach(function (el) { el.setAttribute("aria-label", STAGE_TEXT[next][el.getAttribute("data-st-label")]); });

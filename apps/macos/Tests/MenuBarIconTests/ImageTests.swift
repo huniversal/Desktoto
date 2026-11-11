@@ -4,6 +4,8 @@ import Testing
 @testable import MenuBarIcon
 
 private let testScale: CGFloat = 2
+/// 격자 좌표를 픽셀로 검사하는 테스트는 한 칸이 정확히 1pt인 20pt 기준으로 고정한다(앱 기본 크기와 무관하다).
+private let testPointHeight: CGFloat = 20
 
 /// 원본과 같은 경로(보정 색을 DeviceRGB 비트맵에 칠함)에서 화면 픽셀이 되는 값. 보정 색은 이 과정에서 값이 조금 바뀐다.
 @MainActor
@@ -32,7 +34,7 @@ private func isClose(_ pixel: [CGFloat]?, to expected: [CGFloat], tolerance: CGF
 
 @MainActor
 private func createImage(_ frame: IconFrame, _ appearance: IconAppearance = IconAppearance()) -> NSImage {
-    IconRenderer.image(frame: frame, appearance: appearance, scale: testScale)
+    IconRenderer.image(frame: frame, appearance: appearance, scale: testScale, pointHeight: testPointHeight)
 }
 
 @MainActor @Test func everyStateUsesTheSameCanvasSizeAndBitmap() throws {
@@ -49,6 +51,18 @@ private func createImage(_ frame: IconFrame, _ appearance: IconAppearance = Icon
             #expect(bitmap.pixelsHigh == 40)
         }
     }
+}
+
+@MainActor @Test func imageSetUsesTheDefault22PointHeightWhenNoHeightIsGiven() {
+    let imageSet = IconImageSet(appearance: IconAppearance(), scale: testScale)
+    let image = imageSet.image(for: .standing)
+
+    #expect(IconImageSet.defaultPointHeight == 22)
+    #expect(image.size.height == 22)
+    // 폭은 높이와 같은 비율(42칸 대 20칸)이다.
+    #expect(abs(image.size.width - 22.0 / 20.0 * 42.0) < 0.001)
+    // 비트맵 픽셀 수는 여기서 확인하지 않는다. 폭이 정수가 아니면 AppKit이 화면 배율에 따라 다시 그려서 환경마다 값이 달라진다.
+    // 정수 높이에서의 비트맵 크기는 위의 `everyStateUsesTheSameCanvasSizeAndBitmap`가 확인한다.
 }
 
 @MainActor @Test func pointHeightScalesTheWholeCanvas() {
@@ -87,7 +101,7 @@ private func createImage(_ frame: IconFrame, _ appearance: IconAppearance = Icon
 
 @MainActor @Test func fireworkIsDrawnBehindTheCharacter() throws {
     let base = createImage(.standing)
-    let firework = IconRenderer.fireworkImage(base: base, frame: 0, scale: testScale)
+    let firework = IconRenderer.fireworkImage(base: base, frame: 0, scale: testScale, pointHeight: testPointHeight)
     let bitmap = try #require(createBitmap(firework))
 
     #expect(firework.size == base.size)
@@ -104,19 +118,19 @@ private func createImage(_ frame: IconFrame, _ appearance: IconAppearance = Icon
         builtCount += 1
         return NSImage(size: NSSize(width: 1, height: 1))
     }
-    // 서 있기 1장, 달리기 24장, 잠듦 6장
-    #expect(builtCount == 31)
+    // 서 있기 1장, 시선 117장, 달리기 24장, 잠듦 6장
+    #expect(builtCount == 148)
 
     _ = imageSet.image(for: .standing)
     _ = imageSet.image(for: .running(phase: 3))
     #expect(imageSet.update(appearance: IconAppearance()) == false)
-    #expect(builtCount == 31)
+    #expect(builtCount == 148)
 
     #expect(imageSet.update(appearance: IconAppearance(colorMode: .color)) == true)
-    #expect(builtCount == 62)
+    #expect(builtCount == 296)
     #expect(imageSet.update(appearance: IconAppearance(colorMode: .color, hasUnseenDone: true)) == true)
     #expect(imageSet.update(appearance: IconAppearance(colorMode: .color, hasUnseenDone: true, isWaiting: true)) == true)
-    #expect(builtCount == 124)
+    #expect(builtCount == 592)
 }
 
 @MainActor @Test func imageSetReturnsTheCachedImageAndWrapsFrameNumbers() {
@@ -131,7 +145,7 @@ private func createImage(_ frame: IconFrame, _ appearance: IconAppearance = Icon
 }
 
 @MainActor @Test func imageSetRebuildsWithTheNewColorMode() throws {
-    let imageSet = IconImageSet(appearance: IconAppearance(colorMode: .white), scale: testScale)
+    let imageSet = IconImageSet(appearance: IconAppearance(colorMode: .white), scale: testScale, pointHeight: testPointHeight)
     let before = try #require(createBitmap(imageSet.image(for: .standing)))
     #expect(isClose(readPixel(before, x: 42, y: 16), to: [1, 1, 1, 1]))
 

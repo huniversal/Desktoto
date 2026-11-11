@@ -43,15 +43,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let loginItem = LoginItem()
     private let fileSystem: any FileSystem
     private let menuBuilder = SettingsMenuBuilder()
+    private let gameHost = GameHost()
     private let panelController: PanelController
     private let iconController: MenuBarIconController
+    // NSSound는 재생이 끝나기 전에 해제되면 멈추므로 들고 있는다. 완료와 승인 대기가 동시에 나도 서로 끊지 않게 따로 둔다.
+    private var characterSounds: [CharacterSoundMoment: NSSound] = [:]
 
     private var pollTracker = PollTracker()
     private var sleepPolicy: SleepPolicy
     private var unseenFinishedIDs: Set<String> = []
     private var runningCount = 0
     private var isWaiting = false
-    private var isSleeping = false
+    private var rest: IconRest?
 
     private var isPanelOpen = false
     // 패널을 여는 중에 닫았다가 다시 열 때, 먼저 시작한 열기가 뒤늦게 창을 띄우지 않게 한다.
@@ -110,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             : nil
         panelController = PanelController(now: timeSource.now)
-        iconController = MenuBarIconController(button: statusItem.button, colorMode: settings.colorMode)
+        iconController = MenuBarIconController(button: statusItem.button, colorMode: settings.colorMode, character: settings.iconCharacter)
         sleepPolicy = SleepPolicy(
             startedAt: timeSource.now,
             idleSeconds: SleepPolicy.idleSeconds(environment: ProcessInfo.processInfo.environment)
@@ -234,7 +237,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 updateNoticeTitle: updateMonitor.noticeTitle,
                 isFeedbackAvailable: feedbackWindowController != nil
             )
-            statusItem.menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
+            let menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
+            // 미니게임(실험): 설정 메뉴 맨 위에 시작 항목을 둔다.
+            let gameItem = NSMenuItem(title: "셔틀콕 게임", action: #selector(handleGameMenuClick), keyEquivalent: "")
+            gameItem.target = self
+            menu.insertItem(gameItem, at: 0)
+            menu.insertItem(.separator(), at: 1)
+            statusItem.menu = menu
             statusItem.button?.performClick(nil)
             statusItem.menu = nil
         }
@@ -268,6 +277,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .selectColorMode(let colorMode):
             // 막대 색은 패널이 모델로 바꾸고, 캐릭터는 이미지를 다시 만들어서 바로 바꾼다.
             settings.colorMode = colorMode
+            applyIconState()
+        case .selectCharacter(let character):
+            settings.iconCharacter = character
             applyIconState()
         case .selectTheme(let theme):
             settings.theme = theme
@@ -304,7 +316,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - 패널
 
+    @objc private func handleGameMenuClick() {
+        closePanel()
+        startGame(RallyScene())
+    }
+
+    /// 게임을 시작한다. 시작되면 메뉴바의 실제 캐릭터는 숨기고, 끝나면 되돌린다.
+    private func startGame(_ scene: any GameScene) {
+        gameHost.onFinish = { [weak self] in self?.iconController.setGameMode(false) }
+        if gameHost.start(scene: scene, buttonWindow: statusItem.button?.window, colorMode: settings.colorMode) {
+            iconController.setGameMode(true)
+        }
+    }
+
     @objc private func handleStatusItemClick() {
+        // 캐릭터를 누르면 졸거나 낚시하던 것을 멈추고 2분을 처음부터 다시 센다.
+        sleepPolicy.noteClick(now: timeSource.now)
+        if rest != nil {
+            rest = nil
+            applyIconState()
+        }
         if NSApp.currentEvent?.type == .rightMouseUp {
             showSettingsMenu()
             return
@@ -456,15 +487,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let result = pollTracker.advance(states: states, waitingKinds: waitingKinds)
         runningCount = result.runningCount
         isWaiting = result.isWaiting
-        isSleeping = sleepPolicy.isSleeping(
+        rest = sleepPolicy.rest(
             now: timeSource.now,
             isBusy: runningCount > 0 || isWaiting,
             hasFinished: !result.finishedIDs.isEmpty,
-            hasFirework: iconController.hasFirework
+            hasFirework: iconController.hasFirework,
+            random: { Double.random(in: 0..<1) }
         )
 
         if !result.finishedIDs.isEmpty { handleSessionsFinished(ids: result.finishedIDs) }
-        if !result.newWaitingKinds.isEmpty { NSSound(named: "Ping")?.play() }
+        if !result.newWaitingKinds.isEmpty { playCharacterSound(.waiting) }
         applyIconState()
 
         let finishedNotices = result.finishedIDs.map { (sessionID: $0, body: NotificationText.finishedBody) }
@@ -472,9 +504,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         await sendNotifications(finishedNotices + waitingNotices)
     }
 
+    /// 캐릭터 소리를 내는 때. 작업이 끝났을 때와 승인 대기가 새로 생겼을 때다.
+    private enum CharacterSoundMoment {
+        case finished
+        case waiting
+
+        /// 번들 소리 파일 이름의 끝부분(예: chiikawa-done.mp3)
+        var fileSuffix: String {
+            switch self {
+            case .finished: "done"
+            case .waiting: "wait"
+            }
+        }
+
+        /// 그림 캐릭터의 소리를 찾지 못했을 때나 Claude일 때 내는 시스템 소리
+        var systemSoundName: NSSound.Name {
+            switch self {
+            case .finished: "Glass"
+            case .waiting: "Ping"
+            }
+        }
+    }
+
+    // 치이카와, 하치와레, 우사기를 고르면 번들에 넣은 각자의 소리를, Claude는 시스템 소리를 낸다.
+    // 파일이 없으면(앱 번들이 아닐 때) 시스템 소리로 돌아간다.
+    private func playCharacterSound(_ moment: CharacterSoundMoment) {
+        let character = settings.iconCharacter
+        if character != .claude,
+           let soundURL = Bundle.main.url(forResource: "\(character.rawValue)-\(moment.fileSuffix)", withExtension: "mp3"),
+           let sound = NSSound(contentsOf: soundURL, byReference: true) {
+            characterSounds[moment] = sound
+            sound.play()
+            return
+        }
+        NSSound(named: moment.systemSoundName)?.play()
+    }
+
     // 소리는 한 번만 낸다. 패널을 보고 있으면 점 대신 카드를 바로 강조한다.
     private func handleSessionsFinished(ids: [String]) {
-        NSSound(named: "Glass")?.play()
+        playCharacterSound(.finished)
         iconController.startFirework()
         ids.forEach { id in
             if isPanelOpen {
@@ -498,9 +566,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         iconController.apply(IconState(
             runningCount: runningCount,
             isWaiting: isWaiting,
-            isSleeping: isSleeping,
+            rest: rest,
             hasUnseenDone: !unseenFinishedIDs.isEmpty,
-            colorMode: settings.colorMode
+            colorMode: settings.colorMode,
+            character: settings.iconCharacter
         ))
     }
 }
