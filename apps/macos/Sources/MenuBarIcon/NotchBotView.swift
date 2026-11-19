@@ -156,8 +156,8 @@ public struct NotchBotView<Content: View, Header: View>: View {
             eyes
                 .frame(width: botWidth, height: height)
                 .offset(x: eyeRect.minX)
-                // 펼친 동안 눈은 마우스를 따라 띠 안을 느긋하게 오간다. 접으면 노치와 함께 봇 자리로 돌아간다.
-                .animation(.spring(response: 0.6, dampingFraction: 1), value: model.roamProgress)
+                // 펼친 동안 눈이 띠 안을 오가는 움직임은 창 컨트롤러가 값을 바꿀 때 직접 애니메이션을 건다.
+                // 접으면 노치와 함께 봇 자리로 돌아간다.
         }
         .frame(width: canvas.width, height: canvas.height, alignment: .topLeading)
         .animation(isExpanded ? NotchBotStyle.expandSpring : NotchBotStyle.collapseSpring, value: isExpanded)

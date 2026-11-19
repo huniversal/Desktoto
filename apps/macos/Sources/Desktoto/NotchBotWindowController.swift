@@ -17,6 +17,11 @@ final class NotchBotWindowController {
     /// 마우스가 이 시간(초) 넘게 멈추면 가끔 다른 곳을 둘러본다.
     private static let idleDelay: TimeInterval = 2
     private static let smileDuration: TimeInterval = 2.5
+    /// 펼친 노치에서 눈이 띠 안을 옮겨 갈 때 한 프레임마다 목표 쪽으로 끌리는 힘과, 속도를 줄이는 정도.
+    /// 천천히 출발해 1.2초 남짓에 걸쳐 튕기지 않고 멈추도록 맞춘 값이다.
+    private static let roamPull = 0.0025
+    private static let roamDamping = 0.9
+    private static let roamFrameInterval: TimeInterval = 1.0 / 60
 
     private let model = NotchBotModel()
     private var panel: NSPanel?
@@ -37,6 +42,10 @@ final class NotchBotWindowController {
     private var expandedWidth: CGFloat = 520
     private var maxContentHeight: CGFloat = 240
     private var outsideClickMonitor: Any?
+    /// 눈이 띠 안에서 가려는 자리와 지금 움직이는 속도. 타이머가 매 프레임 model.roamProgress를 옮긴다.
+    private var roamTarget = 1.0
+    private var roamVelocity = 0.0
+    private var roamTimer: Timer?
 
     /// 봇을 눌렀을 때 부른다. 값은 오른쪽 클릭인지다.
     var onClick: ((Bool) -> Void)?
@@ -206,14 +215,47 @@ final class NotchBotWindowController {
         let usableWidth = roam.width - layout.botWidth
         guard usableWidth > 0 else { return }
         let progress = min(max((mouse.x - roam.minX - layout.botWidth / 2) / usableWidth, 0), 1)
-        guard abs(progress - model.roamProgress) > 0.01 else { return }
         if isAnimated {
-            model.roamProgress = progress
+            moveRoam(to: progress)
         } else {
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) { model.roamProgress = progress }
+            roamTimer?.invalidate()
+            roamTimer = nil
+            roamTarget = progress
+            roamVelocity = 0
+            model.roamProgress = progress
         }
+    }
+
+    /// 눈을 띠 안의 새 자리로 보낸다. SwiftUI 애니메이션 대신 타이머가 매 프레임 조금씩 옮겨서 속도를 확실히 정한다.
+    private func moveRoam(to progress: Double) {
+        roamTarget = progress
+        guard roamTimer == nil else { return }
+        let timer = Timer(timeInterval: Self.roamFrameInterval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.tickRoam() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        roamTimer = timer
+    }
+
+    private func tickRoam() {
+        let distance = roamTarget - model.roamProgress
+        roamVelocity = roamVelocity * Self.roamDamping + distance * Self.roamPull
+        if abs(distance) < 0.002, abs(roamVelocity) < 0.0005 {
+            model.roamProgress = roamTarget
+            roamVelocity = 0
+            roamTimer?.invalidate()
+            roamTimer = nil
+            return
+        }
+        model.roamProgress += roamVelocity
+    }
+
+    /// 마우스가 멈춰 있을 때 띠 안의 다른 자리로 옮겨 간다. 너무 가까운 자리는 고르지 않아 움직임이 눈에 띄게 한다.
+    private func wanderRoam() {
+        let current = roamTarget
+        var next = Double.random(in: 0...1)
+        if abs(next - current) < 0.25 { next = current < 0.5 ? min(current + 0.4, 1) : max(current - 0.4, 0) }
+        moveRoam(to: next)
     }
 
     /// 마우스가 클릭 영역 위에 있을 때만 창이 클릭을 받는다. 나머지 영역은 뒤의 메뉴바나 앱으로 클릭이 통과한다.
@@ -237,6 +279,10 @@ final class NotchBotWindowController {
         let now = ProcessInfo.processInfo.systemUptime
         guard now - lastMouseMoveTime > Self.idleDelay, now >= nextIdleLookTime else { return }
         nextIdleLookTime = now + .random(in: 1.5...4)
+        // 펼친 동안에는 시선만 돌리지 않고 띠 안의 다른 자리로 천천히 걸어가듯 옮겨 간다.
+        if model.isExpanded, Bool.random() {
+            wanderRoam()
+        }
         look(x: .random(in: -0.7...0.7), y: .random(in: -0.5...0.5))
     }
 
