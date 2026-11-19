@@ -285,7 +285,7 @@ public struct NotchBotView<Content: View, Header: View>: View {
 
 /// 노치 봇 뷰의 고정 값. 제네릭 뷰에는 정적 저장 속성을 둘 수 없어서 따로 둔다.
 private enum NotchBotStyle {
-    static let collapsedRadius: CGFloat = 10
+    static let collapsedRadius: CGFloat = 12
     static let expandedRadius: CGFloat = 22
     /// 작업 중 봇 몸 색. 하늘빛 파랑에서 남색, 보라, 자줏빛 보라까지 블루 퍼플 계열 안에서 폭넓게 오간다.
     /// 85% 투명도로 검정 위에 얹혀서 흰 눈은 계속 잘 보인다.
