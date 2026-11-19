@@ -6,7 +6,7 @@ import SwiftUI
 /// 접혀 있을 때는 봇 부분만, 펼쳤을 때는 펼친 노치 전체가 클릭을 받고, 나머지 여백은 클릭이 그대로 뒤로 통과한다.
 @MainActor
 final class NotchBotWindowController {
-    private static let botWidth: CGFloat = 28
+    private static let botWidth: CGFloat = 26
     /// 창 가장자리 여백. 펼친 노치의 둥근 모서리가 창 끝에 잘리지 않게 둔다.
     private static let canvasPadding: CGFloat = 16
     private static let topOverlap: CGFloat = 1
