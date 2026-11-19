@@ -203,3 +203,50 @@ private struct NotchSessionRow: View {
         .onTapGesture(perform: onOpen)
     }
 }
+
+/// 펼친 노치 맨 윗줄 왼쪽에 두는 세션 상태 요약. 진행 중인 세션 수와 승인 대기 수를 한 줄로 보여 준다.
+/// 승인 대기는 있을 때만 노란 점과 함께 보여서 눈에 띄게 한다.
+public struct NotchStatusSummaryView: View {
+    private let model: SessionPanelModel
+
+    private static let runningColor = Color(red: 0.42, green: 0.50, blue: 1.0)
+    private static let waitingColor = Color(red: 1.0, green: 0.80, blue: 0.25)
+    private static let dotSize: CGFloat = 6
+
+    public init(model: SessionPanelModel) {
+        self.model = model
+    }
+
+    public var body: some View {
+        let runningCount = model.sessions.filter(\.isRunning).count
+        let waitingCount = model.sessions.filter { $0.waitingKind != nil }.count
+        HStack(spacing: 10) {
+            if model.sessions.isEmpty {
+                Text("세션 없음")
+                    .secondaryText()
+            } else {
+                item(color: runningCount > 0 ? Self.runningColor : .gray, label: "진행 중", count: runningCount)
+                if waitingCount > 0 {
+                    item(color: Self.waitingColor, label: "승인 대기", count: waitingCount)
+                }
+            }
+        }
+        .font(NotchPanelStyle.bodyFont)
+        .lineLimit(1)
+        .environment(\.colorScheme, .dark)
+        .foregroundStyle(.white)
+    }
+
+    private func item(color: Color, label: String, count: Int) -> some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(color)
+                .frame(width: Self.dotSize, height: Self.dotSize)
+            Text(label)
+                .secondaryText()
+            Text("\(count)")
+                .fontWeight(.medium)
+                .monospacedDigit()
+        }
+    }
+}

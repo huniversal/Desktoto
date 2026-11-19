@@ -33,6 +33,7 @@ final class NotchBotWindowController {
     private var notchScreen: NSScreen?
     private var layout: NotchBotLayout?
     private var panelContent = AnyView(EmptyView())
+    private var panelHeader = AnyView(EmptyView())
     private var expandedWidth: CGFloat = 520
     private var maxContentHeight: CGFloat = 240
     private var outsideClickMonitor: Any?
@@ -64,9 +65,10 @@ final class NotchBotWindowController {
 
     var isExpanded: Bool { model.isExpanded }
 
-    /// 펼쳤을 때 노치 안에 보여 줄 내용과 그 크기
-    func setPanelContent<Content: View>(_ content: Content, width: CGFloat, maxHeight: CGFloat) {
+    /// 펼쳤을 때 노치 안에 보여 줄 내용과 그 크기. header는 맨 윗줄 노치 왼쪽 자리에 놓인다.
+    func setPanelContent<Content: View, Header: View>(_ content: Content, header: Header, width: CGFloat, maxHeight: CGFloat) {
         panelContent = AnyView(content)
+        panelHeader = AnyView(header)
         expandedWidth = width
         maxContentHeight = maxHeight
         placePanel()
@@ -162,7 +164,8 @@ final class NotchBotWindowController {
         )
         let panel = panel ?? createPanel()
         let content = panelContent
-        panel.contentView = NSHostingView(rootView: NotchBotView(model: model, layout: layout) { content })
+        let header = panelHeader
+        panel.contentView = NSHostingView(rootView: NotchBotView(model: model, layout: layout) { content } header: { header })
         panel.setFrame(frame, display: true)
         panel.orderFrontRegardless()
         self.panel = panel

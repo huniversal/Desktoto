@@ -70,16 +70,27 @@ public struct NotchBotLayout: Equatable, Sendable {
 
 /// 노치와 그 오른쪽에 붙은 봇 몸을 하나의 검정 덩어리로 그리고, 봇 부분에 알약 눈을 단다.
 /// 작업 중에는 봇 부분의 색이 바뀌고, 펼치면 노치가 커지며 그 안에 패널 내용을 보여 준다.
-public struct NotchBotView<Content: View>: View {
+public struct NotchBotView<Content: View, Header: View>: View {
     private let model: NotchBotModel
     private let layout: NotchBotLayout
     private let content: Content
+    private let header: Header
 
-    public init(model: NotchBotModel, layout: NotchBotLayout, @ViewBuilder content: () -> Content) {
+    /// content는 펼친 노치의 노치 아래 영역, header는 펼친 노치 맨 윗줄에서 노치 왼쪽에 남는 자리에 놓인다.
+    public init(
+        model: NotchBotModel,
+        layout: NotchBotLayout,
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder header: () -> Header
+    ) {
         self.model = model
         self.layout = layout
         self.content = content()
+        self.header = header()
     }
+
+    /// 맨 윗줄 왼쪽 자리의 안쪽 여백. 아래 카드의 바깥 여백과 맞춘다.
+    private static var headerInset: CGFloat { 14 }
 
     private var height: CGFloat { layout.height }
     private var botWidth: CGFloat { layout.botWidth }
@@ -109,6 +120,13 @@ public struct NotchBotView<Content: View>: View {
                     .opacity(isExpanded ? 1 : 0)
                     .animation(isExpanded ? .easeOut(duration: 0.2).delay(0.18) : .easeIn(duration: 0.1), value: isExpanded)
                     .allowsHitTesting(isExpanded)
+                // 노치 왼쪽에 남는 맨 윗줄. 카메라 노치에 가리지 않도록 노치 왼쪽 끝 전까지만 쓴다.
+                header
+                    .frame(width: headerWidth, height: height, alignment: .leading)
+                    .offset(x: flare + (isExpanded ? 0 : layout.padding - bodyRect.minX) + Self.headerInset)
+                    .opacity(isExpanded ? 1 : 0)
+                    .animation(isExpanded ? .easeOut(duration: 0.2).delay(0.18) : .easeIn(duration: 0.1), value: isExpanded)
+                    .allowsHitTesting(false)
             }
             .frame(width: bodyRect.width + flare * 2, height: bodyRect.height, alignment: .topLeading)
             .clipShape(NotchShape(
@@ -124,6 +142,13 @@ public struct NotchBotView<Content: View>: View {
         .frame(width: canvas.width, height: canvas.height, alignment: .topLeading)
         .animation(isExpanded ? NotchBotStyle.expandSpring : NotchBotStyle.collapseSpring, value: isExpanded)
         .animation(NotchBotStyle.collapseSpring, value: model.contentHeight)
+    }
+
+    /// 펼친 몸 왼쪽 끝에서 노치 왼쪽 끝까지, 양쪽 여백을 뺀 너비
+    private var headerWidth: CGFloat {
+        let expandedLeft = layout.bodyRect(isExpanded: true, contentHeight: 0).minX
+        let notchLeft = layout.bodyRect(isExpanded: false, contentHeight: 0).minX
+        return max(notchLeft - expandedLeft - Self.headerInset * 2, 0)
     }
 
     /// 접힌 봇 자리에 고정된 작업 중 색. 접힌 몸 모양으로 잘라서 오른쪽 위 오목한 곡선과 아래 둥근 모서리까지 맞춘다.

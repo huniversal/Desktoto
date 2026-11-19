@@ -590,6 +590,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notchBotController.onDismissRequest = { [weak self] in self?.closePanel() }
         notchBotController.setPanelContent(
             NotchPanelView(model: panelController.model),
+            header: NotchStatusSummaryView(model: panelController.model),
             width: NotchPanelView.contentWidth,
             maxHeight: NotchPanelView.maxContentHeight
         )
