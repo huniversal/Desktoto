@@ -15,6 +15,12 @@ public enum IconCharacter: String, CaseIterable, Sendable {
     case usagi
 }
 
+// 캐릭터를 어디에 둘지. 메뉴바는 기존 캐릭터, 노치는 노치 오른쪽에 붙는 봇이다. 기본값은 menuBar다.
+public enum IconPlacement: String, CaseIterable, Sendable {
+    case menuBar
+    case notch
+}
+
 // 패널의 테마. 시스템은 macOS의 라이트와 다크 설정을 따른다.
 public enum Theme: String, CaseIterable, Sendable {
     case light

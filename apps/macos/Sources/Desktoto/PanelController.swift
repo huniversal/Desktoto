@@ -34,15 +34,15 @@ final class PanelController {
         }
     }
 
-    /// 상태바 아이콘 바로 아래에서 아이콘의 왼쪽 끝에 맞춰 시작하되, 화면 가장자리를 넘지 않게 한다.
-    func updateFrame(buttonWindow: NSWindow?) {
-        guard let buttonWindow else { return }
-        let visibleFrame = (buttonWindow.screen ?? NSScreen.main)?.visibleFrame ?? .zero
-        panel.updateFrame(buttonFrame: buttonWindow.frame, visibleFrame: visibleFrame)
+    /// 기준 영역(메뉴바 아이콘이나 노치 봇) 바로 아래에서 그 왼쪽 끝에 맞춰 시작하되, 화면 가장자리를 넘지 않게 한다.
+    func updateFrame(anchorFrame: CGRect?) {
+        guard let anchorFrame else { return }
+        let screen = NSScreen.screens.first { $0.frame.intersects(anchorFrame) } ?? NSScreen.main
+        panel.updateFrame(buttonFrame: anchorFrame, visibleFrame: screen?.visibleFrame ?? .zero)
     }
 
-    func show(buttonWindow: NSWindow?) {
-        updateFrame(buttonWindow: buttonWindow)
+    func show(anchorFrame: CGRect?) {
+        updateFrame(anchorFrame: anchorFrame)
         panel.alphaValue = 0
         panel.orderFrontRegardless()
         panel.makeKey()

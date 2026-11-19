@@ -53,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var sleepPolicy: SleepPolicy
     private var unseenFinishedIDs: Set<String> = []
     private var runningCount = 0
+    private let notchBotController = NotchBotWindowController()
     private var isWaiting = false
     private var rest: IconRest?
 
@@ -127,6 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
 
         setUpPanel()
+        setUpNotchBot()
         connectClaudeCodeIfAllowed()
         applyLoginItemDefaultOnce()
         setUpUsageMonitoring()
@@ -243,9 +245,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             gameItem.target = self
             menu.insertItem(gameItem, at: 0)
             menu.insertItem(.separator(), at: 1)
-            statusItem.menu = menu
-            statusItem.button?.performClick(nil)
-            statusItem.menu = nil
+            // 노치 봇 모드에서는 메뉴바 아이콘이 숨어 있으니 봇 바로 아래에 메뉴를 띄운다.
+            if isNotchBotActive, let botFrame = notchBotController.botFrame {
+                menu.popUp(positioning: nil, at: NSPoint(x: botFrame.minX, y: botFrame.minY), in: nil)
+            } else {
+                statusItem.menu = menu
+                statusItem.button?.performClick(nil)
+                statusItem.menu = nil
+            }
         }
     }
 
@@ -278,6 +285,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 막대 색은 패널이 모델로 바꾸고, 캐릭터는 이미지를 다시 만들어서 바로 바꾼다.
             settings.colorMode = colorMode
             applyIconState()
+        case .selectPlacement(let placement):
+            settings.iconPlacement = placement
+            closePanel()
+            applyPlacement()
         case .selectCharacter(let character):
             settings.iconCharacter = character
             applyIconState()
@@ -330,13 +341,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func handleStatusItemClick() {
+        handleCharacterClick(isRightClick: NSApp.currentEvent?.type == .rightMouseUp)
+    }
+
+    // 메뉴바 캐릭터와 노치 봇이 같은 동작을 한다. 왼쪽은 패널, 오른쪽은 설정 메뉴다.
+    private func handleCharacterClick(isRightClick: Bool) {
         // 캐릭터를 누르면 졸거나 낚시하던 것을 멈추고 2분을 처음부터 다시 센다.
         sleepPolicy.noteClick(now: timeSource.now)
         if rest != nil {
             rest = nil
             applyIconState()
         }
-        if NSApp.currentEvent?.type == .rightMouseUp {
+        if isRightClick {
             showSettingsMenu()
             return
         }
@@ -367,7 +383,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard generation == openGeneration, isPanelOpen else { return }
             isOpenPending = false
             if settings.showsUsage { requestCodexRefresh(minInterval: 0) }
-            panelController.show(buttonWindow: statusItem.button?.window)
+            // 노치 봇 모드에서는 유리 패널 대신 노치가 펼쳐진다.
+            if isNotchBotActive {
+                notchBotController.setExpanded(true)
+            } else {
+                panelController.show(anchorFrame: panelAnchorFrame)
+            }
             startPanelRefreshTimer()
         }
     }
@@ -386,6 +407,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panelRefreshTimer?.invalidate()
         panelRefreshTimer = nil
         panelController.hide()
+        notchBotController.setExpanded(false)
     }
 
     // 열려 있는 동안 값을 갱신하고, 줄 수가 바뀌면 패널 크기도 맞춘다.
@@ -413,8 +435,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updatePanelFrame() {
-        guard isPanelOpen else { return }
-        panelController.updateFrame(buttonWindow: statusItem.button?.window)
+        guard isPanelOpen, !isNotchBotActive else { return }
+        panelController.updateFrame(anchorFrame: panelAnchorFrame)
     }
 
     // 승인 대기 세션을 맨 위로, 그다음 진행 중인 세션, 방금 끝난 세션, 나머지는 최근 활동순으로 보여준다.
@@ -562,7 +584,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func setUpNotchBot() {
+        notchBotController.onClick = { [weak self] isRightClick in self?.handleCharacterClick(isRightClick: isRightClick) }
+        notchBotController.onAvailabilityChange = { [weak self] in self?.applyPlacement() }
+        notchBotController.onDismissRequest = { [weak self] in self?.closePanel() }
+        notchBotController.setPanelContent(
+            NotchPanelView(model: panelController.model),
+            width: NotchPanelView.contentWidth,
+            maxHeight: NotchPanelView.maxContentHeight
+        )
+        notchBotController.start()
+        applyPlacement()
+    }
+
+    /// 노치 봇을 골랐고 노치가 있는 화면이 있을 때만 노치 봇을 쓴다. 아니면 메뉴바 캐릭터로 돌아가서 앱을 열 수단이 사라지지 않게 한다.
+    private var isNotchBotActive: Bool {
+        settings.iconPlacement == .notch && notchBotController.isAvailable
+    }
+
+    /// 메뉴바 캐릭터와 노치 봇 중 하나만 보이게 한다.
+    private func applyPlacement() {
+        let isNotch = isNotchBotActive
+        statusItem.isVisible = !isNotch
+        notchBotController.setVisible(isNotch)
+    }
+
+    /// 유리 패널을 띄울 기준 영역. 메뉴바 아이콘이다.
+    private var panelAnchorFrame: CGRect? {
+        statusItem.button?.window?.frame
+    }
+
     private func applyIconState() {
+        notchBotController.setWorking(runningCount > 0)
         iconController.apply(IconState(
             runningCount: runningCount,
             isWaiting: isWaiting,

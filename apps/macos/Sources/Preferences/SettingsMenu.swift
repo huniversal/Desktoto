@@ -14,6 +14,7 @@ public enum SettingsAction: Equatable, Sendable {
     case toggleContextPanel
     case selectColorMode(ColorMode)
     case selectCharacter(IconCharacter)
+    case selectPlacement(IconPlacement)
     case selectTheme(Theme)
     case selectGlassStyle(GlassStyle)
     case quit
@@ -100,6 +101,9 @@ public enum SettingsMenu {
         entries.append(.submenu(title: "캐릭터", items: IconCharacter.allCases.map { character in
             makeItem(character.menuTitle, isOn: settings.iconCharacter == character, action: .selectCharacter(character))
         }))
+        entries.append(.submenu(title: "표시 위치", items: IconPlacement.allCases.map { placement in
+            makeItem(placement.menuTitle, isOn: settings.iconPlacement == placement, action: .selectPlacement(placement))
+        }))
         entries.append(.submenu(title: "테마", items: Theme.allCases.map { theme in
             makeItem(theme.menuTitle, isOn: settings.theme == theme, action: .selectTheme(theme))
         }))
@@ -142,6 +146,15 @@ private extension IconCharacter {
         case .chiikawa: "치이카와"
         case .hachiware: "하치와레"
         case .usagi: "우사기"
+        }
+    }
+}
+
+private extension IconPlacement {
+    var menuTitle: String {
+        switch self {
+        case .menuBar: "메뉴바 캐릭터"
+        case .notch: "노치 봇"
         }
     }
 }
