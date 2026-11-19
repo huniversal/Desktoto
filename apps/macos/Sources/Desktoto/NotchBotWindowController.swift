@@ -51,7 +51,7 @@ final class NotchBotWindowController {
     /// 화면 좌표에서 봇(눈이 있는 자리)이 차지하는 영역. 설정 메뉴를 이 아래에 띄운다.
     var botFrame: NSRect? {
         guard let layout else { return nil }
-        return screenRect(of: layout.botRect(isExpanded: model.isExpanded, contentHeight: model.contentHeight))
+        return screenRect(of: layout.eyeRect(isExpanded: model.isExpanded, contentHeight: model.contentHeight, roamProgress: model.roamProgress))
     }
 
     /// 지금 클릭을 받는 영역. 접혔으면 봇, 펼쳤으면 펼친 노치 전체다.
@@ -77,6 +77,7 @@ final class NotchBotWindowController {
     /// 노치를 펼치거나 접는다. 펼친 동안에는 바깥 클릭을 지켜보다가 닫아 달라고 알린다.
     func setExpanded(_ isExpanded: Bool) {
         guard isVisible, model.isExpanded != isExpanded else { return }
+        if isExpanded { updateRoam(mouse: NSEvent.mouseLocation, isAnimated: false) }
         model.isExpanded = isExpanded
         panel?.ignoresMouseEvents = !isExpanded
         if isExpanded {
@@ -189,6 +190,7 @@ final class NotchBotWindowController {
         lastMouseMoveTime = ProcessInfo.processInfo.systemUptime
         let mouse = NSEvent.mouseLocation
         updateClickThrough(mouse: mouse)
+        if model.isExpanded { updateRoam(mouse: mouse, isAnimated: true) }
         let botCenterX = botFrame.midX
         let botCenterY = botFrame.midY
         let direction = GazeDirection.make(offsetX: mouse.x - botCenterX, offsetY: mouse.y - botCenterY)
@@ -196,6 +198,22 @@ final class NotchBotWindowController {
             x: Double(direction.horizontal) / Double(GazeDirection.maxHorizontal),
             y: Double(direction.vertical) / Double(GazeDirection.maxVertical)
         )
+    }
+
+    /// 펼친 동안 눈이 마우스의 가로 위치를 따라 맨 윗줄 오른쪽 띠 안을 움직인다. 띠 밖이면 가까운 끝에 머문다.
+    private func updateRoam(mouse: NSPoint, isAnimated: Bool) {
+        guard let layout, let roam = screenRect(of: layout.roamRect) else { return }
+        let usableWidth = roam.width - layout.botWidth
+        guard usableWidth > 0 else { return }
+        let progress = min(max((mouse.x - roam.minX - layout.botWidth / 2) / usableWidth, 0), 1)
+        guard abs(progress - model.roamProgress) > 0.01 else { return }
+        if isAnimated {
+            model.roamProgress = progress
+        } else {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { model.roamProgress = progress }
+        }
     }
 
     /// 마우스가 클릭 영역 위에 있을 때만 창이 클릭을 받는다. 나머지 영역은 뒤의 메뉴바나 앱으로 클릭이 통과한다.

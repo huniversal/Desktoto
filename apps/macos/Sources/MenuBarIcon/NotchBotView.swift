@@ -22,6 +22,8 @@ public final class NotchBotModel {
     public var isExpanded = false
     /// 펼쳤을 때 패널 내용의 높이. 뷰가 재서 넣고, 창 컨트롤러는 클릭을 받을 영역을 이걸로 잡는다.
     public var contentHeight: CGFloat = 0
+    /// 펼쳤을 때 눈이 맨 윗줄 오른쪽 띠에서 어디쯤 있는지. 0이면 노치 바로 오른쪽, 1이면 펼친 몸 오른쪽 끝이다.
+    public var roamProgress: Double = 1
 
     public init() {}
 }
@@ -62,6 +64,22 @@ public struct NotchBotLayout: Equatable, Sendable {
     }
 
     /// 눈이 있는 봇 자리. 몸의 오른쪽 위다.
+    /// 펼쳤을 때 눈이 마우스를 따라 움직일 수 있는 띠. 노치 오른쪽 끝부터 펼친 몸 오른쪽 끝까지, 높이는 노치 높이다.
+    public var roamRect: CGRect {
+        let collapsed = bodyRect(isExpanded: false, contentHeight: 0)
+        let expanded = bodyRect(isExpanded: true, contentHeight: 0)
+        let left = collapsed.minX + notchWidth
+        return CGRect(x: left, y: 0, width: expanded.maxX - left, height: height)
+    }
+
+    /// 눈이 지금 있는 자리. 접혔으면 봇 자리, 펼쳤으면 띠 안에서 roamProgress만큼 간 자리다.
+    public func eyeRect(isExpanded: Bool, contentHeight: CGFloat, roamProgress: Double) -> CGRect {
+        guard isExpanded else { return botRect(isExpanded: false, contentHeight: contentHeight) }
+        let roam = roamRect
+        let progress = min(max(roamProgress, 0), 1)
+        return CGRect(x: roam.minX + (roam.width - botWidth) * progress, y: 0, width: botWidth, height: height)
+    }
+
     public func botRect(isExpanded: Bool, contentHeight: CGFloat) -> CGRect {
         let body = bodyRect(isExpanded: isExpanded, contentHeight: contentHeight)
         return CGRect(x: body.maxX - botWidth, y: 0, width: botWidth, height: height)
@@ -101,7 +119,7 @@ public struct NotchBotView<Content: View, Header: View>: View {
         let flare = NotchBotLayout.flareRadius
         let canvas = layout.canvasSize
         let bodyRect = layout.bodyRect(isExpanded: isExpanded, contentHeight: model.contentHeight)
-        let botRect = layout.botRect(isExpanded: isExpanded, contentHeight: model.contentHeight)
+        let eyeRect = layout.eyeRect(isExpanded: isExpanded, contentHeight: model.contentHeight, roamProgress: model.roamProgress)
         // 몸, 작업 중 색, 눈을 따로 쌓는다. 색은 접힌 봇 자리에 고정해 두고 투명도만 바꿔서,
         // 노치가 접히는 움직임을 따라 한쪽부터 물드는 일 없이 전체가 한꺼번에 은은하게 바뀐다.
         ZStack(alignment: .topLeading) {
@@ -137,7 +155,9 @@ public struct NotchBotView<Content: View, Header: View>: View {
             collapsedWorkingColor
             eyes
                 .frame(width: botWidth, height: height)
-                .offset(x: botRect.minX)
+                .offset(x: eyeRect.minX)
+                // 펼친 동안 눈은 마우스를 따라 띠 안을 느긋하게 오간다. 접으면 노치와 함께 봇 자리로 돌아간다.
+                .animation(.spring(response: 0.6, dampingFraction: 1), value: model.roamProgress)
         }
         .frame(width: canvas.width, height: canvas.height, alignment: .topLeading)
         .animation(isExpanded ? NotchBotStyle.expandSpring : NotchBotStyle.collapseSpring, value: isExpanded)
