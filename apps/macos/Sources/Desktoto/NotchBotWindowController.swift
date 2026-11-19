@@ -17,6 +17,9 @@ final class NotchBotWindowController {
     /// 마우스가 이 시간(초) 넘게 멈추면 가끔 다른 곳을 둘러본다.
     private static let idleDelay: TimeInterval = 2
     private static let smileDuration: TimeInterval = 2.5
+    /// 마우스가 이 시간(초) 넘게 멈추면 졸고, 더 오래 멈추면 잠든다. 작업 중이거나 펼친 동안에는 졸지 않는다.
+    private static let sleepyDelay: TimeInterval = 60
+    private static let asleepDelay: TimeInterval = 180
     /// 펼친 노치에서 눈이 띠 안을 옮겨 갈 때 한 프레임마다 목표 쪽으로 끌리는 힘과, 속도를 줄이는 정도.
     /// 천천히 출발해 1.2초 남짓에 걸쳐 튕기지 않고 멈추도록 맞춘 값이다.
     private static let roamPull = 0.0025
@@ -86,7 +89,10 @@ final class NotchBotWindowController {
     /// 노치를 펼치거나 접는다. 펼친 동안에는 바깥 클릭을 지켜보다가 닫아 달라고 알린다.
     func setExpanded(_ isExpanded: Bool) {
         guard isVisible, model.isExpanded != isExpanded else { return }
-        if isExpanded { updateRoam(mouse: NSEvent.mouseLocation, isAnimated: false) }
+        if isExpanded {
+            wakeUp()
+            updateRoam(mouse: NSEvent.mouseLocation, isAnimated: false)
+        }
         model.isExpanded = isExpanded
         panel?.ignoresMouseEvents = !isExpanded
         if isExpanded {
@@ -138,7 +144,12 @@ final class NotchBotWindowController {
     /// 작업 중이면 몸 색을 바꾼다. 작업이 끝나는 순간 잠깐 웃는다.
     func setWorking(_ isWorking: Bool) {
         model.isWorking = isWorking
-        if wasWorking, !isWorking { showSmile() }
+        if isWorking { wakeUp() }
+        // 작업이 끝나면 깨어나서 웃고, 졸음 시간도 처음부터 다시 잰다.
+        if wasWorking, !isWorking {
+            lastMouseMoveTime = ProcessInfo.processInfo.systemUptime
+            showSmile()
+        }
         wasWorking = isWorking
     }
 
@@ -197,6 +208,7 @@ final class NotchBotWindowController {
     private func updateGaze() {
         guard let botFrame else { return }
         lastMouseMoveTime = ProcessInfo.processInfo.systemUptime
+        wakeUp()
         let mouse = NSEvent.mouseLocation
         updateClickThrough(mouse: mouse)
         if model.isExpanded { updateRoam(mouse: mouse, isAnimated: true) }
@@ -277,13 +289,50 @@ final class NotchBotWindowController {
     /// 마우스가 한동안 멈춰 있으면 몇 초에 한 번씩 주변을 둘러본다.
     private func tickIdle() {
         let now = ProcessInfo.processInfo.systemUptime
-        guard now - lastMouseMoveTime > Self.idleDelay, now >= nextIdleLookTime else { return }
+        let idleTime = now - lastMouseMoveTime
+        if updateDrowsiness(idleTime: idleTime) { return }
+        guard idleTime > Self.idleDelay, now >= nextIdleLookTime else { return }
         nextIdleLookTime = now + .random(in: 1.5...4)
         // 펼친 동안에는 시선만 돌리지 않고 띠 안의 다른 자리로 천천히 걸어가듯 옮겨 간다.
         if model.isExpanded, Bool.random() {
             wanderRoam()
         }
         look(x: .random(in: -0.7...0.7), y: .random(in: -0.5...0.5))
+    }
+
+    /// 멈춘 시간에 따라 졸거나 잠든다. 졸거나 잠든 동안에는 둘러보지 않도록 true를 돌려준다.
+    private func updateDrowsiness(idleTime: TimeInterval) -> Bool {
+        let expression = model.expression
+        guard !model.isWorking, !model.isExpanded,
+              [.open, .sleepy, .asleep].contains(expression) else { return false }
+        if idleTime > Self.asleepDelay {
+            if expression != .asleep {
+                model.expression = .asleep
+                model.gazeX = 0
+                model.gazeY = 0
+            }
+            return true
+        }
+        if idleTime > Self.sleepyDelay {
+            if expression == .open {
+                model.expression = .sleepy
+                model.gazeY = 0.4
+            }
+            return true
+        }
+        return false
+    }
+
+    /// 졸거나 잠들어 있으면 원래 눈으로 돌아온다. 잠들어 있었다면 깨면서 한 번 깜빡인다.
+    private func wakeUp() {
+        let wasAsleep = model.expression == .asleep
+        guard wasAsleep || model.expression == .sleepy else { return }
+        model.expression = .open
+        if wasAsleep {
+            Timer.scheduledTimer(withTimeInterval: 0.45, repeats: false) { [weak self] _ in
+                MainActor.assumeIsolated { self?.blinkOnce() }
+            }
+        }
     }
 
     private func scheduleBlink() {
@@ -302,14 +351,17 @@ final class NotchBotWindowController {
         scheduleBlink()
     }
 
-    /// 0.06초에 감고, 0.03초 머물렀다가, 0.12초에 걸쳐 뜬다. 다른 표정 중이면 건너뛴다.
+    /// 0.06초에 감고, 0.03초 머물렀다가, 0.12초에 걸쳐 뜬다.
+    /// 졸린 눈일 때는 더 오래 감았다가 0.6초에 걸쳐 무겁게 다시 반쯤 뜬다. 다른 표정 중이면 건너뛴다.
     private func blinkOnce() {
-        guard model.expression == .open else { return }
+        let restingExpression = model.expression
+        guard restingExpression == .open || restingExpression == .sleepy else { return }
         model.expression = .blink
-        Timer.scheduledTimer(withTimeInterval: 0.09, repeats: false) { [weak self] _ in
+        let hold: TimeInterval = restingExpression == .sleepy ? 0.35 : 0.09
+        Timer.scheduledTimer(withTimeInterval: hold, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self, self.model.expression == .blink else { return }
-                self.model.expression = .open
+                self.model.expression = restingExpression
             }
         }
     }

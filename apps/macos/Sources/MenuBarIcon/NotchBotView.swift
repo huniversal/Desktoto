@@ -5,6 +5,10 @@ public enum NotchBotExpression: Sendable {
     case open
     case blink
     case smile
+    /// 마우스를 한동안 안 움직이면 눈꺼풀이 반쯤 내려온다.
+    case sleepy
+    /// 더 오래 쉬면 눈이 가는 선이 되고 옆으로 "z"가 떠오른다.
+    case asleep
 }
 
 /// 노치 봇이 그릴 상태. 창 컨트롤러가 값을 바꾸면 뷰가 다시 그려진다.
@@ -158,6 +162,12 @@ public struct NotchBotView<Content: View, Header: View>: View {
                 .offset(x: eyeRect.minX)
                 // 펼친 동안 눈이 띠 안을 오가는 움직임은 창 컨트롤러가 값을 바꿀 때 직접 애니메이션을 건다.
                 // 접으면 노치와 함께 봇 자리로 돌아간다.
+            NotchBotSleepMark(isAsleep: model.expression == .asleep, height: height)
+                .frame(width: NotchBotSleepMark.width, height: height, alignment: .topLeading)
+                .offset(x: eyeRect.maxX + 2)
+                .opacity(model.expression == .asleep && !isExpanded ? 1 : 0)
+                .animation(.easeInOut(duration: 0.6), value: model.expression)
+                .allowsHitTesting(false)
         }
         .frame(width: canvas.width, height: canvas.height, alignment: .topLeading)
         .animation(isExpanded ? NotchBotStyle.expandSpring : NotchBotStyle.collapseSpring, value: isExpanded)
@@ -253,8 +263,14 @@ public struct NotchBotView<Content: View, Header: View>: View {
     /// 알약 눈. 웃을 때는 모양을 바꾸지 않고, 볼이 올라오듯 타원이 아래에서 밀고 올라와 눈 아래쪽을 도려낸다.
     private func eye(width: CGFloat, height: CGFloat, curiosity: Double) -> some View {
         let expression = model.expression
-        let openness: CGFloat = expression == .blink ? 0.1 : 1
+        let openness: CGFloat = switch expression {
+        case .blink: 0.1
+        case .asleep: 0.16
+        default: 1
+        }
         let cheekCover: CGFloat = expression == .smile ? 0.55 : 0
+        // 졸릴 때는 위에서 눈꺼풀이 내려와 눈 위쪽 절반을 도려낸다.
+        let lidCover: CGFloat = expression == .sleepy ? 0.5 : 0
         // 볼은 검은색으로 덧그리지 않고 눈에서 도려내기만 해서, 눈 밖으로는 아무것도 비치지 않는다.
         return Capsule()
             .fill(.white)
@@ -262,6 +278,11 @@ public struct NotchBotView<Content: View, Header: View>: View {
             .mask {
                 ZStack(alignment: .top) {
                     Rectangle()
+                    Rectangle()
+                        // 눈 위로 조금 넘치게 덮어서 눈꺼풀 가장자리에 흰 잔상이 남지 않게 한다.
+                        .frame(height: height * lidCover + 2)
+                        .offset(y: -2)
+                        .blendMode(.destinationOut)
                     Ellipse()
                         .frame(width: width * 1.5, height: height * 0.9)
                         .offset(y: cheekCover > 0 ? height * (1 - cheekCover) : height * 1.4)
@@ -279,7 +300,35 @@ public struct NotchBotView<Content: View, Header: View>: View {
         case .blink: .easeIn(duration: 0.06)
         case .open: .easeOut(duration: 0.12)
         case .smile: .spring(response: 0.3, dampingFraction: 0.7)
+        case .sleepy, .asleep: .easeInOut(duration: 0.6)
         }
+    }
+}
+
+/// 잠든 봇 옆으로 작은 "z" 두 개가 번갈아 비스듬히 떠오르며 사라진다. 잠들지 않은 동안에는 시간 흐름을 멈춰 둔다.
+private struct NotchBotSleepMark: View {
+    static let width: CGFloat = 14
+    private static let cycle: TimeInterval = 2.4
+
+    let isAsleep: Bool
+    let height: CGFloat
+
+    var body: some View {
+        TimelineView(.animation(paused: !isAsleep)) { context in
+            let seconds = context.date.timeIntervalSinceReferenceDate
+            ZStack(alignment: .topLeading) {
+                letter(progress: (seconds / Self.cycle).truncatingRemainder(dividingBy: 1))
+                letter(progress: (seconds / Self.cycle + 0.5).truncatingRemainder(dividingBy: 1))
+            }
+        }
+    }
+
+    private func letter(progress: Double) -> some View {
+        Text("z")
+            .font(.system(size: height * (0.22 + 0.08 * progress), weight: .bold, design: .rounded))
+            .foregroundStyle(Color(white: 0.6))
+            .offset(x: Self.width * 0.6 * progress, y: height * (0.45 - 0.35 * progress))
+            .opacity(sin(.pi * progress))
     }
 }
 
