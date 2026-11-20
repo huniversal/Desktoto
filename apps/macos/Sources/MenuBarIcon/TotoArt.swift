@@ -48,11 +48,9 @@ enum TotoArt {
     /// 끝까지 옆이나 위아래를 볼 때 눈이 움직이는 거리(칸)
     private static let gazeTravelX: CGFloat = 2.4
     private static let gazeTravelY: CGFloat = 1.6
-    /// 평소 몸 색. 몸이 흰색이라 눈은 검정이다.
-    private static let bodyColor = NSColor.white
-    /// 밝은 메뉴바에서 흰 원이 배경에 묻히지 않도록 두르는 아주 옅은 테두리
-    private static let rimColor = NSColor(white: 0, alpha: 0.18)
-    /// 작업 중 몸 색. 노치 봇과 같은 블루 퍼플 계열이고, 흰 몸 위에 90%로 얹는다.
+    /// 어두운 메뉴바에서 원이 배경에 묻히지 않도록 두르는 아주 옅은 테두리
+    private static let rimColor = NSColor(white: 1, alpha: 0.22)
+    /// 작업 중 몸 색. 노치 봇과 같은 블루 퍼플 계열이고, 검정 위에 85%로 얹는다.
     private static let workingColors: [NSColor] = [
         NSColor(srgbRed: 0.16, green: 0.56, blue: 0.96, alpha: 1),
         NSColor(srgbRed: 0.22, green: 0.36, blue: 0.96, alpha: 1),
@@ -62,7 +60,7 @@ enum TotoArt {
         NSColor(srgbRed: 0.42, green: 0.44, blue: 0.98, alpha: 1),
         NSColor(srgbRed: 0.16, green: 0.56, blue: 0.96, alpha: 1)
     ]
-    private static let workingOpacity: CGFloat = 0.9
+    private static let workingOpacity: CGFloat = 0.85
     /// 승인 대기 중 몸 색. 주황에서 노랑 사이를 오간다.
     private static let waitingColors: [NSColor] = [
         NSColor(srgbRed: 1.00, green: 0.55, blue: 0.15, alpha: 1),
@@ -84,7 +82,7 @@ enum TotoArt {
         let radius = diameter / 2 * unit
         let circle = NSBezierPath(ovalIn: NSRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
 
-        bodyColor.setFill()
+        NSColor.black.setFill()
         circle.fill()
         if let phase = pose.colorPhase, pose.colorStrength > 0 {
             drawWorkingColor(in: circle, center: center, radius: radius, phase: phase, strength: pose.colorStrength, colors: isWaiting ? waitingColors : workingColors)
@@ -172,9 +170,7 @@ enum TotoArt {
         let width = eyeWidth * widthScale * unit
         let height = eyeHeight * heightScale * unit
         let fullHeight = eyeHeight * unit
-        // 흰 몸 위에서는 검정 눈이고, 몸 색이 물드는 만큼 흰 눈으로 바뀐다.
-        let colorStrength = pose.colorPhase == nil ? 0 : pose.colorStrength
-        (NSColor.black.blended(withFraction: colorStrength, of: .white) ?? .black).setFill()
+        NSColor.white.setFill()
         [(-1.0, -dizzyOffset), (1.0, dizzyOffset)].forEach { side, offsetY in
             let eyeCenter = CGPoint(
                 x: center.x + (side * eyeDistance / 2 + gazeX) * unit,
