@@ -142,6 +142,13 @@ final class NotchBotWindowController {
     }
 
     /// 작업 중이면 몸 색을 바꾼다. 작업이 끝나는 순간 잠깐 웃는다.
+    /// 승인을 기다리는 동안 몸 색을 주황과 노랑으로 바꾸고, 졸고 있었다면 깨운다.
+    func setWaiting(_ isWaiting: Bool) {
+        guard model.isWaiting != isWaiting else { return }
+        model.isWaiting = isWaiting
+        if isWaiting { wakeUp() }
+    }
+
     func setWorking(_ isWorking: Bool) {
         model.isWorking = isWorking
         if isWorking { wakeUp() }
@@ -303,7 +310,7 @@ final class NotchBotWindowController {
     /// 멈춘 시간에 따라 졸거나 잠든다. 졸거나 잠든 동안에는 둘러보지 않도록 true를 돌려준다.
     private func updateDrowsiness(idleTime: TimeInterval) -> Bool {
         let expression = model.expression
-        guard !model.isWorking, !model.isExpanded,
+        guard !model.isWorking, !model.isWaiting, !model.isExpanded,
               [.open, .sleepy, .asleep].contains(expression) else { return false }
         if idleTime > Self.asleepDelay {
             if expression != .asleep {

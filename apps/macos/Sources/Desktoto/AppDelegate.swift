@@ -617,6 +617,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func applyIconState() {
         notchBotController.setWorking(runningCount > 0)
+        notchBotController.setWaiting(isWaiting)
         iconController.apply(IconState(
             runningCount: runningCount,
             isWaiting: isWaiting,

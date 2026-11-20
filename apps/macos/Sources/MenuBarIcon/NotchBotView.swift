@@ -20,6 +20,8 @@ public final class NotchBotModel {
     public var gazeY: Double = 0
     public var expression: NotchBotExpression = .open
     public var isWorking = false
+    /// 승인을 기다리는 중이면 몸 색이 주황과 노랑으로 바뀐다.
+    public var isWaiting = false
     /// 바뀔 때마다 눈이 위아래로 통통 튀며 웃는다.
     public var laughCount = 0
     /// 노치가 펼쳐져서 패널을 보여 주는지
@@ -193,27 +195,36 @@ public struct NotchBotView<Content: View, Header: View>: View {
             .allowsHitTesting(false)
     }
 
-    /// 작업 중에는 봇 부분만 색이 천천히 바뀐다. 왼쪽으로는 검정에 스며들게 흐린다.
-    /// 층을 없애고 다시 만들지 않고 투명도만 바꿔서, 시작할 때와 끝날 때 모두 같은 속도로 물들고 빠진다.
-    /// 대기 중에는 색이 투명하니 시간 흐름도 멈춰 둔다.
+    /// 작업 중 색과 승인 대기 색을 겹쳐 둔다. 승인 대기가 작업 중보다 먼저 보인다.
+    /// 두 층이 따로 물들고 빠져서, 작업 중에서 승인 대기로 바뀔 때도 서서히 섞이며 넘어간다.
     private var workingColor: some View {
-        TimelineView(.animation(paused: !model.isWorking)) { context in
+        ZStack {
+            statusColor(colors: NotchBotStyle.workingColors, isActive: model.isWorking && !model.isWaiting)
+            statusColor(colors: NotchBotStyle.waitingColors, isActive: model.isWaiting)
+        }
+    }
+
+    /// 봇 부분만 색이 천천히 바뀐다. 왼쪽으로는 검정에 스며들게 흐린다.
+    /// 층을 없애고 다시 만들지 않고 투명도만 바꿔서, 시작할 때와 끝날 때 모두 같은 속도로 물들고 빠진다.
+    /// 꺼져 있을 때는 색이 투명하니 시간 흐름도 멈춰 둔다.
+    private func statusColor(colors: [Color], isActive: Bool) -> some View {
+        TimelineView(.animation(paused: !isActive)) { context in
             let seconds = context.date.timeIntervalSinceReferenceDate
             let angle = Angle.degrees(seconds.truncatingRemainder(dividingBy: 6) / 6 * 360)
             Rectangle()
-                .fill(AngularGradient(colors: NotchBotStyle.workingColors, center: .trailing, angle: angle))
+                .fill(AngularGradient(colors: colors, center: .trailing, angle: angle))
                 .mask(LinearGradient(
                     stops: [.init(color: .clear, location: 0), .init(color: .black, location: NotchBotStyle.colorFadeWidth / (botWidth + NotchBotStyle.colorFadeWidth + NotchBotLayout.flareRadius))],
                     startPoint: .leading,
                     endPoint: .trailing
                 ))
         }
-        // 검정 몸이 살짝 비쳐서 색이 은은하게 보인다. 대기와 작업 중 사이는 1.5초에 걸쳐 천천히 물들고 빠진다.
+        // 검정 몸이 살짝 비쳐서 색이 은은하게 보인다. 꺼짐과 켜짐 사이는 1.5초에 걸쳐 천천히 물들고 빠진다.
         // 노치를 펼친 동안에는 패널 내용에 집중하도록 색을 끈다.
         // 펼칠 때는 바로 빠르게 끄고, 접을 때는 노치가 다 접힌 뒤에 작업 시작 때처럼 은은하게 다시 물들인다.
         // 접히는 도중에 켜면 색 덩어리가 허공에 떠 보여서 기다린다.
-        .opacity(model.isWorking && !model.isExpanded ? 0.85 : 0)
-        .animation(.easeInOut(duration: 1.5), value: model.isWorking)
+        .opacity(isActive && !model.isExpanded ? 0.85 : 0)
+        .animation(.easeInOut(duration: 1.5), value: isActive)
         .animation(
             model.isExpanded ? .easeOut(duration: 0.12) : .easeInOut(duration: 0.9).delay(0.5),
             value: model.isExpanded
@@ -313,6 +324,16 @@ private enum NotchBotStyle {
         Color(red: 0.74, green: 0.30, blue: 0.86),
         Color(red: 0.42, green: 0.44, blue: 0.98),
         Color(red: 0.16, green: 0.56, blue: 0.96)
+    ]
+    /// 승인 대기 중 봇 몸 색. 메뉴바 토토와 같은 주황과 노랑 사이를 오간다.
+    static let waitingColors: [Color] = [
+        Color(red: 1.00, green: 0.55, blue: 0.15),
+        Color(red: 1.00, green: 0.68, blue: 0.20),
+        Color(red: 0.98, green: 0.80, blue: 0.28),
+        Color(red: 1.00, green: 0.62, blue: 0.18),
+        Color(red: 0.96, green: 0.48, blue: 0.14),
+        Color(red: 1.00, green: 0.74, blue: 0.24),
+        Color(red: 1.00, green: 0.55, blue: 0.15)
     ]
     /// 봇 색이 왼쪽 검정으로 스며드는 폭
     static let colorFadeWidth: CGFloat = 14
