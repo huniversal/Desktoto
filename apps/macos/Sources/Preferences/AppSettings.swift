@@ -76,7 +76,7 @@ public final class AppSettings {
         showsUsage = Self.readBool(defaults, forKey: Key.showsUsage) ?? true
         showsContext = Self.readBool(defaults, forKey: Key.showsContext) ?? true
         colorMode = defaults.string(forKey: Key.colorMode).flatMap(ColorMode.init(rawValue:)) ?? .white
-        iconCharacter = defaults.string(forKey: Key.iconCharacter).flatMap(IconCharacter.init(rawValue:)) ?? .claude
+        iconCharacter = defaults.string(forKey: Key.iconCharacter).flatMap(IconCharacter.init(rawValue:)) ?? .toto
         iconPlacement = defaults.string(forKey: Key.iconPlacement).flatMap(IconPlacement.init(rawValue:)) ?? .menuBar
         theme = defaults.string(forKey: Key.theme).flatMap(Theme.init(rawValue:)) ?? .system
         glassStyle = defaults.string(forKey: Key.glassStyle).flatMap(GlassStyle.init(rawValue:)) ?? .regular

@@ -7,12 +7,22 @@ public enum ColorMode: String, Sendable {
     case color
 }
 
-// 메뉴바에 보여 줄 캐릭터. 저장된 값은 rawValue이고, 기본값은 claude다.
+// 메뉴바에 보여 줄 캐릭터. 저장된 값은 rawValue이고, 기본값은 토토다.
 public enum IconCharacter: String, CaseIterable, Sendable {
+    /// Desktoto의 기본 캐릭터. 검은 원 안에 노치 봇과 같은 눈이 있다.
+    case toto
     case claude
     case chiikawa
     case hachiware
     case usagi
+
+    /// GIF에서 뽑은 그림으로 그리는 캐릭터인지. Claude는 사각형으로, 토토는 원과 눈으로 그린다.
+    public var isPictureArt: Bool {
+        switch self {
+        case .chiikawa, .hachiware, .usagi: true
+        case .toto, .claude: false
+        }
+    }
 }
 
 // 캐릭터를 어디에 둘지. 메뉴바는 기존 캐릭터, 노치는 노치 오른쪽에 붙는 봇이다. 기본값은 menuBar다.

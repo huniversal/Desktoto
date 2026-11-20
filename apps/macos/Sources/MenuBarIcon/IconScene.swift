@@ -11,6 +11,8 @@ public enum IconFrame: Equatable, Sendable {
     /// 대기 중에 그림 캐릭터가 움직이는 모습. clip은 대기 클립 번호, frame은 그 클립의 GIF 프레임 번호다.
     case idle(clip: Int, frame: Int)
     case running(phase: Int)
+    /// 토토가 작업 중인 모습. 달리지 않고 몸 색이 phase 단계만큼 돌면서, 눈은 대기 중처럼 마우스를 따라간다.
+    case working(phase: Int, EyeExpression, GazeDirection)
     case sleeping(frame: Int)
     /// 쉬는 동안 메뉴바에서 낚시하는 모습
     case fishing(FishingFrame)
@@ -53,7 +55,7 @@ struct ImagePlacement: Equatable, Sendable {
 /// 좌표는 캔버스 왼쪽 위를 (0, 0)으로 둔 칸 단위이며, 목록의 앞쪽이 아래에 깔린다.
 enum IconScene {
     static func pieces(frame: IconFrame, appearance: IconAppearance) -> [IconPiece] {
-        // 그림 캐릭터는 그림(imagePlacement)과 풍경(backdrop)을 따로 그리고, 사각형으로는 배지만 그린다.
+        // 그림 캐릭터와 토토는 몸을 따로 그리고, 사각형으로는 배지만 그린다.
         guard appearance.character == .claude else { return pictureBadgePieces(frame: frame, appearance: appearance) }
         return contentPieces(frame: frame, appearance: appearance)
     }
@@ -66,7 +68,7 @@ enum IconScene {
         case .sleeping, .fishing, .rest:
             // 쉬는 모습처럼 확인하지 않은 완료 점만 보여 준다. 그림 캐릭터는 쉬는 동작을 하지 않지만 모습을 받으면 이렇게 그린다.
             return appearance.hasUnseenDone ? badgePieces(.unseenDone, characterOriginX: CharacterGrid.standingOriginX) : []
-        case .standing, .gazing, .expression, .idle, .running:
+        case .standing, .gazing, .expression, .idle, .running, .working:
             return badgePieces(appearance.badge, characterOriginX: CharacterGrid.standingOriginX)
         }
     }
@@ -91,7 +93,8 @@ enum IconScene {
                 + characterPieces(pose: .standing, gaze: direction, expression: expression, bodyColor: bodyColor, originX: originX, originY: CharacterGrid.maxBobHeight)
                 + badgePieces(appearance.badge, characterOriginX: originX)
 
-        case .running(let phase):
+        // 작업 중 시선은 토토만 쓰는 모습이라, 사각형 캐릭터는 달리는 모습으로 그린다.
+        case .running(let phase), .working(let phase, _, _):
             let running = RunningFrame(phase: phase)
             return speedLinePieces(originX: running.originX, originY: running.originY)
                 + characterPieces(pose: running.pose, bodyColor: bodyColor, originX: running.originX, originY: running.originY)
@@ -138,7 +141,7 @@ enum IconScene {
     /// 애니 장면 배경의 자리. 치이카와는 들판을 깔고 달릴 때 들판이 흘러간다. 하치와레(문 앞)와 우사기(숲속)는 제자리에서 춤춰서 배경도 고정이다.
     static func backdrop(frame: IconFrame, appearance: IconAppearance) -> BackdropPlacement? {
         switch (appearance.character, frame) {
-        case (.claude, _): return nil
+        case (.claude, _), (.toto, _): return nil
         case (.hachiware, _): return BackdropPlacement(scene: .gate, grassShift: nil)
         case (.usagi, _): return BackdropPlacement(scene: .forest, grassShift: nil)
         case (.chiikawa, .running(let phase)): return BackdropPlacement(grassShift: SceneBackdrop.grassShift(phase: phase))
@@ -149,7 +152,7 @@ enum IconScene {
     /// 그림으로 그리는 캐릭터(치이카와, 하치와레, 우사기)가 놓일 자리. 사각형 캐릭터(Claude)는 nil이다.
     /// 위치는 사각형 캐릭터와 같은 기준이라서 달리기, 잠듦, 배지 자리가 그대로 맞는다.
     static func imagePlacement(frame: IconFrame, appearance: IconAppearance) -> ImagePlacement? {
-        guard appearance.character != .claude else { return nil }
+        guard appearance.character.isPictureArt else { return nil }
         let character = appearance.character
         let stillFrame = CharacterArt.stillIdleFrame
         switch frame {
@@ -162,7 +165,7 @@ enum IconScene {
                 return .standard(character: character, pose: .resting, frame: stillFrame, originX: CharacterGrid.standingOriginX, originY: CharacterGrid.maxBobHeight)
             }
             return .standard(character: character, pose: .idle(clip: wrapFrameIndex(clip, count: clipCount)), frame: frame, originX: CharacterGrid.standingOriginX, originY: CharacterGrid.maxBobHeight)
-        case .running(let phase):
+        case .running(let phase), .working(let phase, _, _):
             let running = RunningFrame(phase: phase)
             // 하치와레와 우사기는 달리지 않고 제자리에서 춤춘다.
             let dancesInPlace = character == .hachiware || character == .usagi

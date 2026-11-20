@@ -142,6 +142,7 @@ private extension GlassStyle {
 private extension IconCharacter {
     var menuTitle: String {
         switch self {
+        case .toto: "토토"
         case .claude: "Claude"
         case .chiikawa: "치이카와"
         case .hachiware: "하치와레"
