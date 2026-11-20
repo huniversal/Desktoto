@@ -12,7 +12,8 @@ public enum IconFrame: Equatable, Sendable {
     case idle(clip: Int, frame: Int)
     case running(phase: Int)
     /// 토토가 작업 중인 모습. 달리지 않고 몸 색이 phase 단계만큼 돌면서, 눈은 대기 중처럼 마우스를 따라간다.
-    case working(phase: Int, EyeExpression, GazeDirection)
+    /// fade는 몸 색이 물든 정도(0...IconTiming.totoFadeStepCount)다. 작업을 시작하고 끝낼 때 서서히 바뀐다.
+    case working(phase: Int, fade: Int, EyeExpression, GazeDirection)
     case sleeping(frame: Int)
     /// 쉬는 동안 메뉴바에서 낚시하는 모습
     case fishing(FishingFrame)
@@ -94,7 +95,7 @@ enum IconScene {
                 + badgePieces(appearance.badge, characterOriginX: originX)
 
         // 작업 중 시선은 토토만 쓰는 모습이라, 사각형 캐릭터는 달리는 모습으로 그린다.
-        case .running(let phase), .working(let phase, _, _):
+        case .running(let phase), .working(let phase, _, _, _):
             let running = RunningFrame(phase: phase)
             return speedLinePieces(originX: running.originX, originY: running.originY)
                 + characterPieces(pose: running.pose, bodyColor: bodyColor, originX: running.originX, originY: running.originY)
@@ -165,7 +166,7 @@ enum IconScene {
                 return .standard(character: character, pose: .resting, frame: stillFrame, originX: CharacterGrid.standingOriginX, originY: CharacterGrid.maxBobHeight)
             }
             return .standard(character: character, pose: .idle(clip: wrapFrameIndex(clip, count: clipCount)), frame: frame, originX: CharacterGrid.standingOriginX, originY: CharacterGrid.maxBobHeight)
-        case .running(let phase), .working(let phase, _, _):
+        case .running(let phase), .working(let phase, _, _, _):
             let running = RunningFrame(phase: phase)
             // 하치와레와 우사기는 달리지 않고 제자리에서 춤춘다.
             let dancesInPlace = character == .hachiware || character == .usagi

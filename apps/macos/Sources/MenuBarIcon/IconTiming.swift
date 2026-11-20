@@ -9,6 +9,8 @@ public enum IconTiming {
     /// 달리기 타이머(초당 24번) 3번마다 한 단계씩 넘긴다. 타이머는 그대로 두어서 폭죽은 원래 빠르기로 재생된다.
     public static let totoColorStepCount = 48
     public static let totoColorTicksPerStep = 3
+    /// 토토 몸 색이 물들고 빠지는 단계 수. 몸 색 단계와 같이 넘어가서 노치 봇처럼 1.5초에 걸쳐 바뀐다.
+    public static let totoFadeStepCount = 12
     /// 메뉴바 이미지를 바꿀 때마다 시스템이 스냅샷을 다시 만들어서, 초당 24번으로 제한한다.
     public static let runningFrameInterval: TimeInterval = 1.0 / 24.0
     /// 캐릭터별 달리기 갱신 주기. 하치와레만 원본 춤 속도에 맞춰 절반 속도(초당 12번)로 돈다.

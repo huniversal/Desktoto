@@ -8,6 +8,8 @@ struct TotoPose: Equatable, Sendable {
     var direction: GazeDirection = .center
     /// 작업 중이면 몸 색이 도는 단계(IconTiming.totoColorStepCount 단계 중 하나), 아니면 nil이다.
     var colorPhase: Int?
+    /// 몸 색이 물든 정도(0...1)
+    var colorStrength: CGFloat = 1
     /// 잠, 낚시, 쉬는 장면 대신 눈을 가는 선으로 감고 있다.
     var isAsleep = false
 
@@ -20,8 +22,9 @@ struct TotoPose: Equatable, Sendable {
             self.direction = direction
         // 달리기 단계(24)를 몸 색 단계(48)로 옮긴다.
         case .running(let phase): colorPhase = phase * IconTiming.totoColorStepCount / IconTiming.runningFrameCount
-        case .working(let phase, let expression, let direction):
+        case .working(let phase, let fade, let expression, let direction):
             colorPhase = phase
+            colorStrength = CGFloat(min(max(fade, 0), IconTiming.totoFadeStepCount)) / CGFloat(IconTiming.totoFadeStepCount)
             self.expression = expression
             self.direction = direction
         case .sleeping, .fishing, .rest: isAsleep = true
@@ -70,7 +73,9 @@ enum TotoArt {
 
         NSColor.black.setFill()
         circle.fill()
-        if let phase = pose.colorPhase { drawWorkingColor(in: circle, center: center, radius: radius, phase: phase) }
+        if let phase = pose.colorPhase, pose.colorStrength > 0 {
+            drawWorkingColor(in: circle, center: center, radius: radius, phase: phase, strength: pose.colorStrength)
+        }
         rimColor.setStroke()
         circle.lineWidth = 0.35 * unit
         circle.stroke()
@@ -80,7 +85,7 @@ enum TotoArt {
 
     /// 노치 봇과 같은 각도 그라데이션. 원 오른쪽 바깥을 중심으로 색이 부채꼴로 퍼지고, 단계마다 그 각도가 조금씩 돌아간다.
     /// AppKit에는 각도 그라데이션이 없어서 가는 부채꼴을 촘촘히 이어 칠한다. 원이 작아서 이음매는 보이지 않는다.
-    private static func drawWorkingColor(in circle: NSBezierPath, center: CGPoint, radius: CGFloat, phase: Int) {
+    private static func drawWorkingColor(in circle: NSBezierPath, center: CGPoint, radius: CGFloat, phase: Int, strength: CGFloat) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         let turn = CGFloat(wrapFrameIndex(phase, count: IconTiming.totoColorStepCount)) / CGFloat(IconTiming.totoColorStepCount)
         // 중심점이 원 안에 있으면 색이 한 점으로 모이는 자국이 보여서 원 밖 오른쪽에 둔다.
@@ -91,7 +96,7 @@ enum TotoArt {
         circle.addClip()
         // 부채꼴은 서로 겹쳐서 불투명하게 칠하고, 다 칠한 뒤 한꺼번에 투명도를 준다.
         // 부채꼴마다 투명도를 주면 겹친 곳과 이음매가 줄무늬로 비친다.
-        context.setAlpha(workingOpacity)
+        context.setAlpha(workingOpacity * strength)
         context.beginTransparencyLayer(auxiliaryInfo: nil)
         context.setAlpha(1)
         (0..<colorSliceCount).forEach { slice in

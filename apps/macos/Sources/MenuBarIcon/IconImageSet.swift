@@ -131,12 +131,12 @@ public final class IconImageSet {
             return frames[wrapFrameIndex(frame, count: frames.count)]
         case .running(let phase):
             return running[wrapFrameIndex(phase, count: running.count)]
-        case .working(let phase, let expression, let direction):
-            let key = WorkingKey(phase: wrapFrameIndex(phase, count: IconTiming.totoColorStepCount), expression: expression, direction: direction)
+        case .working(let phase, let fade, let expression, let direction):
+            let key = WorkingKey(phase: wrapFrameIndex(phase, count: IconTiming.totoColorStepCount), fade: fade, expression: expression, direction: direction)
             if let cached = working[key] { return cached }
             // 시선과 색 단계 조합이 끝없이 쌓이지 않도록 일정 개수를 넘으면 비운다.
             if working.count >= Self.workingCacheLimit { working = [:] }
-            let created = makeImage(.working(phase: key.phase, expression, direction), appearance)
+            let created = makeImage(.working(phase: key.phase, fade: fade, expression, direction), appearance)
             working[key] = created
             return created
         case .sleeping(let sleepFrame):
@@ -153,6 +153,7 @@ public final class IconImageSet {
 
     private struct WorkingKey: Hashable {
         let phase: Int
+        let fade: Int
         let expression: EyeExpression
         let direction: GazeDirection
     }
