@@ -25,7 +25,7 @@ enum IconRenderer {
         let placement = IconScene.imagePlacement(frame: frame, appearance: appearance)
         let backdrop = IconScene.backdrop(frame: frame, appearance: appearance)
         // 그림 캐릭터는 항상 풍경이 깔리므로 모서리를 둥글게 잘라 메뉴바에 어울리게 한다.
-        let hasBackdrop = appearance.character != .claude
+        let hasBackdrop = appearance.character.isPictureArt
         return createCanvasImage(pointHeight: pointHeight, topMargin: topMargin, bottomMargin: bottomMargin, scale: scale) { unit in
             if hasBackdrop {
                 let canvas = NSRect(x: 0, y: 0, width: CharacterGrid.canvasWidth * unit, height: CharacterGrid.canvasHeight * unit)
@@ -34,6 +34,7 @@ enum IconRenderer {
             if let backdrop { drawBackdrop(backdrop, unit: unit) }
             fill(pieces, unit: unit)
             if let placement { drawCharacterImage(placement, unit: unit) }
+            if appearance.character == .toto { TotoArt.draw(frame: frame, isWaiting: appearance.isWaiting, unit: unit) }
         }
     }
 

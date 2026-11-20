@@ -22,6 +22,8 @@ public final class IconImageSet {
     /// 낚시 모습도 조합이 많아서 처음 필요할 때 한 번만 그려 둔다.
     private var fishing: [FishingFrame: NSImage] = [:]
     private var restFrames: [RestFrame: NSImage] = [:]
+    /// 토토의 작업 중 모습(몸 색 단계, 표정, 시선)도 조합이 많아서 처음 필요할 때 한 번만 그려 둔다.
+    private var working: [WorkingKey: NSImage] = [:]
     private var running: [NSImage]
     private var sleeping: [NSImage]
     /// 대기 클립별로 미리 그린 GIF 프레임. 대기 중에 움직이지 않는 캐릭터는 비어 있다.
@@ -93,6 +95,7 @@ public final class IconImageSet {
         expressions = [:]
         fishing = [:]
         restFrames = [:]
+        working = [:]
         (standing, gazing, running, sleeping, idle) = Self.createImages(appearance: newAppearance, makeImage: makeImage)
         idleSequences = CharacterArt.idleClips(of: newAppearance.character).map(\.sequence)
         return true
@@ -128,6 +131,14 @@ public final class IconImageSet {
             return frames[wrapFrameIndex(frame, count: frames.count)]
         case .running(let phase):
             return running[wrapFrameIndex(phase, count: running.count)]
+        case .working(let phase, let fade, let expression, let direction):
+            let key = WorkingKey(phase: wrapFrameIndex(phase, count: IconTiming.totoColorStepCount), fade: fade, expression: expression, direction: direction)
+            if let cached = working[key] { return cached }
+            // 시선과 색 단계 조합이 끝없이 쌓이지 않도록 일정 개수를 넘으면 비운다.
+            if working.count >= Self.workingCacheLimit { working = [:] }
+            let created = makeImage(.working(phase: key.phase, fade: fade, expression, direction), appearance)
+            working[key] = created
+            return created
         case .sleeping(let sleepFrame):
             return sleeping[wrapFrameIndex(sleepFrame, count: sleeping.count)]
         }
@@ -136,6 +147,15 @@ public final class IconImageSet {
     /// 바탕 모습 뒤에 폭죽을 합성한다. 폭죽은 재생되는 프레임마다 새로 만든다(원본과 같다).
     public func fireworkImage(over base: IconFrame, fireworkFrame: Int) -> NSImage {
         IconRenderer.fireworkImage(base: image(for: base), frame: fireworkFrame, scale: scale, pointHeight: pointHeight, topMargin: topMargin, bottomMargin: bottomMargin)
+    }
+
+    private static let workingCacheLimit = 400
+
+    private struct WorkingKey: Hashable {
+        let phase: Int
+        let fade: Int
+        let expression: EyeExpression
+        let direction: GazeDirection
     }
 
     private struct ExpressionKey: Hashable {
@@ -148,7 +168,8 @@ public final class IconImageSet {
         makeImage: @MainActor (IconFrame, IconAppearance) -> NSImage
     ) -> (standing: NSImage, gazing: [NSImage], running: [NSImage], sleeping: [NSImage], idle: [[NSImage]]) {
         let clips = CharacterArt.idleClips(of: appearance.character)
-        let isPicture = appearance.character != .claude
+        // 그림 캐릭터는 시선 그림이 없다.
+        let isPicture = appearance.character.isPictureArt
         return (
             makeImage(.standing, appearance),
             isPicture ? [] : (0..<GazeDirection.count).map { makeImage(.gazing(GazeDirection(index: $0)), appearance) },
