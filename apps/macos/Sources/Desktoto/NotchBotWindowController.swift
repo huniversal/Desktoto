@@ -370,8 +370,8 @@ final class NotchBotWindowController {
         Timer.scheduledTimer(withTimeInterval: hold, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self, self.model.expression == .blink else { return }
-                // 감은 사이에 마우스가 움직였거나 노치를 펼쳤으면 졸린 눈으로 돌아가지 않고 깨어난다.
-                let isStillDrowsy = !self.model.isExpanded
+                // 감은 사이에 마우스가 움직였거나, 노치를 펼쳤거나, 작업이나 승인 대기가 시작됐으면 졸린 눈으로 돌아가지 않고 깨어난다.
+                let isStillDrowsy = !self.model.isExpanded && !self.model.isWorking && !self.model.isWaiting
                     && ProcessInfo.processInfo.systemUptime - self.lastMouseMoveTime > Self.sleepyDelay
                 self.model.expression = restingExpression == .sleepy && !isStillDrowsy ? .open : restingExpression
             }
