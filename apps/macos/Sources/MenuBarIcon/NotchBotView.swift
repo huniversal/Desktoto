@@ -7,7 +7,7 @@ public enum NotchBotExpression: Sendable {
     case smile
     /// 마우스를 한동안 안 움직이면 눈꺼풀이 반쯤 내려온다.
     case sleepy
-    /// 더 오래 쉬면 눈이 가는 선이 되고 옆으로 "z"가 떠오른다.
+    /// 더 오래 쉬면 눈이 가는 선이 된다.
     case asleep
 }
 
@@ -162,12 +162,6 @@ public struct NotchBotView<Content: View, Header: View>: View {
                 .offset(x: eyeRect.minX)
                 // 펼친 동안 눈이 띠 안을 오가는 움직임은 창 컨트롤러가 값을 바꿀 때 직접 애니메이션을 건다.
                 // 접으면 노치와 함께 봇 자리로 돌아간다.
-            NotchBotSleepMark(isAsleep: model.expression == .asleep, height: height)
-                .frame(width: NotchBotSleepMark.width, height: height, alignment: .topLeading)
-                .offset(x: eyeRect.maxX + 2)
-                .opacity(model.expression == .asleep && !isExpanded ? 1 : 0)
-                .animation(.easeInOut(duration: 0.6), value: model.expression)
-                .allowsHitTesting(false)
         }
         .frame(width: canvas.width, height: canvas.height, alignment: .topLeading)
         .animation(isExpanded ? NotchBotStyle.expandSpring : NotchBotStyle.collapseSpring, value: isExpanded)
@@ -302,33 +296,6 @@ public struct NotchBotView<Content: View, Header: View>: View {
         case .smile: .spring(response: 0.3, dampingFraction: 0.7)
         case .sleepy, .asleep: .easeInOut(duration: 0.6)
         }
-    }
-}
-
-/// 잠든 봇 옆으로 작은 "z" 두 개가 번갈아 비스듬히 떠오르며 사라진다. 잠들지 않은 동안에는 시간 흐름을 멈춰 둔다.
-private struct NotchBotSleepMark: View {
-    static let width: CGFloat = 14
-    private static let cycle: TimeInterval = 2.4
-
-    let isAsleep: Bool
-    let height: CGFloat
-
-    var body: some View {
-        TimelineView(.animation(paused: !isAsleep)) { context in
-            let seconds = context.date.timeIntervalSinceReferenceDate
-            ZStack(alignment: .topLeading) {
-                letter(progress: (seconds / Self.cycle).truncatingRemainder(dividingBy: 1))
-                letter(progress: (seconds / Self.cycle + 0.5).truncatingRemainder(dividingBy: 1))
-            }
-        }
-    }
-
-    private func letter(progress: Double) -> some View {
-        Text("z")
-            .font(.system(size: height * (0.22 + 0.08 * progress), weight: .bold, design: .rounded))
-            .foregroundStyle(Color(white: 0.6))
-            .offset(x: Self.width * 0.6 * progress, y: height * (0.45 - 0.35 * progress))
-            .opacity(sin(.pi * progress))
     }
 }
 
