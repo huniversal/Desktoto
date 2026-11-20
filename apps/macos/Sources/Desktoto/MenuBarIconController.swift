@@ -127,7 +127,8 @@ final class MenuBarIconController {
         // 그림 캐릭터는 쉬는 동작을 하지 않고 대기 클립만 돌린다.
         // 토토는 쉬는 장면 없이 눈을 감고 잔다.
         let rest: IconRest? = if images.hasIdleAnimation { nil } else if state.character == .toto, state.rest != nil { .sleeping } else { state.rest }
-        switch IconSchedule(isRunning: state.runningCount > 0, hasFirework: animation.hasFirework, rest: rest) {
+        // 토토는 승인 대기 중에도 몸 색이 돌아서 작업 중처럼 타이머를 돌린다.
+        switch IconSchedule(isRunning: state.runningCount > 0 || isTotoWaiting, hasFirework: animation.hasFirework, rest: rest) {
         case .running:
             stopIdleAnimation()
             stopSleepAnimation()
@@ -438,7 +439,7 @@ final class MenuBarIconController {
             if button?.image !== image { button?.image = image }
         }
         // 토토는 작업이 끝난 뒤 몸 색이 다 빠지고 폭죽도 끝나면 멈추고 다시 마우스를 따라 본다.
-        if state.character == .toto, state.runningCount == 0, totoFade == 0, !animation.hasFirework {
+        if state.character == .toto, !isTotoColored, totoFade == 0, !animation.hasFirework {
             stopAnimation()
             showGaze()
             return
@@ -452,19 +453,29 @@ final class MenuBarIconController {
 
     /// 작업이 끝났는데 토토 몸 색이 아직 남아 있는지
     private var isTotoFadingOut: Bool {
-        state.character == .toto && state.runningCount == 0 && totoFade > 0
+        state.character == .toto && !isTotoColored && totoFade > 0
+    }
+
+    /// 토토가 승인을 기다리는 중인지
+    private var isTotoWaiting: Bool {
+        state.character == .toto && state.isWaiting
+    }
+
+    /// 토토 몸 색이 차올라야 하는지. 작업 중이거나 승인을 기다리는 동안이다.
+    private var isTotoColored: Bool {
+        state.runningCount > 0 || isTotoWaiting
     }
 
     /// 토토 몸 색을 한 칸 돌리고, 몸 색 단계가 넘어갈 때마다 작업 중이면 한 단계 물들이고 아니면 한 단계 뺀다.
     private func advanceTotoColor() {
         totoColorTick += 1
         guard totoColorTick.isMultiple(of: IconTiming.totoColorTicksPerStep) else { return }
-        totoFade = state.runningCount > 0 ? min(totoFade + 1, IconTiming.totoFadeStepCount) : max(totoFade - 1, 0)
+        totoFade = isTotoColored ? min(totoFade + 1, IconTiming.totoFadeStepCount) : max(totoFade - 1, 0)
     }
 
     /// 토토가 작업 중이거나 몸 색이 빠지는 중일 때 보여 줄 모습. 아니면 nil이다. 이때는 하품하지 않는다.
     private func totoWorkingFrame() -> IconFrame? {
-        guard state.character == .toto, animationTimer != nil, state.runningCount > 0 || totoFade > 0 else { return nil }
+        guard state.character == .toto, animationTimer != nil, isTotoColored || totoFade > 0 else { return nil }
         let expression: EyeExpression = if case .yawn = displayedExpression { .open } else { displayedExpression }
         return .working(phase: totoColorTick / IconTiming.totoColorTicksPerStep, fade: totoFade, expression, gazeDirection)
     }

@@ -34,7 +34,7 @@ enum IconRenderer {
             if let backdrop { drawBackdrop(backdrop, unit: unit) }
             fill(pieces, unit: unit)
             if let placement { drawCharacterImage(placement, unit: unit) }
-            if appearance.character == .toto { TotoArt.draw(frame: frame, unit: unit) }
+            if appearance.character == .toto { TotoArt.draw(frame: frame, isWaiting: appearance.isWaiting, unit: unit) }
         }
     }
 

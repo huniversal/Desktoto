@@ -61,8 +61,19 @@ enum TotoArt {
         NSColor(srgbRed: 0.16, green: 0.56, blue: 0.96, alpha: 1)
     ]
     private static let workingOpacity: CGFloat = 0.85
+    /// 승인 대기 중 몸 색. 주황에서 노랑 사이를 오간다.
+    private static let waitingColors: [NSColor] = [
+        NSColor(srgbRed: 1.00, green: 0.55, blue: 0.15, alpha: 1),
+        NSColor(srgbRed: 1.00, green: 0.68, blue: 0.20, alpha: 1),
+        NSColor(srgbRed: 0.98, green: 0.80, blue: 0.28, alpha: 1),
+        NSColor(srgbRed: 1.00, green: 0.62, blue: 0.18, alpha: 1),
+        NSColor(srgbRed: 0.96, green: 0.48, blue: 0.14, alpha: 1),
+        NSColor(srgbRed: 1.00, green: 0.74, blue: 0.24, alpha: 1),
+        NSColor(srgbRed: 1.00, green: 0.55, blue: 0.15, alpha: 1)
+    ]
 
-    static func draw(frame: IconFrame, unit: CGFloat) {
+    /// isWaiting이면 몸 색이 승인 대기 색(주황과 노랑)으로 돈다.
+    static func draw(frame: IconFrame, isWaiting: Bool, unit: CGFloat) {
         let pose = TotoPose(frame: frame)
         // 어지러울 때는 몸이 좌우로 살짝 흔들린다.
         var shakeX: CGFloat = 0
@@ -74,7 +85,7 @@ enum TotoArt {
         NSColor.black.setFill()
         circle.fill()
         if let phase = pose.colorPhase, pose.colorStrength > 0 {
-            drawWorkingColor(in: circle, center: center, radius: radius, phase: phase, strength: pose.colorStrength)
+            drawWorkingColor(in: circle, center: center, radius: radius, phase: phase, strength: pose.colorStrength, colors: isWaiting ? waitingColors : workingColors)
         }
         rimColor.setStroke()
         circle.lineWidth = 0.35 * unit
@@ -85,7 +96,7 @@ enum TotoArt {
 
     /// 노치 봇과 같은 각도 그라데이션. 원 오른쪽 바깥을 중심으로 색이 부채꼴로 퍼지고, 단계마다 그 각도가 조금씩 돌아간다.
     /// AppKit에는 각도 그라데이션이 없어서 가는 부채꼴을 촘촘히 이어 칠한다. 원이 작아서 이음매는 보이지 않는다.
-    private static func drawWorkingColor(in circle: NSBezierPath, center: CGPoint, radius: CGFloat, phase: Int, strength: CGFloat) {
+    private static func drawWorkingColor(in circle: NSBezierPath, center: CGPoint, radius: CGFloat, phase: Int, strength: CGFloat, colors: [NSColor]) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         let turn = CGFloat(wrapFrameIndex(phase, count: IconTiming.totoColorStepCount)) / CGFloat(IconTiming.totoColorStepCount)
         // 중심점이 원 안에 있으면 색이 한 점으로 모이는 자국이 보여서 원 밖 오른쪽에 둔다.
@@ -106,7 +117,7 @@ enum TotoArt {
             // 이웃 부채꼴과 살짝 겹쳐서 틈이 생기지 않게 한다.
             slicePath.appendArc(withCenter: pivot, radius: reach, startAngle: start * 180 / .pi, endAngle: (start + sliceAngle * 1.5) * 180 / .pi)
             slicePath.close()
-            workingColor(at: CGFloat(slice) / CGFloat(colorSliceCount) + turn).setFill()
+            color(at: CGFloat(slice) / CGFloat(colorSliceCount) + turn, in: colors).setFill()
             slicePath.fill()
         }
         context.endTransparencyLayer()
@@ -116,12 +127,12 @@ enum TotoArt {
     private static let colorSliceCount = 96
 
     /// 0...1 위치(한 바퀴)에 해당하는 색. 색 목록 사이를 부드럽게 섞는다.
-    private static func workingColor(at position: CGFloat) -> NSColor {
+    private static func color(at position: CGFloat, in colors: [NSColor]) -> NSColor {
         let wrapped = position - floor(position)
-        let scaled = wrapped * CGFloat(workingColors.count - 1)
-        let lower = min(Int(scaled), workingColors.count - 2)
+        let scaled = wrapped * CGFloat(colors.count - 1)
+        let lower = min(Int(scaled), colors.count - 2)
         let fraction = scaled - CGFloat(lower)
-        return workingColors[lower].blended(withFraction: fraction, of: workingColors[lower + 1]) ?? workingColors[lower]
+        return colors[lower].blended(withFraction: fraction, of: colors[lower + 1]) ?? colors[lower]
     }
 
     private static func drawEyes(pose: TotoPose, center: CGPoint, unit: CGFloat) {

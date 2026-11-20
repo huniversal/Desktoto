@@ -57,7 +57,12 @@ struct ImagePlacement: Equatable, Sendable {
 enum IconScene {
     static func pieces(frame: IconFrame, appearance: IconAppearance) -> [IconPiece] {
         // 그림 캐릭터와 토토는 몸을 따로 그리고, 사각형으로는 배지만 그린다.
-        guard appearance.character == .claude else { return pictureBadgePieces(frame: frame, appearance: appearance) }
+        guard appearance.character == .claude else {
+            // 토토는 승인 대기를 물음표 대신 몸 색으로 보여 준다.
+            var badgeAppearance = appearance
+            if appearance.character == .toto { badgeAppearance.isWaiting = false }
+            return pictureBadgePieces(frame: frame, appearance: badgeAppearance)
+        }
         return contentPieces(frame: frame, appearance: appearance)
     }
 
