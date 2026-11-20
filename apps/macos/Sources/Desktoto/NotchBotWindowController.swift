@@ -94,7 +94,8 @@ final class NotchBotWindowController {
             updateRoam(mouse: NSEvent.mouseLocation, isAnimated: false)
         }
         model.isExpanded = isExpanded
-        panel?.ignoresMouseEvents = !isExpanded
+        // 펼친 노치 밖 투명한 여백은 클릭이 뒤로 통과해야 해서, 마우스가 움직이기 전에도 지금 위치로 바로 판단한다.
+        updateClickThrough(mouse: NSEvent.mouseLocation)
         if isExpanded {
             outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] _ in
                 MainActor.assumeIsolated { self?.onDismissRequest?() }
@@ -171,8 +172,9 @@ final class NotchBotWindowController {
         }
         // 화면 위로 1pt 더 올려 그려서, 노치와 창 사이에 반 픽셀 틈이 비치지 않게 한다.
         let notchHeight = screen.safeAreaInsets.top + Self.topOverlap
-        let notchMinX = screen.frame.minX + leftArea.maxX
-        let notchWidth = screen.frame.minX + rightArea.minX - notchMinX
+        // 노치 좌우 영역의 좌표계에 기대지 않도록 폭만 쓴다. 노치가 있는 화면이 주 화면 오른쪽에 있어도 어긋나지 않는다.
+        let notchMinX = screen.frame.minX + leftArea.width
+        let notchWidth = screen.frame.width - leftArea.width - rightArea.width
         let layout = NotchBotLayout(
             notchWidth: notchWidth,
             botWidth: Self.botWidth,
@@ -368,7 +370,10 @@ final class NotchBotWindowController {
         Timer.scheduledTimer(withTimeInterval: hold, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self, self.model.expression == .blink else { return }
-                self.model.expression = restingExpression
+                // 감은 사이에 마우스가 움직였거나 노치를 펼쳤으면 졸린 눈으로 돌아가지 않고 깨어난다.
+                let isStillDrowsy = !self.model.isExpanded
+                    && ProcessInfo.processInfo.systemUptime - self.lastMouseMoveTime > Self.sleepyDelay
+                self.model.expression = restingExpression == .sleepy && !isStillDrowsy ? .open : restingExpression
             }
         }
     }

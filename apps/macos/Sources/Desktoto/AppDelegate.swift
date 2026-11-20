@@ -586,7 +586,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setUpNotchBot() {
         notchBotController.onClick = { [weak self] isRightClick in self?.handleCharacterClick(isRightClick: isRightClick) }
-        notchBotController.onAvailabilityChange = { [weak self] in self?.applyPlacement() }
+        // 노치 화면이 사라지면 펼친 노치도 숨겨지므로, 열린 상태를 남기지 않게 먼저 닫고 표시 위치를 다시 정한다.
+        notchBotController.onAvailabilityChange = { [weak self] in
+            guard let self else { return }
+            if self.isPanelOpen { self.closePanel() }
+            self.applyPlacement()
+        }
         notchBotController.onDismissRequest = { [weak self] in self?.closePanel() }
         notchBotController.setPanelContent(
             NotchPanelView(model: panelController.model),
