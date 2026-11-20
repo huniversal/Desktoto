@@ -99,7 +99,9 @@ final class MenuBarIconController {
         animation.hasFirework
     }
 
+    /// 작업 완료 폭죽은 Claude 캐릭터만 터뜨린다. 토토와 그림 캐릭터는 폭죽 없이 끝난다.
     func startFirework() {
+        guard state.character == .claude else { return }
         animation.startFirework()
     }
 
