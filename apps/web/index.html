@@ -249,7 +249,6 @@
   .menubar .left b { color: var(--glass-ink); font-weight: 700; }
   .menubar .right { display: flex; align-items: center; gap: 14px; margin-left: auto; white-space: nowrap; }
   .menubar .pill { background: rgba(255, 255, 255, 0.85); color: #1d1d1f; border-radius: 5px; padding: 0 6px; font-size: 12px; line-height: 18px; }
-  .menubar canvas { display: block; image-rendering: pixelated; }
   @media (max-width: 560px) { .menubar .left span.extra { display: none; } }
 
   /* 히어로 무대: 파란 물결 바탕화면 위에서 마우스가 패널의 카드를 눌러 해당 창으로 이동하는 장면이 반복된다. */
@@ -509,8 +508,8 @@
   .gk-cap { margin-top: 12px; min-height: 52px; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--btn-ghost); color: var(--fg); font-size: 0.95rem; line-height: 1.4; opacity: 0; transition: opacity 0.25s; }
   .gk-cap.show { opacity: 1; }
   .gk-cap b { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: var(--btn-bg); color: var(--btn-fg); font: 700 12px var(--font-body); }
-  .tour.gk .menubar canvas.icon { opacity: 0; transform: scale(0.6); transition: opacity 0.3s, transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1); }
-  .tour.gk.icon-on .menubar canvas.icon { opacity: 1; transform: none; }
+  .tour.gk .menubar .icon { opacity: 0; transform: scale(0.6); transition: opacity 0.3s, transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1); }
+  .tour.gk.icon-on .menubar .icon { opacity: 1; transform: none; }
   .why { display: grid; gap: 6px; padding: 14px 16px; border-radius: 12px; background: var(--btn-ghost); font-size: 0.95rem; }
   .why strong { color: var(--fg); }
   .why span { color: var(--muted); }
@@ -519,7 +518,7 @@
   @media (prefers-reduced-motion: reduce) {
     .gk-win, .gk-alert, .gk-sheet, .gk-sheetwrap::before, .gk-cap, .gk-scroll, .gk-page, .gk-side p { transition: none; }
     .gk-block.hot .gk-open { animation: none; }
-    .tour.gk .menubar canvas.icon { transition: none; }
+    .tour.gk .menubar .icon { transition: none; }
   }
 
   /* 문제 */
@@ -804,7 +803,7 @@
 
   <footer>
     <p data-i18n="footer.1">Desktoto는 수익을 목적으로 하지 않는 무료 프로젝트예요. 광고도, 결제도 없어요.</p>
-    <p data-i18n="footer.2">캐릭터는 Claude Code의 마스코트에서 영감을 받은 팬 작품이에요. Claude는 Anthropic의, Codex는 OpenAI의 상표이고, Desktoto는 두 회사의 공식 제품이 아니에요.</p>
+    <p data-i18n="footer.2">Claude는 Anthropic의, Codex는 OpenAI의 상표이고, 데모 화면의 앱 아이콘은 각 회사의 상표예요. Desktoto는 어느 회사의 공식 제품도 아니에요.</p>
   </footer>
 </div>
 
@@ -812,140 +811,7 @@
 (function () {
   "use strict";
 
-  /* 캐릭터 엔진: 앱(SpriteRenderer.swift)과 같은 격자(칸)와 같은 도형으로 그린다. 한 칸이 화면 픽셀 정수 배가 되도록 맞춘다. */
-  var UNITS_WIDE = 41, CHAR_W = 24, TRACK = 36, TRAVEL = TRACK - CHAR_W;
-  var STAND_X = Math.floor((UNITS_WIDE - CHAR_W) / 2);
-  var RUN_FRAMES = 24, LEG_FRAMES = 3, FW_FRAMES = 24, MAX_BOB = 2, STEP_MS = 1000 / 24;
-  var LEG_COLUMNS = [4, 7, 15, 18];
-  var SLEEP_FRAMES = 6, SLEEP_FRAME_TICKS = 14; // 약 0.6초마다 z가 한 단계 떠오른다(앱과 같다).
-  var Z_SMALL = ["1111", "0010", "0100", "1111"];
-  var Z_BIG = ["11111", "00010", "00100", "01000", "11111"];
-  // [큰 z인지, 배지 자리 왼쪽 기준 칸, 위쪽 기준 칸]
-  var Z_STEPS = [[[0, 0, 11]], [[0, 0, 9]], [[0, 0, 9], [1, 2, 3]], [[0, 0, 9], [1, 2, 3]], [[1, 2, 2]], []];
-  var QUESTION = ["01110", "10001", "00001", "00110", "00100", "00000", "00100"];
-  var REACHES = [19, 15, 11];
-  var SPARK_COLORS = ["#ff9ec7", "#ffd973", "#9ed1ff", "#bda9ff", "#ffffff"];
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var sprites = [];
-
-  function Sprite(canvas, unit, options) {
-    this.canvas = canvas;
-    this.mode = options.mode || "stand";
-    this.waiting = !!options.waiting;
-    this.dot = !!options.dot;
-    this.fw = null;
-    this.loopFireworks = !!options.loopFireworks;
-    this.phase = options.phase || 0;
-    this.tick = 0;
-    this.dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
-    this.ctx = canvas.getContext("2d");
-    this.resize(unit, options.trackUnits || UNITS_WIDE);
-    sprites.push(this);
-  }
-
-  Sprite.prototype.resize = function (unit, trackUnits) {
-    this.unit = unit;
-    this.trackUnits = trackUnits;
-    this.canvas.width = trackUnits * unit * this.dpr;
-    this.canvas.height = 20 * unit * this.dpr;
-    this.canvas.style.width = trackUnits * unit + "px";
-    this.canvas.style.height = 20 * unit + "px";
-    this.render();
-  };
-
-  Sprite.prototype.fireFirework = function () { this.fw = reduceMotion ? null : 0; this.render(); };
-
-  Sprite.prototype.advance = function () {
-    this.tick++;
-    if (this.mode === "run" && !reduceMotion) this.phase = (this.phase + 1) % RUN_FRAMES;
-    if (this.fw !== null) { this.fw++; if (this.fw >= FW_FRAMES) this.fw = null; }
-    if (this.loopFireworks && !reduceMotion && this.tick % 96 === 40) this.fw = 0;
-  };
-
-  Sprite.prototype.render = function () {
-    var ctx = this.ctx, scale = this.unit * this.dpr, self = this;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    var fill = function (x, y, w, h, color, alpha) {
-      var l = Math.round(x * scale), t = Math.round(y * scale), r = Math.round((x + w) * scale), b = Math.round((y + h) * scale);
-      if (r <= l || b <= t) return;
-      ctx.globalAlpha = alpha === undefined ? 1 : alpha;
-      ctx.fillStyle = color;
-      ctx.fillRect(l, t, r - l, b - t);
-      ctx.globalAlpha = 1;
-    };
-    var running = this.mode === "run";
-    var legStep = this.phase / LEG_FRAMES;
-    var isLegA = Math.floor(legStep) % 2 === 0;
-    var wide = this.trackUnits;
-    var ox = running ? this.phase / RUN_FRAMES * TRAVEL : STAND_X;
-    var sleeping = this.mode === "sleep";
-    var oy = running ? MAX_BOB * (0.5 + 0.5 * Math.cos(Math.PI * legStep)) : (sleeping ? MAX_BOB + 1 : MAX_BOB);
-
-    if (this.fw !== null) {
-      var p = this.fw / (FW_FRAMES - 1), eased = 1 - Math.pow(1 - p, 2);
-      var alpha = Math.max(0, 1 - Math.pow(p, 2.4));
-      var size = p < 0.45 ? 3 : (p < 0.8 ? 2 : 1);
-      var cx = wide / 2;
-      for (var i = 0; i < 14; i++) {
-        var angle = 2 * Math.PI * i / 14 + 0.3;
-        var radius = 8 + (REACHES[i % 3] - 8) * eased;
-        var sx = cx + Math.cos(angle) * radius;
-        var sy = 9 + Math.sin(angle) * radius * 0.5 + 4 * p * p;
-        fill(sx - size / 2, sy - size / 2, size, size, SPARK_COLORS[i % 5], alpha);
-      }
-      if (p < 0.2) fill(cx - 2, 7, 4, 4, "#ffffff", 1 - p / 0.2);
-    }
-
-    if (running) {
-      var lines = [[2, 7, 3], [6, 4, 4], [10, 7, 3]];
-      lines.forEach(function (line) {
-        var end = ox - line[2], start = Math.max(0, end - line[1]);
-        if (end > start) fill(start, oy + line[0], end - start, 2, "#cccccc", 0.9);
-      });
-    }
-
-    var legs = sleeping ? [3, 3, 3, 3] : !running ? [4, 4, 4, 4] : (isLegA ? [5, 3, 5, 3] : [3, 5, 3, 5]);
-    var arms = !running ? [0, 0] : (isLegA ? [-1, 1] : [1, -1]);
-    LEG_COLUMNS.forEach(function (col, idx) { fill(ox + col, oy + 12, 2, legs[idx], "#ffffff"); });
-    fill(ox + 0, oy + 6 + arms[0], 3, 3, "#ffffff");
-    fill(ox + 21, oy + 6 + arms[1], 3, 3, "#ffffff");
-    fill(ox + 3, oy, 18, 12, "#ffffff");
-    // 잠든 눈은 뜬 눈의 맨 아래 한 줄만 남긴다.
-    fill(ox + 6, oy + (sleeping ? 5 : 3), 2, sleeping ? 1 : 3, "#0d0d0d");
-    fill(ox + 16, oy + (sleeping ? 5 : 3), 2, sleeping ? 1 : 3, "#0d0d0d");
-
-    var bx = ox + CHAR_W + 1;
-    if (this.waiting) {
-      QUESTION.forEach(function (line, r) {
-        for (var c = 0; c < line.length; c++) if (line.charAt(c) === "1") fill(bx + c, r, 1, 1, "#ffcc59");
-      });
-    } else if (this.dot) {
-      fill(bx, 0, 4, 4, "#ad85ff");
-    } else if (sleeping) {
-      // 움직임을 줄인 설정에서는 z가 가장 잘 보이는 한 장면에 멈춰 둔다.
-      var step = reduceMotion ? 2 : Math.floor(this.tick / SLEEP_FRAME_TICKS) % SLEEP_FRAMES;
-      Z_STEPS[step].forEach(function (z) {
-        (z[0] ? Z_BIG : Z_SMALL).forEach(function (line, r) {
-          for (var c = 0; c < line.length; c++) if (line.charAt(c) === "1") fill(bx + z[1] + c, z[2] + r, 1, 1, "#ffffff", 0.85);
-        });
-      });
-    }
-  };
-
-  var lastTime = 0, acc = 0;
-  function loop(ts) {
-    if (!lastTime) lastTime = ts;
-    acc += ts - lastTime;
-    lastTime = ts;
-    if (document.hidden) { acc = 0; }
-    var steps = 0;
-    while (acc >= STEP_MS && steps < 3) { acc -= STEP_MS; steps++; sprites.forEach(function (s) { s.advance(); }); }
-    if (acc > STEP_MS * 3) acc = 0;
-    if (steps) sprites.forEach(function (s) { s.render(); });
-    requestAnimationFrame(loop);
-  }
-  if (!reduceMotion) requestAnimationFrame(loop);
 
   /* 언어: 데모 화면(메뉴바, 세션 제목, 알약)은 스크립트가 만들어서 따로 사전을 둔다. */
   var lang = "ko";
@@ -997,7 +863,7 @@
   var MENUBAR =
     '<div class="menubar" aria-hidden="true">' +
       '<div class="left"><b>Finder</b><span data-st="file">파일</span><span data-st="edit">편집</span><span class="extra" data-st="view">보기</span><span class="extra" data-st="go">이동</span></div>' +
-      '<div class="right"><canvas class="icon"></canvas><span class="pill" data-st="input">한</span><span data-st="clock">오전 10:24</span></div>' +
+      '<div class="right"><span class="mb-slot icon"><span class="toto on working"><span class="toto-color"></span><span class="em-eyes"><i></i><i></i></span></span></span><span class="pill" data-st="input">한</span><span data-st="clock">오전 10:24</span></div>' +
     '</div>';
 
   // 히어로 메뉴바는 오른쪽 캐릭터 아이콘 대신 가운데 노치 봇을 쓴다.
@@ -1412,7 +1278,6 @@
     var ripple = root.querySelector(".tour-ripple");
     var stepList = document.querySelector("#install .steps");
     var stepItems = [].slice.call(stepList.querySelectorAll("li"));
-    new Sprite(root.querySelector("canvas.icon"), 2, { mode: "run" });
 
     function setText(el, key) { el.setAttribute("data-st", key); el.textContent = STAGE_TEXT[lang][key]; }
     // 단계 목록 번호(2, 3, 4)와 같은 번호를 자막에 달아 두 곳이 같은 흐름임을 보여 준다.
@@ -1645,7 +1510,7 @@
     "install.step4": "Open it again and the character appears in your menu bar.",
     "install.term.lead": "If you prefer the terminal, this command opens it without the warning.",
     "footer.1": "Desktoto is a free, non-commercial project with no ads or payments.",
-    "footer.2": "The character is a fan creation inspired by the Claude Code mascot. Claude is a trademark of Anthropic and Codex is a trademark of OpenAI. Desktoto is not an official product of either company."
+    "footer.2": "Claude is a trademark of Anthropic and Codex is a trademark of OpenAI. The app icons in the demo are trademarks of their respective owners. Desktoto is not an official product of any of these companies."
   };
 
   (function () {
