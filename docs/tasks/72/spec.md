@@ -90,7 +90,7 @@ Desktoto 고유 캐릭터인 토토와 새 표시 위치인 노치 봇이 첫 �
 | AC-7 | 페이지 첫 화면 스크린샷 | 배너가 없다 |
 | AC-8 | 1440px 폭에서 `.tour` 크기 측정 | 1240×775 (16:10) |
 | AC-9 | 두 바퀴 이상 연속 캡처 | 노치에서 메뉴바, 메뉴바에서 노치로 전환이 이어진다 |
-| AC-10 | `bash apps/macos/scripts/build-app.sh` 실행 후 아이콘 추출 | 빌드 성공, 새 아이콘 |
+| AC-10 | `bash apps/macos/scripts/build-app.sh` 실행 후 아이콘 추출, 파비콘 파일(`favicon.svg`, `favicon.ico`, `apple-touch-icon.png`)을 열어 확인 | 빌드 성공, 새 앱 아이콘과 토토 파비콘 |
 
 ## 검증 결과
 
@@ -105,7 +105,7 @@ Desktoto 고유 캐릭터인 토토와 새 표시 위치인 노치 봇이 첫 �
 | AC-7 | 통과 |
 | AC-8 | 통과. 1440px에서 1240×775 |
 | AC-9 | 통과. 떨어짐 5.0초, 붙음 4.8초 측정, 두 방향 시점별 캡처 |
-| AC-10 | 통과. `build-app.sh` 성공, 빌드된 AppIcon.icns에서 새 아이콘 확인 |
+| AC-10 | 통과. `build-app.sh` 성공, 빌드된 AppIcon.icns에서 새 아이콘 확인. `favicon.svg`는 브라우저에서 열어 토토 디자인 확인, `favicon.ico`(32×32)와 `apple-touch-icon.png`(180×180)는 이미지를 열어 같은 디자인 확인 |
 | 공통 | `.github/scripts/check-web.sh` 통과 |
 
 ## 미결정 사항
