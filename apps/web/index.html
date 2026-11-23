@@ -17,7 +17,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="claude:viewport-fit-sides" content="cover">
-<!-- 파비콘: 앱 아이콘과 같은 어두운 둥근 사각형 위의 흰색 캐릭터. favicon.svg가 원본이고 ico와 apple-touch-icon.png는 같은 그림으로 만든다. -->
+<!-- 파비콘: 앱 아이콘과 같은 블루 퍼플 그라데이션 둥근 사각형 위의 토토 눈. favicon.svg가 원본이고 ico와 apple-touch-icon.png는 같은 그림으로 만든다. -->
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -96,6 +96,8 @@
   }
   /* 좌우 여백은 본문 틀이 갖고, 헤더(nav)는 페이지 전체 너비를 쓴다. */
   .wrap, .nav-inner { max-width: 1080px; margin-inline: auto; box-sizing: content-box; }
+  /* 헤더는 히어로 무대 폭(최대 1240px)에 맞춰 왼쪽, 오른쪽 끝을 맞춘다. */
+  .nav-inner { max-width: 1240px; }
   .wrap, nav { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   :root { --section-pad: clamp(144px, 19vw, 216px); }
   /* 위 여백이 커서 섹션 맨 위가 아니라 제목이 헤더 바로 아래에 오도록, 이동 위치에서 여백만큼 뺀다. */
@@ -247,7 +249,6 @@
   .menubar .left b { color: var(--glass-ink); font-weight: 700; }
   .menubar .right { display: flex; align-items: center; gap: 14px; margin-left: auto; white-space: nowrap; }
   .menubar .pill { background: rgba(255, 255, 255, 0.85); color: #1d1d1f; border-radius: 5px; padding: 0 6px; font-size: 12px; line-height: 18px; }
-  .menubar canvas { display: block; image-rendering: pixelated; }
   @media (max-width: 560px) { .menubar .left span.extra { display: none; } }
 
   /* 히어로 무대: 파란 물결 바탕화면 위에서 마우스가 패널의 카드를 눌러 해당 창으로 이동하는 장면이 반복된다. */
@@ -256,6 +257,115 @@
     border-radius: 28px; overflow: hidden; border: 1px solid var(--line); user-select: none;
     background: var(--wallpaper);
   }
+  /* 히어로(문구와 무대)는 본문 폭(1080px)을 넘어 최대 1240px까지 넓혀 헤더와 끝을 맞춘다. 좁은 화면에서는 본문 폭을 그대로 채운다. */
+  .hero { --stage-w: min(1240px, calc(100vw - 32px)); width: max(100%, var(--stage-w)); margin-inline: min(0px, calc((100% - var(--stage-w)) / 2)); box-sizing: border-box; }
+  .hero-stage { width: 100%; }
+  /* 히어로 문구 위아래 여백. 위는 헤더와, 아래는 데모 무대와 숨 쉴 틈을 둔다. */
+  .hero.hero { padding-block: clamp(40px, 7vw, 96px) 0; }
+  .hero-stage { margin-top: clamp(16px, 3vw, 40px); }
+  /* 제목이 좁은 화면에서 줄을 바꿀 때 쉼표 뒤에서만 바뀌도록 두 구절을 각각 묶는다. */
+  .hero h1 .nw { white-space: nowrap; }
+  /* MacBook 화면과 같은 16:10 비율. 좁은 화면에서는 데모 창이 들어가도록 최소 높이를 지킨다. */
+  .hero-stage .tour { height: auto; aspect-ratio: 16 / 10; min-height: 480px; }
+  /* 노트북 화면 모양: 검은 베젤을 두르고, 노치가 베젤 위쪽과 이어진다. */
+  .hero-stage .tour { border: clamp(8px, 1.1vw, 14px) solid #0c0c0e; border-radius: clamp(20px, 2.6vw, 32px); box-shadow: 0 0 0 1.5px #3a3a3f; box-sizing: border-box; }
+
+  /* 노치 봇: 앱(NotchBotView.swift)처럼 노치와 그 오른쪽 봇을 한 덩어리 검정으로 그리고, 봇 자리에만 작업 색과 알약 눈을 둔다.
+     치수는 앱 값(노치 높이 32pt, 봇 폭 26pt, 접힌 모서리 12pt, 펼친 모서리 22pt, 오목 곡선 6pt, 펼친 폭 520pt)에 데모 배율 --k를 곱한다.
+     누르면 앱처럼 노치 자체가 펼쳐지고, 맨 윗줄 왼쪽에 진행 요약, 아래에 사용량과 세션 카드가 나타난다. */
+  @property --nb-turn { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  .tour.has-nb { --k: 1.375; }
+  .nb { --nb-h: calc(32px * var(--k)); --nb-notch: clamp(112px, 15%, 190px); --nb-bot: calc(26px * var(--k)); --nb-flare: calc(6px * var(--k));
+    --nb-open-w: min(calc(520px * var(--k)), calc(100% - 24px));
+    position: absolute; top: 0; z-index: 8; left: calc(50% - var(--nb-notch) / 2); width: calc(var(--nb-notch) + var(--nb-bot)); height: var(--nb-h);
+    background: #000; border-radius: 0 0 calc(12px * var(--k)) calc(12px * var(--k));
+    transition: left 0.45s cubic-bezier(0.3, 0.9, 0.3, 1), width 0.45s cubic-bezier(0.3, 0.9, 0.3, 1), height 0.45s cubic-bezier(0.3, 0.9, 0.3, 1), border-radius 0.45s; }
+  .nb.open { left: calc(50% - var(--nb-open-w) / 2); width: var(--nb-open-w); height: calc(var(--nb-h) + var(--nb-panel-h, 180px)); border-radius: 0 0 calc(22px * var(--k)) calc(22px * var(--k)); }
+  .nb::before, .nb::after { content: ""; position: absolute; top: 0; width: var(--nb-flare); height: var(--nb-flare); }
+  .nb::before { right: 100%; background: radial-gradient(circle at 0 100%, transparent calc(var(--nb-flare) - 0.5px), #000 var(--nb-flare)); }
+  .nb::after { left: 100%; background: radial-gradient(circle at 100% 100%, transparent calc(var(--nb-flare) - 0.5px), #000 var(--nb-flare)); }
+  .nb-cam { position: absolute; z-index: 9; top: calc(16px * var(--k)); left: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #2b3550, #0a0a12 70%); pointer-events: none; }
+  /* 곡선 조각(::after)은 자식보다 나중에 그려져서, 색과 눈을 그 위로 올린다. */
+  .nb-color { z-index: 1; position: absolute; top: 0; right: 0; height: var(--nb-h); width: calc(var(--nb-bot) + 14px); border-bottom-right-radius: calc(12px * var(--k)); opacity: 0;
+    background: conic-gradient(from var(--nb-turn) at 100% 50%, #298ff5, #385cf5, #6145e0, #944cf0, #bd4ddb, #6b70fa, #298ff5);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px); mask-image: linear-gradient(90deg, transparent, #000 14px);
+    transition: opacity 0.12s ease-out; animation: nbTurn 6s linear infinite; }
+  /* 봇 오른쪽 위 오목 곡선 조각에도 같은 색을 얹는다. 회전 중심을 몸 쪽 색과 같은 점(봇 오른쪽 끝, 높이 가운데)에 맞춘다. */
+  .nb-flare-color { left: 100%; right: auto; width: var(--nb-flare); height: var(--nb-flare); border-radius: 0;
+    background: conic-gradient(from var(--nb-turn) at 0 calc(var(--nb-h) / 2), #298ff5, #385cf5, #6145e0, #944cf0, #bd4ddb, #6b70fa, #298ff5);
+    -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent calc(var(--nb-flare) - 0.5px), #000 var(--nb-flare)); mask-image: radial-gradient(circle at 100% 100%, transparent calc(var(--nb-flare) - 0.5px), #000 var(--nb-flare)); }
+  .nb.working:not(.open) .nb-color { opacity: 0.85; transition: opacity 1.5s ease-in-out; }
+  @keyframes nbTurn { to { --nb-turn: 360deg; } }
+  .nb-eyes { z-index: 2; position: absolute; top: 0; right: 0; width: var(--nb-bot); height: var(--nb-h); display: flex; justify-content: center; align-items: center; gap: calc(var(--nb-h) * 0.108); transform: rotate(-12deg); }
+  .nb-eyes i { width: calc(var(--nb-h) * 0.12); height: calc(var(--nb-h) * 0.24); border-radius: 99px; background: #fff;
+    translate: var(--nb-gx, 0px) var(--nb-gy, 0px); transition: translate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), scale 0.12s ease-out; }
+  .nb.blink .nb-eyes i { scale: 1 0.1; transition: translate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), scale 0.06s ease-in; }
+  /* 펼친 노치 안의 내용. 펼칠 때는 노치가 거의 다 커진 뒤에 나타나고, 접을 때는 먼저 빠르게 사라진다. */
+  .nb-head, .nb-panel { position: absolute; left: 0; opacity: 0; transition: opacity 0.1s ease-in; color: #fff; pointer-events: none; }
+  .nb.open .nb-head, .nb.open .nb-panel { opacity: 1; transition: opacity 0.2s ease-out 0.3s; }
+  .nb-head { top: 0; height: var(--nb-h); padding-left: calc(14px * var(--k)); display: flex; align-items: center; gap: 6px; font-size: calc(11px * var(--k)); color: rgba(255, 255, 255, 0.6); white-space: nowrap; }
+  .nb-head::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #8f7bff; }
+  .nb-head b { color: #fff; font-weight: 600; }
+  .nb-panel { top: var(--nb-h); width: 100%; box-sizing: border-box; padding: calc(6px * var(--k)) calc(12px * var(--k)) calc(12px * var(--k)); display: flex; gap: calc(8px * var(--k)); align-items: stretch; }
+  .nb-card { background: #1c1c1c; border-radius: calc(14px * var(--k)); padding: calc(9px * var(--k)) calc(11px * var(--k)); display: grid; align-content: start; gap: calc(5px * var(--k)); font-size: calc(11px * var(--k)); min-width: 0; }
+  .nb-card h5 { margin: 0; font-size: calc(12px * var(--k)); font-weight: 600; letter-spacing: 0; display: flex; gap: 6px; align-items: baseline; }
+  .nb-card h5 b { font-weight: 600; }
+  .nb-card h5 span { font-weight: 400; color: rgba(255, 255, 255, 0.5); font-size: calc(11px * var(--k)); }
+  .nb-usage { flex: 0 0 calc(140px * var(--k)); }
+  .nb-use { display: grid; grid-template-columns: calc(24px * var(--k)) 1fr calc(30px * var(--k)); align-items: center; gap: 6px; color: rgba(255, 255, 255, 0.5); font-variant-numeric: tabular-nums; }
+  .nb-use b { color: #fff; font-weight: 500; text-align: right; }
+  .nb-bar { height: calc(3px * var(--k)); border-radius: 9px; background: rgba(255, 255, 255, 0.14); }
+  .nb-bar i { display: block; height: 100%; min-width: 4px; border-radius: 9px; background: #e9e9ee; }
+  .nb-reset { font-size: calc(10px * var(--k)); color: rgba(255, 255, 255, 0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nb-sessions { flex: 1; }
+  .nb-row { margin: 0 calc(-6px * var(--k)); padding: calc(4px * var(--k)) calc(6px * var(--k)); border-radius: calc(8px * var(--k)); display: grid; gap: calc(5px * var(--k)); transition: background 0.2s, transform 0.12s; }
+  .nb-row .head { display: flex; justify-content: space-between; gap: 8px; }
+  .nb-row .head span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nb-row .head span:last-child { flex: none; color: rgba(255, 255, 255, 0.5); font-variant-numeric: tabular-nums; }
+  .nb-row.hover { background: rgba(255, 255, 255, 0.1); }
+  .nb-row.press { transform: scale(0.97); }
+  /* 메뉴바 모드의 토토. 앱(TotoArt.swift)처럼 검은 원 안에 노치 봇과 같은 알약 눈 두 개, 옅은 테두리, 작업 중에는 원 밖 오른쪽을 중심으로 도는 색이다. */
+  .mb-slot { position: relative; width: 30px; height: 30px; flex: none; }
+  .toto { position: absolute; border-radius: 50%; background: #000; overflow: hidden; }
+  .toto { inset: 0; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22) inset; opacity: 0; font-size: 30px; }
+  .toto.on { opacity: 1; }
+  .toto-color { position: absolute; inset: 0; opacity: 0; transition: opacity 0.12s ease-out;
+    background: conic-gradient(from var(--nb-turn) at 130% 50%, #298ff5, #385cf5, #6145e0, #944cf0, #bd4ddb, #6b70fa, #298ff5); animation: nbTurn 6s linear infinite; }
+  .toto.working .toto-color { opacity: 0.85; transition: opacity 1.5s ease-in-out; }
+  .em-eyes { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; gap: 0.11em; transform: rotate(-12deg); }
+  .em-eyes i { width: 0.122em; height: 0.27em; border-radius: 99px; background: #fff; translate: var(--nb-gx, 0px) var(--nb-gy, 0px); transition: translate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), scale 0.12s ease-out; }
+  .toto.blink .em-eyes i { scale: 1 0.1; transition: scale 0.06s ease-in; }
+  /* 봇이 떨어진 노치는 봇 자리만 빠지고, 양쪽 오목 곡선은 그대로 둔다. */
+  .nb.bare { width: var(--nb-notch); transition: none; }
+  .nb.bare .nb-eyes, .nb.bare .nb-color { visibility: hidden; }
+  .nb.hide { visibility: hidden; }
+  /* 물방울 층: 흐린 뒤 투명도 경계를 자르는 SVG 필터(#nbGoo)를 걸어서, 노치 몸통과 물방울이 가까우면 서로 끈적하게 이어진다.
+     층을 무대 위로 40px 올려 필터 영역이 노치 위쪽에서 잘리지 않게 하고, 진짜 노치(봇 없는 상태)를 그 위에 그대로 둬서 노치 모양은 늘 같다. */
+  .goo { position: absolute; inset: -40px 0 0 0; z-index: 7; pointer-events: none; filter: url(#nbGoo); display: none; }
+  .goo.on { display: block; }
+  .goo-notch { position: absolute; top: 0; background: #000; border-radius: 0 0 calc(12px * var(--k)) calc(12px * var(--k)); }
+  .goo-drop, .drop-eyes { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; }
+  .goo-drop { background: #000; }
+  .drop-eyes { z-index: 9; pointer-events: none; display: none; }
+  .drop-eyes.on { display: block; }
+  /* 메뉴바 모드에서 토토를 누르면 열리는 패널. 앱의 메뉴바 패널처럼 유리 카드 두 장이다. */
+  .mb-panel { position: absolute; right: 14px; top: 54px; z-index: 7; width: min(300px, calc(100% - 28px)); display: flex; flex-direction: column; gap: 8px;
+    opacity: 0; transform: translateY(-6px) scale(0.97); transform-origin: top right; pointer-events: none; transition: opacity 0.22s, transform 0.22s; }
+  .mb-panel.open { opacity: 1; transform: none; }
+  @media (max-width: 760px) { .tour.has-nb { --k: 1.1; } .nb-usage + .nb-usage { display: none; } }
+  @media (max-width: 560px) { .nb { --nb-notch: 96px; } .nb-usage { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .nb, .nb-head, .nb-panel, .nb-row, .mb-panel { transition: none !important; } .toto-color { animation: none; } .nb-color { animation: none; } .nb-eyes i { transition: none; } }
+  /* Dock: 화면 아래 가운데에 뜬 유리 막대. 아이콘은 이 Mac에 설치된 각 앱의 공식 아이콘 파일(.icns)을 PNG로 바꾼 것이다(dock-icons/).
+     데모에 나오는 터미널과 Claude 아래에 실행 중 점을 찍는다. */
+  .dock { --ic: clamp(24px, 3.2vw, 46px); position: absolute; z-index: 5; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: calc(var(--ic) * 0.06);
+    padding: calc(var(--ic) * 0.1) calc(var(--ic) * 0.14) calc(var(--ic) * 0.14); border-radius: calc(var(--ic) * 0.42);
+    background: rgba(255, 255, 255, 0.22); border: 0.5px solid rgba(255, 255, 255, 0.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 8px 24px rgba(0, 20, 80, 0.22); }
+  .dock i { position: relative; display: block; width: var(--ic); height: var(--ic); font-style: normal; }
+  .dock img { display: block; width: 100%; height: 100%; }
+  .dock i.run::after { content: ""; position: absolute; left: 50%; bottom: calc(var(--ic) * -0.11); width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: rgba(20, 20, 30, 0.75); }
+  .dock .sep { width: 1px; align-self: stretch; margin: 4px calc(var(--ic) * 0.12); background: rgba(255, 255, 255, 0.45); }
+  @media (max-width: 560px) { .dock .opt { display: none; } }
   .tour-line { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
   .tour .menubar { position: absolute; inset: 0 0 auto; z-index: 6; background: rgba(18, 26, 58, 0.5); }
   .tour-win {
@@ -289,13 +399,6 @@
   .tour-me { align-self: flex-end; background: #e4e1ee; padding: 7px 12px; border-radius: 13px 13px 3px 13px; max-width: 82%; }
   .tour-ai { max-width: 94%; }
   .tour-input { margin-top: auto; border: 0.5px solid #cfcdd6; border-radius: 11px; background: #fff; padding: 8px 12px; font-size: 12px; color: #8b8b94; }
-  .tour-panel {
-    position: absolute; right: 14px; top: 54px; z-index: 7; width: min(300px, calc(100% - 28px));
-    display: flex; flex-direction: column; gap: 8px;
-    opacity: 0; transform: translateY(-6px) scale(0.97); transform-origin: top right; pointer-events: none;
-    transition: opacity 0.22s, transform 0.22s;
-  }
-  .tour-panel.open { opacity: 1; transform: none; }
   .tour-glass {
     border-radius: 22px; color: #fff; font-size: 14px; line-height: 1.35;
     background: rgba(28, 28, 34, 0.58); border: 0.5px solid rgba(255, 255, 255, 0.16);
@@ -325,7 +428,7 @@
   .tour-ripple.go { animation: ripple 0.5s ease-out; }
   @keyframes ripple { from { opacity: 0.85; transform: scale(0.2); } to { opacity: 0; transform: scale(1.1); } }
   @media (prefers-reduced-motion: reduce) {
-    .tour-win, .tour-panel, .tour-row, .tour-row .more { transition: none; }
+    .tour-win, .tour-row, .tour-row .more { transition: none; }
     .tour-cur { animation: none; }
   }
 
@@ -405,8 +508,8 @@
   .gk-cap { margin-top: 12px; min-height: 52px; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--btn-ghost); color: var(--fg); font-size: 0.95rem; line-height: 1.4; opacity: 0; transition: opacity 0.25s; }
   .gk-cap.show { opacity: 1; }
   .gk-cap b { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: var(--btn-bg); color: var(--btn-fg); font: 700 12px var(--font-body); }
-  .tour.gk .menubar canvas.icon { opacity: 0; transform: scale(0.6); transition: opacity 0.3s, transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1); }
-  .tour.gk.icon-on .menubar canvas.icon { opacity: 1; transform: none; }
+  .tour.gk .menubar .icon { opacity: 0; transform: scale(0.6); transition: opacity 0.3s, transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1); }
+  .tour.gk.icon-on .menubar .icon { opacity: 1; transform: none; }
   .why { display: grid; gap: 6px; padding: 14px 16px; border-radius: 12px; background: var(--btn-ghost); font-size: 0.95rem; }
   .why strong { color: var(--fg); }
   .why span { color: var(--muted); }
@@ -415,7 +518,7 @@
   @media (prefers-reduced-motion: reduce) {
     .gk-win, .gk-alert, .gk-sheet, .gk-sheetwrap::before, .gk-cap, .gk-scroll, .gk-page, .gk-side p { transition: none; }
     .gk-block.hot .gk-open { animation: none; }
-    .tour.gk .menubar canvas.icon { transition: none; }
+    .tour.gk .menubar .icon { transition: none; }
   }
 
   /* 문제 */
@@ -430,38 +533,6 @@
   .state h3 { padding-inline: 6px; }
   .state p { padding-inline: 6px; color: var(--muted); font-size: 0.96rem; }
 
-  /* 캐릭터 고르기: 상태 카드와 같은 카드 모양에, 그림 배경만 배너와 같은 분홍을 쓴다. */
-  .chars { margin-top: 72px; scroll-margin-top: 96px; }
-  .chars h3.chars-title { font-size: clamp(1.3rem, 2.6vw, 1.7rem); }
-  .chars .chars-lead { margin-top: 10px; color: var(--muted); }
-  .char-list { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
-  .char-card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 14px 14px 20px; display: grid; gap: 14px; }
-  .char-poses { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  /* 그림 배경은 앱 메뉴바와 같은 캐릭터별 장면(들판, 가게 앞, 숲)이다. 캐릭터는 아래쪽 땅에 선다. */
-  .char-pose { position: relative; margin: 0; background: #cfe3c0 center bottom / cover no-repeat; border-radius: 12px; height: 140px; display: grid; place-items: end center; padding: 0 6px 10px; overflow: hidden; }
-  .char-card.chiikawa .char-pose { background-image: url("characters/chiikawa-bg.webp"); }
-  .char-card.hachiware .char-pose { background-image: url("characters/hachiware-bg.webp"); }
-  .char-card.usagi .char-pose { background-image: url("characters/usagi-bg.webp"); }
-  .char-pose img { max-height: 88px; width: auto; display: block; }
-  .char-pose figcaption { position: absolute; top: 8px; left: 8px; font-size: 0.74rem; font-weight: 500; color: #3a2a30; background: rgba(255, 255, 255, 0.82); padding: 2px 9px; border-radius: 999px; }
-  .char-card h4 { margin: 0; padding-inline: 6px; font-size: 1.05rem; }
-  /* 캐릭터 바꾸는 법: 왼쪽 단계 안내, 오른쪽 우클릭 메뉴 모형. 메뉴 모양은 기능 섹션 모형(.fv-menu, .mi)을 다시 쓴다. */
-  .char-card { transition: border-color 0.3s, box-shadow 0.3s; }
-  .char-card.picked { border-color: #ff8a95; box-shadow: 0 0 0 2px #ff8a95; }
-  .how { margin-top: 20px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
-  .how-steps { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 24px 26px; display: grid; gap: 14px; align-content: center; }
-  .how-steps h4 { margin: 0; font-size: 1.1rem; }
-  .how-steps ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: how; }
-  .how-steps li { counter-increment: how; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; color: var(--muted); }
-  .how-steps li::before { content: counter(how); width: 24px; height: 24px; border-radius: 50%; background: #ff8a95; color: #3a2a30; font-size: 0.8rem; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
-  .how-steps b { color: var(--fg); font-weight: 600; }
-  .how-stage { border-radius: 20px; background: var(--wallpaper); min-height: 230px; display: grid; place-items: center; padding: 24px 16px; overflow: hidden; }
-  .how-menu { position: relative; width: 150px; margin-right: 96px; transform: scale(1.2); }
-  .how-menu .fv-sub { top: 40px; display: block; }
-  .how-menu .mi { cursor: default; }
-  .how-menu .mi:hover:not(.on) { background: none; color: inherit; }
-  @media (max-width: 720px) { .how { grid-template-columns: minmax(0, 1fr); } }
-  .chars-notice { margin-top: 20px; font-size: 0.8rem; line-height: 1.7; color: var(--muted); }
 
   /* 기능: 상태 카드와 같은 카드에, 히어로 데모와 같은 배경과 유리 패널로 앱 화면을 작게 보여 준다. */
   .fgrid { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
@@ -535,7 +606,7 @@
 
 <div class="wrap">
   <header class="hero">
-    <aside class="event-banner" id="eventBanner" aria-label="새 캐릭터 소식" data-i18n-aria="banner.aria">
+    <aside class="event-banner" id="eventBanner" hidden aria-label="새 캐릭터 소식" data-i18n-aria="banner.aria">
       <div class="eb-copy">
         <span class="eb-badge">NEW</span>
         <p class="eb-title" data-i18n="banner.title">치이카와, 하치와레, 우사기가<br>메뉴바에 놀러 왔어요!</p>
@@ -549,12 +620,12 @@
       <span class="eb-confetti c3" aria-hidden="true"></span>
       <span class="eb-confetti c4" aria-hidden="true"></span>
     </aside>
-    <h1 data-i18n="hero.title">AI가 일하는 동안,<br>메뉴바에서 지켜보세요.</h1>
-    <p class="lead" data-i18n="hero.lead"><span class="ln">Desktoto는 AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.</span><span class="ln">작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.</span></p>
+    <h1 data-i18n="hero.title"><span class="nw">AI가 일하는 동안,</span> <span class="nw">지켜보세요.</span></h1>
+    <p class="lead" data-i18n="hero.lead"><span class="ln">Desktoto는 AI Agent 세션의 진행 상태를 메뉴바나 노치의 작은 캐릭터로 보여줘요.</span><span class="ln">작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.</span></p>
     <div class="cta">
       <a class="btn" href="#install"><span data-i18n="hero.cta1">다운로드 바로 가기</span></a>
     </div>
-    <div id="heroStage" style="width:100%"></div>
+    <div id="heroStage" class="hero-stage"></div>
   </header>
 
   <section id="problem">
@@ -573,102 +644,29 @@
     <div class="states">
       <article class="state">
         <div class="strip"><canvas id="sRun"></canvas></div>
-        <h3 data-i18n="states.run.title">달리는 중</h3>
-        <p data-i18n="states.run.body">작업이 진행 중이에요. 여러 세션 중 하나라도 돌고 있으면 계속 달려요.</p>
+        <h3 data-i18n="states.run.title">작업 중</h3>
+        <p data-i18n="states.run.body">몸 색이 파랑과 보라로 돌아요.</p>
       </article>
       <article class="state">
         <div class="strip"><canvas id="sDone"></canvas></div>
-        <h3 data-i18n="states.done.title">폭죽</h3>
-        <p data-i18n="states.done.body">작업이 끝났어요. 캐릭터 뒤에서 작은 폭죽이 터지고 macOS 알림이 와요.</p>
+        <h3 data-i18n="states.done.title">완료</h3>
+        <p data-i18n="states.done.body">색이 빠지고 macOS 알림이 와요.</p>
       </article>
       <article class="state">
         <div class="strip"><canvas id="sWait"></canvas></div>
-        <h3 data-i18n="states.wait.title">물음표</h3>
-        <p data-i18n="states.wait.body">승인이나 답변이 필요해요. 사람을 기다리는 세션이 있으면 물음표가 떠요.</p>
+        <h3 data-i18n="states.wait.title">승인 대기</h3>
+        <p data-i18n="states.wait.body">몸 색이 주황과 노랑으로 바뀌어요.</p>
       </article>
       <article class="state">
         <div class="strip"><canvas id="sDot"></canvas></div>
         <h3 data-i18n="states.dot.title">보라색 점</h3>
-        <p data-i18n="states.dot.body">확인하지 않은 완료가 있어요. 패널을 열어서 확인하면 사라져요.</p>
+        <p data-i18n="states.dot.body">확인하지 않은 완료가 있어요.</p>
       </article>
       <article class="state">
         <div class="strip"><canvas id="sSleep"></canvas></div>
         <h3 data-i18n="states.sleep.title">졸음</h3>
-        <p data-i18n="states.sleep.body">10분 동안 아무 활동이 없으면 캐릭터가 눈을 감고 졸아요. 새 작업이 시작되면 바로 깨요.</p>
+        <p data-i18n="states.sleep.body">10분 동안 쉬면 눈을 감고 졸아요.</p>
       </article>
-    </div>
-    <div class="chars" id="characters">
-      <h3 class="chars-title" data-i18n="chars.title">메뉴바 캐릭터도 고를 수 있어요.</h3>
-      <p class="chars-lead" data-i18n="chars.lead">메뉴바에서 달리는 캐릭터를 Claude, 치이카와, 하치와레, 우사기 중에 골라 바꿀 수 있어요.</p>
-      <div class="char-list">
-      <article class="char-card chiikawa">
-        <div class="char-poses">
-          <figure class="char-pose">
-            <picture><source srcset="characters/chiikawa-run-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/chiikawa-run.webp" width="111" height="120" alt="" loading="lazy"></picture>
-            <figcaption data-i18n="chars.run">작업 중</figcaption>
-          </figure>
-          <figure class="char-pose">
-            <picture><source srcset="characters/chiikawa-idle-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/chiikawa-idle.webp" width="109" height="96" alt="" loading="lazy"></picture>
-            <figcaption data-i18n="chars.idle">대기 중</figcaption>
-          </figure>
-        </div>
-        <h4 data-i18n="chars.chiikawa">치이카와</h4>
-      </article>
-      <article class="char-card hachiware">
-        <div class="char-poses">
-          <figure class="char-pose">
-            <picture><source srcset="characters/hachiware-run-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/hachiware-run.webp" width="98" height="96" alt="" loading="lazy"></picture>
-            <figcaption data-i18n="chars.run">작업 중</figcaption>
-          </figure>
-          <figure class="char-pose">
-            <picture><source srcset="characters/hachiware-idle-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/hachiware-idle.webp" width="99" height="96" alt="" loading="lazy"></picture>
-            <figcaption data-i18n="chars.idle">대기 중</figcaption>
-          </figure>
-        </div>
-        <h4 data-i18n="chars.hachiware">하치와레</h4>
-      </article>
-      <article class="char-card usagi">
-        <div class="char-poses">
-          <figure class="char-pose">
-            <picture><source srcset="characters/usagi-run-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/usagi-run.webp" width="60" height="96" alt="" loading="lazy"></picture>
-            <figcaption data-i18n="chars.run">작업 중</figcaption>
-          </figure>
-          <figure class="char-pose">
-            <picture><source srcset="characters/usagi-idle-still.webp" media="(prefers-reduced-motion: reduce)"><img src="characters/usagi-idle.webp" width="97" height="96" alt="" loading="lazy"></picture>
-            <figcaption data-i18n="chars.idle">대기 중</figcaption>
-          </figure>
-        </div>
-        <h4 data-i18n="chars.usagi">우사기</h4>
-      </article>
-      </div>
-      <div class="how">
-        <div class="how-steps">
-          <h4 data-i18n="how.title">캐릭터 바꾸는 법</h4>
-          <ol>
-            <li><span data-i18n="how.1">메뉴바의 <b>Desktoto 아이콘을 우클릭</b>해요.</span></li>
-            <li><span data-i18n="how.2">메뉴에서 <b>캐릭터</b>에 마우스를 올려요.</span></li>
-            <li><span data-i18n="how.3">원하는 캐릭터를 고르면 <b>바로 바뀌어요</b>.</span></li>
-          </ol>
-        </div>
-        <div class="how-stage" aria-hidden="true">
-          <div class="how-menu">
-            <div class="fv-menu">
-              <div class="mi sub"><span></span><span data-i18n="fv.m5">표시할 패널</span></div>
-              <div class="mi sub"><span></span><span data-i18n="fv.m6">색상</span></div>
-              <div class="mi sub on"><span></span><span data-i18n="how.menu">캐릭터</span></div>
-              <div class="mi sub"><span></span><span data-i18n="fv.m7">테마</span></div>
-              <div class="mi sub"><span></span><span>Liquid Glass</span></div>
-            </div>
-            <div class="fv-sub">
-              <div class="mi" data-pick="claude"><span></span><span>Claude</span></div>
-              <div class="mi checked" data-pick="chiikawa"><span></span><span data-i18n="chars.chiikawa">치이카와</span></div>
-              <div class="mi" data-pick="hachiware"><span></span><span data-i18n="chars.hachiware">하치와레</span></div>
-              <div class="mi" data-pick="usagi"><span></span><span data-i18n="chars.usagi">우사기</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <p class="chars-notice" data-i18n="chars.notice">치이카와, 하치와레, 우사기는 나가노(©nagano)의 캐릭터예요. Desktoto의 캐릭터 그림은 비상업 팬 메이드 작품이며 공식 제품과 관계가 없어요. 권리자의 요청이나 문제가 생기면 바로 내리거나 고칠게요.</p>
     </div>
   </section>
 
@@ -805,7 +803,7 @@
 
   <footer>
     <p data-i18n="footer.1">Desktoto는 수익을 목적으로 하지 않는 무료 프로젝트예요. 광고도, 결제도 없어요.</p>
-    <p data-i18n="footer.2">캐릭터는 Claude Code의 마스코트에서 영감을 받은 팬 작품이에요. Claude는 Anthropic의, Codex는 OpenAI의 상표이고, Desktoto는 두 회사의 공식 제품이 아니에요.</p>
+    <p data-i18n="footer.2">Claude는 Anthropic의, Codex는 OpenAI의 상표이고, 데모 화면의 앱 아이콘은 각 회사의 상표예요. Desktoto는 어느 회사의 공식 제품도 아니에요.</p>
   </footer>
 </div>
 
@@ -813,140 +811,7 @@
 (function () {
   "use strict";
 
-  /* 캐릭터 엔진: 앱(SpriteRenderer.swift)과 같은 격자(칸)와 같은 도형으로 그린다. 한 칸이 화면 픽셀 정수 배가 되도록 맞춘다. */
-  var UNITS_WIDE = 41, CHAR_W = 24, TRACK = 36, TRAVEL = TRACK - CHAR_W;
-  var STAND_X = Math.floor((UNITS_WIDE - CHAR_W) / 2);
-  var RUN_FRAMES = 24, LEG_FRAMES = 3, FW_FRAMES = 24, MAX_BOB = 2, STEP_MS = 1000 / 24;
-  var LEG_COLUMNS = [4, 7, 15, 18];
-  var SLEEP_FRAMES = 6, SLEEP_FRAME_TICKS = 14; // 약 0.6초마다 z가 한 단계 떠오른다(앱과 같다).
-  var Z_SMALL = ["1111", "0010", "0100", "1111"];
-  var Z_BIG = ["11111", "00010", "00100", "01000", "11111"];
-  // [큰 z인지, 배지 자리 왼쪽 기준 칸, 위쪽 기준 칸]
-  var Z_STEPS = [[[0, 0, 11]], [[0, 0, 9]], [[0, 0, 9], [1, 2, 3]], [[0, 0, 9], [1, 2, 3]], [[1, 2, 2]], []];
-  var QUESTION = ["01110", "10001", "00001", "00110", "00100", "00000", "00100"];
-  var REACHES = [19, 15, 11];
-  var SPARK_COLORS = ["#ff9ec7", "#ffd973", "#9ed1ff", "#bda9ff", "#ffffff"];
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var sprites = [];
-
-  function Sprite(canvas, unit, options) {
-    this.canvas = canvas;
-    this.mode = options.mode || "stand";
-    this.waiting = !!options.waiting;
-    this.dot = !!options.dot;
-    this.fw = null;
-    this.loopFireworks = !!options.loopFireworks;
-    this.phase = options.phase || 0;
-    this.tick = 0;
-    this.dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
-    this.ctx = canvas.getContext("2d");
-    this.resize(unit, options.trackUnits || UNITS_WIDE);
-    sprites.push(this);
-  }
-
-  Sprite.prototype.resize = function (unit, trackUnits) {
-    this.unit = unit;
-    this.trackUnits = trackUnits;
-    this.canvas.width = trackUnits * unit * this.dpr;
-    this.canvas.height = 20 * unit * this.dpr;
-    this.canvas.style.width = trackUnits * unit + "px";
-    this.canvas.style.height = 20 * unit + "px";
-    this.render();
-  };
-
-  Sprite.prototype.fireFirework = function () { this.fw = reduceMotion ? null : 0; this.render(); };
-
-  Sprite.prototype.advance = function () {
-    this.tick++;
-    if (this.mode === "run" && !reduceMotion) this.phase = (this.phase + 1) % RUN_FRAMES;
-    if (this.fw !== null) { this.fw++; if (this.fw >= FW_FRAMES) this.fw = null; }
-    if (this.loopFireworks && !reduceMotion && this.tick % 96 === 40) this.fw = 0;
-  };
-
-  Sprite.prototype.render = function () {
-    var ctx = this.ctx, scale = this.unit * this.dpr, self = this;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    var fill = function (x, y, w, h, color, alpha) {
-      var l = Math.round(x * scale), t = Math.round(y * scale), r = Math.round((x + w) * scale), b = Math.round((y + h) * scale);
-      if (r <= l || b <= t) return;
-      ctx.globalAlpha = alpha === undefined ? 1 : alpha;
-      ctx.fillStyle = color;
-      ctx.fillRect(l, t, r - l, b - t);
-      ctx.globalAlpha = 1;
-    };
-    var running = this.mode === "run";
-    var legStep = this.phase / LEG_FRAMES;
-    var isLegA = Math.floor(legStep) % 2 === 0;
-    var wide = this.trackUnits;
-    var ox = running ? this.phase / RUN_FRAMES * TRAVEL : STAND_X;
-    var sleeping = this.mode === "sleep";
-    var oy = running ? MAX_BOB * (0.5 + 0.5 * Math.cos(Math.PI * legStep)) : (sleeping ? MAX_BOB + 1 : MAX_BOB);
-
-    if (this.fw !== null) {
-      var p = this.fw / (FW_FRAMES - 1), eased = 1 - Math.pow(1 - p, 2);
-      var alpha = Math.max(0, 1 - Math.pow(p, 2.4));
-      var size = p < 0.45 ? 3 : (p < 0.8 ? 2 : 1);
-      var cx = wide / 2;
-      for (var i = 0; i < 14; i++) {
-        var angle = 2 * Math.PI * i / 14 + 0.3;
-        var radius = 8 + (REACHES[i % 3] - 8) * eased;
-        var sx = cx + Math.cos(angle) * radius;
-        var sy = 9 + Math.sin(angle) * radius * 0.5 + 4 * p * p;
-        fill(sx - size / 2, sy - size / 2, size, size, SPARK_COLORS[i % 5], alpha);
-      }
-      if (p < 0.2) fill(cx - 2, 7, 4, 4, "#ffffff", 1 - p / 0.2);
-    }
-
-    if (running) {
-      var lines = [[2, 7, 3], [6, 4, 4], [10, 7, 3]];
-      lines.forEach(function (line) {
-        var end = ox - line[2], start = Math.max(0, end - line[1]);
-        if (end > start) fill(start, oy + line[0], end - start, 2, "#cccccc", 0.9);
-      });
-    }
-
-    var legs = sleeping ? [3, 3, 3, 3] : !running ? [4, 4, 4, 4] : (isLegA ? [5, 3, 5, 3] : [3, 5, 3, 5]);
-    var arms = !running ? [0, 0] : (isLegA ? [-1, 1] : [1, -1]);
-    LEG_COLUMNS.forEach(function (col, idx) { fill(ox + col, oy + 12, 2, legs[idx], "#ffffff"); });
-    fill(ox + 0, oy + 6 + arms[0], 3, 3, "#ffffff");
-    fill(ox + 21, oy + 6 + arms[1], 3, 3, "#ffffff");
-    fill(ox + 3, oy, 18, 12, "#ffffff");
-    // 잠든 눈은 뜬 눈의 맨 아래 한 줄만 남긴다.
-    fill(ox + 6, oy + (sleeping ? 5 : 3), 2, sleeping ? 1 : 3, "#0d0d0d");
-    fill(ox + 16, oy + (sleeping ? 5 : 3), 2, sleeping ? 1 : 3, "#0d0d0d");
-
-    var bx = ox + CHAR_W + 1;
-    if (this.waiting) {
-      QUESTION.forEach(function (line, r) {
-        for (var c = 0; c < line.length; c++) if (line.charAt(c) === "1") fill(bx + c, r, 1, 1, "#ffcc59");
-      });
-    } else if (this.dot) {
-      fill(bx, 0, 4, 4, "#ad85ff");
-    } else if (sleeping) {
-      // 움직임을 줄인 설정에서는 z가 가장 잘 보이는 한 장면에 멈춰 둔다.
-      var step = reduceMotion ? 2 : Math.floor(this.tick / SLEEP_FRAME_TICKS) % SLEEP_FRAMES;
-      Z_STEPS[step].forEach(function (z) {
-        (z[0] ? Z_BIG : Z_SMALL).forEach(function (line, r) {
-          for (var c = 0; c < line.length; c++) if (line.charAt(c) === "1") fill(bx + z[1] + c, z[2] + r, 1, 1, "#ffffff", 0.85);
-        });
-      });
-    }
-  };
-
-  var lastTime = 0, acc = 0;
-  function loop(ts) {
-    if (!lastTime) lastTime = ts;
-    acc += ts - lastTime;
-    lastTime = ts;
-    if (document.hidden) { acc = 0; }
-    var steps = 0;
-    while (acc >= STEP_MS && steps < 3) { acc -= STEP_MS; steps++; sprites.forEach(function (s) { s.advance(); }); }
-    if (acc > STEP_MS * 3) acc = 0;
-    if (steps) sprites.forEach(function (s) { s.render(); });
-    requestAnimationFrame(loop);
-  }
-  if (!reduceMotion) requestAnimationFrame(loop);
 
   /* 언어: 데모 화면(메뉴바, 세션 제목, 알약)은 스크립트가 만들어서 따로 사전을 둔다. */
   var lang = "ko";
@@ -955,6 +820,7 @@
       tourLabel: "마우스가 패널의 세션 카드를 누르면 해당 터미널이나 앱 창이 앞으로 나오는 장면의 예시",
       tourT1: "결제 모듈을 정리할게요.", tourT2: "테스트 12개 통과", tourT3: "이 변경을 적용할까요?",
       tourMe: "로그인이 가끔 실패하는 이유를 찾아줘", tourAi: "토큰이 만료될 때 갱신 요청이 두 번 나가고 있어요. 한 번만 보내도록 고칠게요.", tourInput: "메시지를 입력하세요",
+      nbRun: "진행 중", nbSess: "세션", nbReset0: "3시간 12분 후 초기화", nbReset1: "4시간 40분 후 초기화",
       tourH5: "5시간", tourWk: "주간", tourR1: "3시간 12분", tourR2: "4일 2시간", tourR3: "4시간 40분", tourR4: "6일 1시간",
       gkLabel: "경고창에서 ‘완료’를 누르고, 시스템 설정의 개인정보 보호 및 보안에서 ‘그래도 열기’를 눌러 암호를 입력하면 메뉴바에 캐릭터가 나타나는 장면의 예시",
       gkAlertTitle: "‘Desktoto’을(를) 열지 않음", gkAlertBody: "Apple은 ‘Desktoto’에 사용자의 Mac에 손상을 입히거나 사용자의 개인정보에 침입할 수 있는 악성 코드가 없음을 확인할 수 없습니다.",
@@ -971,6 +837,7 @@
       tourLabel: "Example of a mouse clicking a session card in the panel and the matching terminal or app window coming to the front",
       tourT1: "I'll tidy up the payments module.", tourT2: "12 tests passed", tourT3: "Apply this change?",
       tourMe: "Find out why login sometimes fails", tourAi: "The refresh request goes out twice when the token expires. I'll make it send only once.", tourInput: "Type a message",
+      nbRun: "Running", nbSess: "Sessions", nbReset0: "Resets in 3h 12m", nbReset1: "Resets in 4h 40m",
       tourH5: "5h", tourWk: "Weekly", tourR1: "3h 12m", tourR2: "4d 2h", tourR3: "4h 40m", tourR4: "6d 1h",
       gkLabel: "An example of pressing Done on the warning, then pressing Open Anyway in System Settings, Privacy & Security, entering your password, and the character appearing in the menu bar",
       gkAlertTitle: "“Desktoto” Not Opened", gkAlertBody: "Apple could not verify “Desktoto” is free of malware that may harm your Mac or compromise your privacy.",
@@ -996,10 +863,17 @@
   var MENUBAR =
     '<div class="menubar" aria-hidden="true">' +
       '<div class="left"><b>Finder</b><span data-st="file">파일</span><span data-st="edit">편집</span><span class="extra" data-st="view">보기</span><span class="extra" data-st="go">이동</span></div>' +
-      '<div class="right"><canvas class="icon"></canvas><span class="pill" data-st="input">한</span><span data-st="clock">오전 10:24</span></div>' +
+      '<div class="right"><span class="mb-slot icon"><span class="toto on working"><span class="toto-color"></span><span class="em-eyes"><i></i><i></i></span></span></span><span class="pill" data-st="input">한</span><span data-st="clock">오전 10:24</span></div>' +
     '</div>';
 
-  /* 히어로: 마우스가 메뉴바의 캐릭터를 눌러 패널을 열고, 카드를 누르면 그 세션의 창(터미널 또는 앱)이 앞으로 나오는 장면을 번갈아 반복한다. */
+  // 히어로 메뉴바는 오른쪽 캐릭터 아이콘 대신 가운데 노치 봇을 쓴다.
+  var HERO_MENUBAR =
+    '<div class="menubar" aria-hidden="true">' +
+      '<div class="left"><b>Finder</b><span data-st="file">파일</span><span data-st="edit">편집</span><span class="extra" data-st="view">보기</span><span class="extra" data-st="go">이동</span></div>' +
+      '<div class="right"><span class="mb-slot"><span class="toto"><span class="toto-color"></span><span class="em-eyes"><i></i><i></i></span></span></span><span class="pill" data-st="input">한</span><span data-st="clock">오전 10:24</span></div>' +
+    '</div>';
+
+  /* 히어로: 마우스가 노치 봇을 눌러 패널을 열고, 카드를 누르면 그 세션의 창(터미널 또는 앱)이 앞으로 나오는 장면을 번갈아 반복한다. */
   function buildHeroTour(root) {
     var USAGE = [
       { name: "Claude", rows: [["tourH5", 42, "tourR1"], ["tourWk", 18, "tourR2"]] },
@@ -1007,10 +881,17 @@
     ];
     var LIGHTS = '<span class="tour-lights"><i></i><i></i><i></i></span>';
     root.innerHTML =
-      '<div class="tour" role="img" aria-label="" data-st-label="tourLabel">' +
+      '<div class="tour has-nb" role="img" aria-label="" data-st-label="tourLabel">' +
         '<svg class="tour-line" viewBox="0 0 680 410" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><filter id="tourBlur"><feGaussianBlur stdDeviation="0.7"/></filter></defs>' +
           '<path d="M-80 146 L0 164 C120 190 260 262 360 258 C480 252 600 150 680 42 C720 -12 760 -60 790 -95" fill="none" stroke="#fff" stroke-width="1.4" opacity="0.8" filter="url(#tourBlur)"/></svg>' +
-        MENUBAR +
+        HERO_MENUBAR +
+        // 좁은 화면에서는 opt 아이콘을 숨겨 Dock이 화면 안에 들어가게 한다.
+        '<div class="dock" aria-hidden="true">' +
+          [["finder"], ["settings"], ["chrome", "opt"], ["claude", "run"], ["vscode"], ["notion"], ["terminal", "run"], ["slack", "opt"], ["figma", "opt"]].map(function (app) {
+            return '<i class="' + (app[1] || "") + '"><img src="dock-icons/' + app[0] + '.png" alt="" width="64" height="64" loading="lazy" decoding="async"></i>';
+          }).join("") +
+          '<span class="sep"></span><i><img src="dock-icons/trash.png" alt="" width="64" height="64" loading="lazy" decoding="async"></i>' +
+        '</div>' +
         '<div class="tour-win tour-term" aria-hidden="true"><div class="tour-bar">' + LIGHTS + '<span>claude — payments</span></div><div class="tour-text">' +
           '<div><span class="c-b">❯</span> claude</div>' +
           '<div><span class="c-g">●</span> <span data-st="tourT1"></span></div>' +
@@ -1022,7 +903,29 @@
           '<div class="tour-side"><p class="on" data-st="title1"></p><p data-st="title2"></p><p data-st="title0"></p></div>' +
           '<div class="tour-chat"><div class="tour-me" data-st="tourMe"></div><div class="tour-ai" data-st="tourAi"></div><div class="tour-input" data-st="tourInput"></div></div>' +
         '</div></div>' +
-        '<div class="tour-panel" aria-hidden="true">' +
+        // 노치 봇. 누르면 노치가 펼쳐지며 앱(NotchPanelView.swift)처럼 사용량 카드와 세션 카드를 보여 준다.
+        '<div class="nb" aria-hidden="true"><span class="nb-color"></span><span class="nb-color nb-flare-color"></span>' +
+          '<div class="nb-head"><span data-st="nbRun"></span><b>' + SESSIONS.length + '</b></div>' +
+          '<div class="nb-panel">' +
+            USAGE.map(function (group, g) {
+              return '<div class="nb-card nb-usage"><h5>' + group.name + '</h5>' + group.rows.map(function (r, n) {
+                return '<div class="nb-use">' + (n === 0 ? "<span>5h</span>" : '<span data-st="tourWk"></span>') + '<div class="nb-bar"><i style="width:' + r[1] + '%"></i></div><b>' + r[1] + '%</b></div>';
+              }).join("") + '<div class="nb-reset" data-st="nbReset' + g + '"></div></div>';
+            }).join("") +
+            '<div class="nb-card nb-sessions"><h5><b data-st="nbSess"></b><span>' + SESSIONS.length + '</span></h5>' +
+              SESSIONS.map(function (s, i) {
+                var pct = Math.round(s.used / s.windowSize * 100);
+                return '<div class="nb-row"><div class="head"><span data-st="title' + i + '"></span><span>' + pct + '%</span></div><div class="nb-bar"><i style="width:' + pct + '%"></i></div></div>';
+              }).join("") +
+            '</div>' +
+          '</div>' +
+          '<span class="nb-eyes"><i></i><i></i></span>' +
+        '</div>' +
+        '<span class="nb-cam" aria-hidden="true"></span>' +
+        '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="nbGoo"><feGaussianBlur stdDeviation="5"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"/></filter></svg>' +
+        '<div class="goo" aria-hidden="true"><div class="goo-notch"></div><div class="goo-drop"></div></div>' +
+        '<div class="drop-eyes" aria-hidden="true"><span class="em-eyes"><i></i><i></i></span></div>' +
+        '<div class="mb-panel" aria-hidden="true">' +
           '<div class="tour-glass tour-usage">' +
             USAGE.map(function (group) {
               return '<div class="sec"><h4>' + group.name + '</h4>' + group.rows.map(function (r) {
@@ -1043,16 +946,33 @@
       '</div>';
 
     var stage = root.querySelector(".tour");
-    var panel = root.querySelector(".tour-panel");
     var cursor = root.querySelector(".tour-cursor");
     var ripple = root.querySelector(".tour-ripple");
     var wins = [].slice.call(root.querySelectorAll(".tour-win"));
-    var rows = [].slice.call(root.querySelectorAll(".tour-row"));
-    var icon = new Sprite(root.querySelector("canvas.icon"), 2, { mode: "run" });
+    var bot = root.querySelector(".nb");
+    var botEyes = root.querySelector(".nb-eyes");
+    var toto = root.querySelector(".toto");
+    var slot = root.querySelector(".mb-slot");
+    var GOO_LIFT = 40; // CSS .goo의 위쪽 inset과 같은 값
+    var goo = root.querySelector(".goo");
+    var gooNotch = root.querySelector(".goo-notch");
+    var gooDrop = root.querySelector(".goo-drop");
+    var dropEyes = root.querySelector(".drop-eyes");
+    var mbPanel = root.querySelector(".mb-panel");
+    // 두 표시 위치. 노치에서는 노치 봇 자신이 펼쳐지고, 메뉴바에서는 토토 아래로 유리 패널이 열린다.
+    var MODES = {
+      notch: { host: bot, eyes: botEyes, panel: bot, rows: [].slice.call(root.querySelectorAll(".nb-row")) },
+      menubar: { host: toto, eyes: toto, panel: mbPanel, rows: [].slice.call(root.querySelectorAll(".mb-panel .tour-row")) }
+    };
+    var mode = MODES.notch;
+    var nbPanel = root.querySelector(".nb-panel");
+    function fitPanel() { bot.style.setProperty("--nb-panel-h", nbPanel.scrollHeight + "px"); }
+    fitPanel();
+    window.addEventListener("resize", fitPanel);
 
-    // 움직임을 줄인 설정에서는 패널이 열린 정지 장면만 보여 준다.
+    // 움직임을 줄인 설정에서는 노치가 펼쳐진 정지 장면만 보여 준다.
     if (reduceMotion) {
-      panel.classList.add("open");
+      bot.classList.add("open");
       wins[0].classList.add("front");
       cursor.style.display = "none";
       return;
@@ -1068,9 +988,14 @@
         return new Promise(function (resolve) { (function check() { if (isVisible && !document.hidden) resolve(); else setTimeout(check, 200); })(); });
       });
     }
-    function pointOf(el, fx, fy) {
+    // 무대 안 요소는 베젤 테두리 안쪽을 기준으로 놓이므로, 테두리 두께(clientLeft, clientTop)를 빼고 잰다.
+    function rectOf(el) {
       var s = stage.getBoundingClientRect(), r = el.getBoundingClientRect();
-      return [r.left - s.left + r.width * fx, r.top - s.top + r.height * fy];
+      return { left: r.left - s.left - stage.clientLeft, top: r.top - s.top - stage.clientTop, width: r.width, height: r.height };
+    }
+    function pointOf(el, fx, fy) {
+      var r = rectOf(el);
+      return [r.left + r.width * fx, r.top + r.height * fy];
     }
     var at = [0, 0];
     function jump(x, y) { at = [x, y]; cursor.style.transition = "none"; cursor.style.transform = "translate(" + x + "px," + y + "px)"; }
@@ -1084,36 +1009,207 @@
       ripple.style.left = (at[0] + 2) + "px"; ripple.style.top = (at[1] + 2) + "px";
       ripple.classList.remove("go"); void ripple.offsetWidth; ripple.classList.add("go");
     }
+    // 지금 캐릭터의 눈이 무대 안의 한 점을 바라본다. 앱처럼 가로는 폭의 12%, 세로는 높이의 10%까지만 움직인다.
+    function lookAt(x, y) {
+      var r = rectOf(mode.eyes), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var dx = x - cx, dy = y - cy, len = Math.max(1, Math.hypot(dx, dy));
+      mode.host.style.setProperty("--nb-gx", (dx / len * r.width * 0.12).toFixed(2) + "px");
+      mode.host.style.setProperty("--nb-gy", (Math.max(0, dy) / len * r.height * 0.1).toFixed(2) + "px");
+    }
+    // 3초 남짓마다 한 번씩 눈을 깜빡인다.
+    (function blinkLater() {
+      setTimeout(function () {
+        var host = mode.host;
+        host.classList.add("blink");
+        setTimeout(function () { host.classList.remove("blink"); blinkLater(); }, 140);
+      }, 2600 + Math.random() * 2200);
+    })();
     function bringToFront(index) {
       wins.forEach(function (w, n) { w.classList.toggle("front", n === index); w.classList.remove("flash"); });
     }
 
+    // 캐릭터가 작업 색으로 물들고, 마우스가 캐릭터를 눌러 패널을 열고, 세션을 누르면 그 창이 앞으로 나온다.
     async function playOnce(index) {
       var restX = stage.clientWidth * 0.45, restY = stage.clientHeight - 70;
+      var rows = mode.rows;
       bringToFront(1 - index);
-      panel.classList.remove("open");
-      jump(restX, restY);
-      await wait(600);
-      var iconPoint = pointOf(icon.canvas, 0.5, 0.5);
-      await glide(iconPoint[0], iconPoint[1], 1000);
+      lookAt(restX, restY);
+      mode.host.classList.add("working");
+      await wait(2200);
+      var hostPoint = pointOf(mode.eyes, 0.5, 0.55);
+      lookAt(hostPoint[0], hostPoint[1] + 60);
+      await glide(hostPoint[0], hostPoint[1], 1000);
       click(); await wait(180);
-      panel.classList.add("open"); await wait(500);
+      // 패널이 열리면 패널에 집중하도록 캐릭터 색을 빠르게 끈다.
+      mode.host.classList.remove("working");
+      mode.panel.classList.add("open"); await wait(500);
       var rowPoint = pointOf(rows[index], 0.6, 0.5);
+      lookAt(rowPoint[0], rowPoint[1]);
       await glide(rowPoint[0], rowPoint[1], 900);
       rows[index].classList.add("hover"); await wait(500);
       click(); rows[index].classList.add("press"); await wait(220);
-      panel.classList.remove("open");
+      mode.panel.classList.remove("open");
       rows[index].classList.remove("hover", "press");
       bringToFront(index);
+      var winPoint = pointOf(wins[index], 0.5, 0.4);
+      lookAt(winPoint[0], winPoint[1]);
       wins[index].classList.add("flash");
       await glide(restX, restY, 900);
       await wait(900);
       wins[index].classList.remove("flash");
-      await wait(1300);
+      await wait(900);
     }
+
+    // 물방울이 봇 자리에서 떨어져 나와 통통 세 번 튀며 토토 자리로 가는 길. 닿을 때마다 납작해지고, 공중에서는 살짝 길어진다.
+    // 물방울 움직임은 시간(ms)마다 위치, 크기, 찌그러짐, 노치 폭을 돌려주는 함수로 정하고, 16ms마다 찍어서 키프레임으로 만든다.
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function clamp01(t) { return Math.max(0, Math.min(1, t)); }
+    function easeInOut(t) { t = clamp01(t); return t * t * (3 - 2 * t); }
+    function easeOut(t) { t = clamp01(t); return 1 - Math.pow(1 - t, 3); }
+    // 통통 튀는 이동. v(0...1)만큼 가고, 닿을 때마다 납작해지며 튈수록 낮아진다.
+    function hopAt(v, from, to, fromSize, toSize, hops) {
+      var local = v * hops, hop = Math.min(Math.floor(local), hops - 1), f = local - hop;
+      var contact = Math.max(0, 1 - Math.min(f, 1 - f) / 0.14);
+      return {
+        x: lerp(from[0], to[0], v), y: lerp(from[1], to[1], v) - 9 * (1 - hop * 0.3) * 4 * f * (1 - f),
+        size: lerp(fromSize, toSize, v), sx: 1 + 0.22 * contact - 0.04 * (1 - contact), sy: 1 - 0.2 * contact + 0.05 * (1 - contact)
+      };
+    }
+    // 노치에서 떨어져 메뉴바 토토 자리에 앉는다.
+    function createDetachMotion(g) {
+      var BALL = 250, TUG = 1900, SETTLE = 3150, YANK = 30, TUGS = 2, TUG_END = 0.84, LAND = 0.78;
+      return { duration: SETTLE, at: function (t) {
+        if (t < BALL) {
+          // 나가기 전에 제자리에서 살짝 웅크린다. 노치 폭은 캐릭터 위치를 따르므로 아직 그대로다.
+          var c = Math.sin(t / BALL * Math.PI);
+          return { x: g.start[0], y: g.start[1], size: g.size, sx: 1 - 0.06 * c, sy: 1 + 0.06 * c };
+        }
+        if (t < TUG) {
+          // 젤리 괴물처럼 끙끙대며 두 번 당긴다. 갈수록 세게 당기고, 가장 늘어났을 때 부르르 떨다가 놓치면 튕겨 돌아오며 위아래로 불룩해진다.
+          // 왼쪽 끝은 노치에 붙인 채 몸만 오른쪽으로 늘어나고, 마지막에 쭉 당겨지며 목이 끊긴다.
+          var w = (t - BALL) / (TUG - BALL);
+          if (w < TUG_END) {
+            var local = w / TUG_END * TUGS, k = Math.min(Math.floor(local), TUGS - 1), f = local - k;
+            var strength = 0.45 + 0.55 * k / (TUGS - 1);
+            var shape = f < 0.6 ? easeInOut(f / 0.6) : 1 - 0.85 * easeOut((f - 0.6) / 0.4);
+            var quiver = (f > 0.35 && f < 0.7) ? 0.05 * strength * Math.sin(f * Math.PI * 40) : 0;
+            var recoil = f > 0.6 ? 0.12 * strength * Math.sin((f - 0.6) / 0.4 * Math.PI) : 0;
+            // 가장 세게 당길 때 몸이 1.7배까지 늘어난다.
+            var stretch = 0.06 + 0.64 * strength * shape;
+            var sx = 1 + stretch + quiver - recoil, sy = 1 - stretch * 0.42 - quiver + recoil;
+            return { x: g.start[0] + g.size * (sx - 1) / 2 + 3 * strength * shape, y: g.start[1] + 1.5 * Math.sin(local * Math.PI * 2) * strength, size: g.size, sx: sx, sy: sy };
+          }
+          var yank = easeOut((w - TUG_END) / (1 - TUG_END)), snapStretch = 0.5 * Math.sin(yank * Math.PI) * (1 - yank * 0.4);
+          var fromX = g.start[0] + g.size * 0.07;
+          return { x: lerp(fromX, g.start[0] + YANK, yank), y: g.start[1], size: g.size, sx: 1 + snapStretch, sy: 1 - snapStretch * 0.45 };
+        }
+        // 튀어 가기와 자리 잡기를 한 감속 곡선으로 잇는다. 처음엔 빠르게 튀고 점점 느려지다가 속도가 0이 되며 토토 자리에 멈춘다.
+        // 앞쪽(LAND까지)에서 세 번 튀고, 그 뒤로는 바닥에 닿은 채 미끄러지며 젤리처럼 출렁이다 잦아든다.
+        var u = (t - TUG) / (SETTLE - TUG), progress = 1 - Math.pow(1 - u, 2.4);
+        var fromX = g.start[0] + YANK, x = lerp(fromX, g.end[0], progress), baseY = lerp(g.start[1], g.end[1], progress);
+        var size = lerp(g.size * 0.92, g.endSize, easeInOut(progress));
+        if (progress < LAND) {
+          var local = progress / LAND * 3, hop = Math.min(Math.floor(local), 2), f = local - hop;
+          var contact = Math.max(0, 1 - Math.min(f, 1 - f) / 0.14);
+          return { x: x, y: baseY - 9 * (1 - hop * 0.3) * 4 * f * (1 - f), size: size, sx: 1 + 0.22 * contact - 0.04 * (1 - contact), sy: 1 - 0.2 * contact + 0.05 * (1 - contact) };
+        }
+        var landU = 1 - Math.pow(1 - LAND, 1 / 2.4), settle = (u - landU) / (1 - landU);
+        var wobble = 0.18 * Math.exp(-4 * settle) * Math.cos(settle * Math.PI * 4);
+        return { x: x, y: baseY, size: size, sx: 1 + wobble, sy: 1 - wobble };
+      } };
+    }
+    // 토토 자리에서 튀어 올라 노치로 돌아간다. 노치가 물방울 쪽으로 늘어나 마중 나가고, 닿으면 천천히 빨려 들어간다.
+    function createAttachMotion(g) {
+      var CROUCH = 260, HOP = 1050, MERGE = 2550, NEAR = 40;
+      var near = [g.start[0] + NEAR, g.start[1]];
+      return { duration: MERGE, at: function (t) {
+        if (t < CROUCH) {
+          var c = Math.sin(t / CROUCH * Math.PI);
+          return { x: g.end[0], y: g.end[1], size: g.endSize, sx: 1 + 0.2 * c, sy: 1 - 0.22 * c };
+        }
+        if (t < HOP) {
+          var hop = hopAt((t - CROUCH) / (HOP - CROUCH), g.end, near, g.endSize, g.size * 0.9, 3);
+          return hop;
+        }
+        // 노치 옆에서 천천히 밀고 들어온다. 노치 폭은 캐릭터 위치를 따르므로 들어온 만큼 늘어난다.
+        var m = (t - HOP) / (MERGE - HOP);
+        return { x: lerp(near[0], g.start[0], easeInOut(m)), y: g.start[1], size: lerp(g.size * 0.9, g.size, easeInOut(m)), sx: 1, sy: 1 };
+      } };
+    }
+    // 실제 재생 시간(ms). 장면 함수의 구간 비율은 그대로 두고 이 길이에 맞춰 늘린다.
+    var DETACH_DURATION = 5000, ATTACH_DURATION = 4800;
+    function createMotionFrames(motion, lift) {
+      var drop = [], dropInGoo = [], notch = [], STEP = 16, count = Math.ceil(motion.duration / STEP);
+      for (var i = 0; i <= count; i++) {
+        var t = Math.min(i * STEP, motion.duration), offset = t / motion.duration, p = motion.at(t), scale = p.size / motion.baseSize;
+        // 노치 폭은 캐릭터가 봇 자리에서 오른쪽으로 벗어난 만큼만 줄어든다(돌아올 때는 들어온 만큼 늘어난다).
+        var g = motion.geometry;
+        p.notch = Math.max(g.bare, Math.min(g.full, g.full - (p.x - g.start[0])));
+        var transform = function (y) { return "translate(" + p.x.toFixed(2) + "px," + y.toFixed(2) + "px) scale(" + (scale * p.sx).toFixed(3) + "," + (scale * p.sy).toFixed(3) + ")"; };
+        drop.push({ offset: offset, transform: transform(p.y) });
+        dropInGoo.push({ offset: offset, transform: transform(p.y + lift) });
+        notch.push({ offset: offset, width: p.notch.toFixed(2) + "px" });
+      }
+      return { drop: drop, dropInGoo: dropInGoo, notch: notch };
+    }
+    // 노치 봇과 메뉴바 토토 사이를 물방울처럼 오간다.
+    async function switchMode(toMenubar) {
+      // 돌아올 때는 노치가 봇 없는 폭이라, 잴 때만 잠깐 봇이 붙은 폭으로 돌려서 원래 봇 자리를 잰다.
+      // 노치 폭에는 전환 애니메이션이 걸려 있어서 잴 때만 끈다(화면에 그려지기 전에 되돌린다).
+      bot.style.transition = "none";
+      bot.classList.remove("bare");
+      var slotRect = rectOf(slot), notchRect = rectOf(bot);
+      var botWidth = botEyes.offsetWidth, botHeight = bot.offsetHeight;
+      if (!toMenubar) bot.classList.add("bare");
+      void bot.offsetWidth;
+      bot.style.transition = "";
+      var size = botHeight * 0.78;
+      var geometry = {
+        start: [notchRect.left + notchRect.width - botWidth / 2, notchRect.top + botHeight / 2],
+        end: [slotRect.left + slotRect.width / 2, slotRect.top + slotRect.height / 2],
+        size: size, endSize: slotRect.height, botWidth: botWidth, full: notchRect.width, bare: notchRect.width - botWidth
+      };
+      var motion = toMenubar ? createDetachMotion(geometry) : createAttachMotion(geometry);
+      motion.baseSize = size;
+      motion.geometry = geometry;
+      [gooDrop, dropEyes].forEach(function (el) {
+        el.style.width = size + "px"; el.style.height = size + "px";
+        el.style.marginLeft = (-size / 2) + "px"; el.style.marginTop = (-size / 2) + "px";
+      });
+      dropEyes.style.fontSize = size + "px";
+      gooNotch.style.left = notchRect.left + "px";
+      gooNotch.style.height = (notchRect.height + GOO_LIFT) + "px"; // 위로 올린 만큼 더 길게
+      // 물방울 층은 무대보다 GOO_LIFT만큼 위에서 시작하므로 그 층 안의 물방울만 아래로 옮긴다.
+      var frames = createMotionFrames(motion, GOO_LIFT);
+      var timing = { duration: toMenubar ? DETACH_DURATION : ATTACH_DURATION, easing: "linear", fill: "both" };
+      // 진짜 노치도 물방울 층의 노치와 같은 폭으로 늘고 줄게 해서, 필터가 없는 진짜 노치의 오목 곡선이 늘 끝을 따라간다.
+      // 물방울 층은 그 뒤에서 목과 물방울만 보인다.
+      var animations = [gooDrop.animate(frames.dropInGoo, timing), dropEyes.animate(frames.drop, timing), gooNotch.animate(frames.notch, timing), bot.animate(frames.notch, timing)];
+      goo.classList.add("on"); dropEyes.classList.add("on");
+      bot.classList.add("bare");
+      toto.classList.remove("on");
+      await Promise.all(animations.map(function (a) { return a.finished; }));
+      if (toMenubar) toto.classList.add("on");
+      else {
+        // 노치 폭 전환 애니메이션이 다시 돌면 좁은 폭에서 한 번 더 늘어나며 튕겨 보이므로, 끈 채로 원래 폭에 둔다.
+        bot.style.transition = "none";
+        bot.classList.remove("bare");
+        void bot.offsetWidth;
+        bot.style.transition = "";
+      }
+      goo.classList.remove("on"); dropEyes.classList.remove("on");
+      animations.forEach(function (a) { a.cancel(); });
+      mode = toMenubar ? MODES.menubar : MODES.notch;
+    }
+
     (async function loop() {
       var turn = 0;
-      while (true) { await playOnce(turn % wins.length); turn++; }
+      while (true) {
+        await playOnce(turn % wins.length);
+        await switchMode(mode === MODES.notch);
+        await wait(700);
+        turn++;
+      }
     })();
   }
   buildHeroTour(document.getElementById("heroStage"));
@@ -1182,7 +1278,6 @@
     var ripple = root.querySelector(".tour-ripple");
     var stepList = document.querySelector("#install .steps");
     var stepItems = [].slice.call(stepList.querySelectorAll("li"));
-    new Sprite(root.querySelector("canvas.icon"), 2, { mode: "run" });
 
     function setText(el, key) { el.setAttribute("data-st", key); el.textContent = STAGE_TEXT[lang][key]; }
     // 단계 목록 번호(2, 3, 4)와 같은 번호를 자막에 달아 두 곳이 같은 흐름임을 보여 준다.
@@ -1366,8 +1461,8 @@
   /* 영어 문구. 한국어는 HTML에 들어 있는 원문을 그대로 쓰므로 사전에는 영어만 둔다. */
   var EN = {
     "nav.states": "States", "nav.features": "Features", "nav.privacy": "Privacy", "nav.install": "Install", "nav.github": "GitHub repository",
-    "hero.title": "While AI works,<br>watch it from your menu bar.",
-    "hero.lead": "<span class=\"ln\">Desktoto shows the status of your AI agent sessions as a small character in the menu bar.</span><span class=\"ln\">See when a task has finished, or when it's waiting for you, without opening a window.</span>",
+    "hero.title": "<span class=\"nw\">While AI works,</span> <span class=\"nw\">keep an eye on it.</span>",
+    "hero.lead": "<span class=\"ln\">Desktoto shows the status of your AI agent sessions as a small character in the menu bar or notch.</span><span class=\"ln\">See when a task has finished, or when it's waiting for you, without opening a window.</span>",
     "hero.cta1": "Go to download",
     "banner.aria": "New characters", "banner.close": "Close banner", "banner.alt": "Chiikawa, Hachiware and Usagi waving",
     "banner.title": "Chiikawa, Hachiware and Usagi<br>just moved into your menu bar!",
@@ -1377,20 +1472,11 @@
     "problem.2": "An approval prompt is open and the AI is stuck, but you don't know and keep waiting.",
     "problem.3": "You can't tell how full the context is until you open the session.",
     "states.eyebrow": "States", "states.title": "The character tells you what's going on.",
-    "states.run.title": "Running", "states.run.body": "A task is in progress. The character keeps running as long as any session is working.",
-    "states.done.title": "Fireworks", "states.done.body": "A task has finished. Small fireworks go off behind the character and a macOS notification arrives.",
-    "states.wait.title": "Question mark", "states.wait.body": "A session needs your approval or an answer. A question mark appears while anything is waiting for you.",
-    "states.sleep.title": "Dozing off", "states.sleep.body": "After 10 minutes with no activity, the character closes its eyes and dozes off. It wakes up as soon as a new task starts.",
-    "chars.title": "You can pick your menu bar character, too.",
-    "chars.lead": "Switch the character running in your menu bar between Claude, Chiikawa, Hachiware and Usagi.",
-    "how.title": "How to switch characters", "how.menu": "Character",
-    "how.1": "<b>Right-click the Desktoto icon</b> in the menu bar.",
-    "how.2": "Hover over <b>Character</b> in the menu.",
-    "how.3": "Pick a character and it <b>switches right away</b>.",
-    "chars.run": "Working", "chars.idle": "Idle",
-    "chars.chiikawa": "Chiikawa", "chars.hachiware": "Hachiware", "chars.usagi": "Usagi",
-    "chars.notice": "Chiikawa, Hachiware and Usagi are characters by nagano (©nagano). The character art in Desktoto is a non-commercial fan work and is not affiliated with any official product. If the rights holder asks or any issue comes up, we will remove or change it right away.",
-    "states.dot.title": "Purple dot", "states.dot.body": "There's a finished task you haven't looked at yet. The dot goes away once you open the panel.",
+    "states.run.title": "Working", "states.run.body": "Toto's body cycles through blue and purple.",
+    "states.done.title": "Done", "states.done.body": "The color fades and a macOS notification arrives.",
+    "states.wait.title": "Waiting", "states.wait.body": "Toto turns orange and yellow.",
+    "states.sleep.title": "Dozing off", "states.sleep.body": "After 10 idle minutes, Toto dozes off.",
+    "states.dot.title": "Purple dot", "states.dot.body": "There's a finished task you haven't checked.",
     "features.eyebrow": "Features", "features.title": "Only what you need to see.",
     "f1.title": "Every session in one panel", "f1.body": "Shows the title, context usage and a bar. The model and token count appear only when you hover. Sessions that need approval or an answer rise to the top.",
     "f2.title": "Click a card to jump to that session", "f2.body": "Conversations in the Claude desktop app open in the app. Terminal sessions bring the matching iTerm2 or Terminal tab to the front.",
@@ -1424,7 +1510,7 @@
     "install.step4": "Open it again and the character appears in your menu bar.",
     "install.term.lead": "If you prefer the terminal, this command opens it without the warning.",
     "footer.1": "Desktoto is a free, non-commercial project with no ads or payments.",
-    "footer.2": "The character is a fan creation inspired by the Claude Code mascot. Claude is a trademark of Anthropic and Codex is a trademark of OpenAI. Desktoto is not an official product of either company."
+    "footer.2": "Claude is a trademark of Anthropic and Codex is a trademark of OpenAI. The app icons in the demo are trademarks of their respective owners. Desktoto is not an official product of any of these companies."
   };
 
   (function () {
@@ -1437,19 +1523,6 @@
     });
   })();
 
-  /* 캐릭터 바꾸는 법: 메뉴 모형의 체크를 차례로 옮기고, 같은 캐릭터 카드를 강조한다. */
-  (function () {
-    var picks = [].slice.call(document.querySelectorAll(".how-menu [data-pick]"));
-    function pick(index) {
-      var name = picks[index].getAttribute("data-pick");
-      picks.forEach(function (row, n) { row.classList.toggle("checked", n === index); });
-      document.querySelectorAll(".char-card").forEach(function (card) { card.classList.toggle("picked", card.classList.contains(name)); });
-    }
-    var current = 1;
-    pick(current);
-    if (reduceMotion) return;
-    setInterval(function () { current = (current + 1) % picks.length; pick(current); }, 1800);
-  })();
 
   function getInitialLang() {
     try {
@@ -1564,11 +1637,61 @@
   });
 
   /* 상태 소개 카드 */
-  new Sprite(document.getElementById("sRun"), 3, { mode: "run" });
-  new Sprite(document.getElementById("sDone"), 3, { mode: "stand", loopFireworks: true });
-  new Sprite(document.getElementById("sWait"), 3, { mode: "stand", waiting: true });
-  new Sprite(document.getElementById("sDot"), 3, { mode: "stand", dot: true });
-  new Sprite(document.getElementById("sSleep"), 3, { mode: "sleep" });
+  /* 상태 줄: 기본 캐릭터 토토를 앱(TotoArt.swift)과 같은 모양으로 그린다.
+     검은 원, 옅은 테두리, 12도 기울어진 알약 눈이고, 작업 중에는 원 밖 오른쪽을 중심으로 몸 색이 돈다. */
+  (function () {
+    var WORKING = ["#298ff5", "#385cf5", "#6145e0", "#944cf0", "#bd4ddb", "#6b70fa", "#298ff5"];
+    var WAITING = ["#ff8c26", "#ffad33", "#facc47", "#ff9e2e", "#f57a24", "#ffbd3d", "#ff8c26"];
+    var COLOR_TURN_MS = 6000, DONE_CYCLE_MS = 6000;
+    function createToto(canvas, mode) {
+      var W = 120, H = 92, D = 58, dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + "px"; canvas.style.height = H + "px";
+      canvas.style.imageRendering = "auto";
+      var ctx = canvas.getContext("2d"), cx = W / 2, cy = H / 2, r = D / 2, unit = D / 18;
+      var nextBlink = 1500 + Math.random() * 2500, blinkUntil = 0;
+      // 완료 장면: 작업 색으로 돌다가 서서히 빠지고, 잠시 검게 있다가 다시 물든다.
+      function strengthAt(t) {
+        if (mode === "run" || mode === "wait") return 1;
+        if (mode !== "done") return 0;
+        var p = (t % DONE_CYCLE_MS) / DONE_CYCLE_MS;
+        if (p < 0.35) return 1;
+        if (p < 0.6) return 1 - (p - 0.35) / 0.25;
+        if (p < 0.85) return 0;
+        return (p - 0.85) / 0.15;
+      }
+      function drawEye(x, y, w, h) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(-12 * Math.PI / 180);
+        ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, Math.min(w, h) / 2); ctx.fill(); ctx.restore();
+      }
+      function draw(t) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+        ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = "#000"; ctx.fill(); ctx.clip();
+        var strength = strengthAt(t);
+        if (strength > 0 && ctx.createConicGradient) {
+          var colors = mode === "wait" ? WAITING : WORKING;
+          var g = ctx.createConicGradient((t % COLOR_TURN_MS) / COLOR_TURN_MS * Math.PI * 2, cx + r * 1.6, cy);
+          colors.forEach(function (c, i) { g.addColorStop(i / (colors.length - 1), c); });
+          ctx.globalAlpha = 0.85 * strength; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+        }
+        ctx.restore();
+        ctx.beginPath(); ctx.arc(cx, cy, r - 0.5, 0, Math.PI * 2); ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = "#fff";
+        var isAsleep = mode === "sleep", isBlinking = t < blinkUntil;
+        var w = 2.2 * unit * (isAsleep ? 1.3 : 1), h = 5 * unit * (isAsleep ? 0.18 : isBlinking ? 0.15 : 1), dy = isAsleep ? 0.8 * unit : 0;
+        drawEye(cx - 2.1 * unit, cy + dy, w, h); drawEye(cx + 2.1 * unit, cy + dy, w, h);
+        // 확인하지 않은 완료 점. 앱처럼 캐릭터 오른쪽 위에 작은 보라색 사각형을 둔다.
+        if (mode === "dot") { ctx.fillStyle = "#ad85ff"; ctx.fillRect(cx + r + 4, cy - r, 4 * unit * 0.75, 4 * unit * 0.75); }
+        if (!isAsleep && t > nextBlink) { blinkUntil = t + 140; nextBlink = t + 2600 + Math.random() * 2200; }
+      }
+      return draw;
+    }
+    var drawers = [["sRun", "run"], ["sDone", "done"], ["sWait", "wait"], ["sDot", "dot"], ["sSleep", "sleep"]].map(function (item) {
+      return createToto(document.getElementById(item[0]), item[1]);
+    });
+    // 움직임을 줄인 설정에서는 색이 다 물든 한 장면만 그린다.
+    if (reduceMotion) { drawers.forEach(function (draw) { draw(0); }); return; }
+    (function frame(t) { if (!document.hidden) drawers.forEach(function (draw) { draw(t); }); requestAnimationFrame(frame); })(0);
+  })();
 
   applyLang(getInitialLang());
   // 처음 열 때 선택 표시가 한국어 위치에서 미끄러져 오지 않도록, 첫 적용이 끝난 뒤에 전환 효과를 켠다.

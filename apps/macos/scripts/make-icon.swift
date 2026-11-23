@@ -1,24 +1,25 @@
 import AppKit
 
 // 앱 아이콘 생성기. 사용법: make-icon <출력 .iconset 폴더>
-// 어두운 둥근 사각형 위에 흰색 캐릭터를 그려서, macOS가 요구하는 크기별 PNG를 저장한다.
-
-private struct UnitRect {
-    let x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat
-}
-
-// 메뉴바 캐릭터(SpriteRenderer.swift)와 같은 도형. 24x16칸.
-private let body = UnitRect(x: 3, y: 0, width: 18, height: 12)
-private let eyes = [UnitRect(x: 6, y: 3, width: 2, height: 3), UnitRect(x: 16, y: 3, width: 2, height: 3)]
-private let arms = [UnitRect(x: 0, y: 6, width: 3, height: 3), UnitRect(x: 21, y: 6, width: 3, height: 3)]
-private let legs = [4, 7, 15, 18].map { UnitRect(x: CGFloat($0), y: 12, width: 2, height: 4) }
-private let characterUnitsWide: CGFloat = 24
-private let characterUnitsTall: CGFloat = 16
+// 기본 캐릭터 토토처럼 블루 퍼플 그라데이션 둥근 사각형 위에 흰 알약 눈 두 개를 그려서, macOS가 요구하는 크기별 PNG를 저장한다.
+// 웹 파비콘(apps/web/favicon.svg)도 같은 색과 비율을 쓴다.
 
 // macOS 아이콘 규격: 1024 캔버스 안에서 실제 그림은 약 80%이고, 모서리 반경은 그림 폭의 약 22%다.
 private let artworkRatio: CGFloat = 0.805
 private let cornerRatio: CGFloat = 0.2237
-private let characterWidthRatio: CGFloat = 0.60
+// 노치 봇 작업 색(NotchBotView.swift)에서 고른 그라데이션. 왼쪽 위 하늘빛 파랑에서 오른쪽 아래 자줏빛 보라로 흐른다.
+private let gradientColors: [NSColor] = [
+    NSColor(srgbRed: 0.16, green: 0.56, blue: 0.96, alpha: 1),
+    NSColor(srgbRed: 0.22, green: 0.36, blue: 0.96, alpha: 1),
+    NSColor(srgbRed: 0.38, green: 0.27, blue: 0.88, alpha: 1),
+    NSColor(srgbRed: 0.58, green: 0.30, blue: 0.94, alpha: 1),
+    NSColor(srgbRed: 0.74, green: 0.30, blue: 0.86, alpha: 1)
+]
+// 눈 크기와 간격(그림 폭 대비). 작은 크기에서도 뭉개지지 않게 노치 봇 눈보다 조금 굵다.
+private let eyeWidthRatio: CGFloat = 0.14
+private let eyeHeightRatio: CGFloat = 0.31
+private let eyeDistanceRatio: CGFloat = 0.21
+private let eyeTiltDegrees: CGFloat = -12
 
 private func renderIcon(pixelSize: Int) -> Data? {
     guard let bitmap = NSBitmapImageRep(
@@ -42,32 +43,28 @@ private func renderIcon(pixelSize: Int) -> Data? {
     let artworkSize = size * artworkRatio
     let artwork = NSRect(x: (size - artworkSize) / 2, y: (size - artworkSize) / 2, width: artworkSize, height: artworkSize)
 
-    // 배경: 위에서 아래로 살짝 어두워지는 둥근 사각형
+    // 배경: 왼쪽 위에서 오른쪽 아래로 흐르는 블루 퍼플 그라데이션 둥근 사각형(이 좌표계는 아래쪽이 0이라 -45도가 왼쪽 위에서 오른쪽 아래다)
     let background = NSBezierPath(roundedRect: artwork, xRadius: artworkSize * cornerRatio, yRadius: artworkSize * cornerRatio)
-    NSGradient(
-        starting: NSColor(calibratedRed: 0.22, green: 0.23, blue: 0.28, alpha: 1),
-        ending: NSColor(calibratedRed: 0.10, green: 0.10, blue: 0.13, alpha: 1)
-    )?.draw(in: background, angle: -90)
+    NSGradient(colors: gradientColors)?.draw(in: background, angle: -45)
 
-    // 캐릭터: 칸 하나를 정수 픽셀로 맞춰서 선이 또렷하게 한다(작은 크기에서는 소수 크기를 허용한다).
-    let rawUnit = artworkSize * characterWidthRatio / characterUnitsWide
-    let unit = rawUnit >= 1 ? floor(rawUnit) : rawUnit
-    let originX = (size - unit * characterUnitsWide) / 2
-    let originY = (size - unit * characterUnitsTall) / 2
-    let fill = { (rect: UnitRect, color: NSColor) in
-        color.setFill()
-        // 이 좌표계는 아래쪽이 0이라서, 위에서부터 센 칸 좌표를 뒤집어 그린다.
-        NSRect(
-            x: originX + rect.x * unit,
-            y: originY + (characterUnitsTall - rect.y - rect.height) * unit,
-            width: rect.width * unit,
-            height: rect.height * unit
+    // 눈: 가운데에 -12도 기울어진 흰 알약 두 개
+    let eyeWidth = artworkSize * eyeWidthRatio
+    let eyeHeight = artworkSize * eyeHeightRatio
+    NSColor.white.setFill()
+    [-1.0, 1.0].forEach { side in
+        let transform = NSAffineTransform()
+        transform.translateX(by: size / 2 + side * artworkSize * eyeDistanceRatio / 2, yBy: size / 2)
+        // 아래쪽이 0인 좌표계라 화면에서 시계 반대 방향으로 기울이려면 각도 부호를 뒤집는다.
+        transform.rotate(byDegrees: -eyeTiltDegrees)
+        NSGraphicsContext.saveGraphicsState()
+        transform.concat()
+        NSBezierPath(
+            roundedRect: NSRect(x: -eyeWidth / 2, y: -eyeHeight / 2, width: eyeWidth, height: eyeHeight),
+            xRadius: eyeWidth / 2,
+            yRadius: eyeWidth / 2
         ).fill()
+        NSGraphicsContext.restoreGraphicsState()
     }
-    legs.forEach { fill($0, .white) }
-    arms.forEach { fill($0, .white) }
-    fill(body, .white)
-    eyes.forEach { fill($0, NSColor(calibratedWhite: 0.05, alpha: 1)) }
 
     NSGraphicsContext.restoreGraphicsState()
     return bitmap.representation(using: .png, properties: [:])

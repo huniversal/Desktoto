@@ -5,6 +5,12 @@ import Foundation
 public enum IconTiming {
     /// 달리기 한 바퀴의 프레임 수. 3의 배수여야 다리 교대가 한 바퀴 끝에서 어긋나지 않는다(교대 횟수가 짝수).
     public static let runningFrameCount = 24
+    /// 토토는 달리지 않고 몸 색만 돈다. 노치 봇처럼 6초에 한 바퀴 돌도록 한 바퀴를 48단계로 나누고,
+    /// 달리기 타이머(초당 24번) 3번마다 한 단계씩 넘긴다. 타이머는 그대로 두어서 폭죽은 원래 빠르기로 재생된다.
+    public static let totoColorStepCount = 48
+    public static let totoColorTicksPerStep = 3
+    /// 토토 몸 색이 물들고 빠지는 단계 수. 몸 색 단계와 같이 넘어가서 노치 봇처럼 1.5초에 걸쳐 바뀐다.
+    public static let totoFadeStepCount = 12
     /// 메뉴바 이미지를 바꿀 때마다 시스템이 스냅샷을 다시 만들어서, 초당 24번으로 제한한다.
     public static let runningFrameInterval: TimeInterval = 1.0 / 24.0
     /// 캐릭터별 달리기 갱신 주기. 하치와레만 원본 춤 속도에 맞춰 절반 속도(초당 12번)로 돈다.
@@ -12,7 +18,7 @@ public enum IconTiming {
         switch character {
         // 하치와레 춤은 원본 GIF(22장, 100ms)와 비슷한 빠르기가 되도록 절반 속도로 돈다.
         case .hachiware: runningFrameInterval * 2
-        case .claude, .chiikawa, .usagi: runningFrameInterval
+        case .claude, .chiikawa, .usagi, .toto: runningFrameInterval
         }
     }
     /// 그림 캐릭터가 대기 중에 움직일 때의 갱신 주기. 원본 GIF 간격(100ms)의 절반으로 잘게 나눠 숨쉬는 움직임을 부드럽게 한다.

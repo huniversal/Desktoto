@@ -66,7 +66,7 @@ enum CharacterArt {
         case .chiikawa: chiikawaIdleClips
         case .hachiware: hachiwareIdleClips
         case .usagi: usagiIdleClips
-        case .claude: []
+        case .claude, .toto: []
         }
     }
 
@@ -84,7 +84,7 @@ enum CharacterArt {
         case .chiikawa: 0...0.72
         case .hachiware: 0...0.8
         case .usagi: 0.12...0.85
-        case .claude: 0...1
+        case .claude, .toto: 0...1
         }
     }
 
@@ -93,7 +93,7 @@ enum CharacterArt {
 
     private static func frames(of character: IconCharacter, pose: ArtPose) -> [String] {
         switch (character, pose) {
-        case (.claude, _): []
+        case (.claude, _), (.toto, _): []
         case (.usagi, .running): CharacterArtData.usagiDance
         case (.chiikawa, .running): CharacterArtData.chiikawaRunFrames
         case (.hachiware, .running): CharacterArtData.hachiwareDance
@@ -109,7 +109,7 @@ enum CharacterArt {
 
     static func aspectRatio(of character: IconCharacter, pose: ArtPose) -> CGFloat {
         switch (character, pose) {
-        case (.claude, _): 1
+        case (.claude, _), (.toto, _): 1
         case (.usagi, .running): 60.0 / 96.0
         case (.chiikawa, .running): 111.0 / 120.0
         case (.hachiware, .running): 98.0 / 96.0
