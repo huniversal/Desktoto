@@ -77,6 +77,20 @@ final class NotchBotWindowController {
 
     var isExpanded: Bool { model.isExpanded }
 
+    /// 노치 오른쪽 끝과 위쪽(화면 좌표), 노치 높이, 봇 폭. 봇이 보이지 않아도 계산한다. 표시 위치 전환 애니메이션이 쓴다.
+    var notchGeometry: PlacementTransitionController.NotchGeometry? {
+        guard let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }),
+              let leftArea = screen.auxiliaryTopLeftArea,
+              let rightArea = screen.auxiliaryTopRightArea else { return nil }
+        return PlacementTransitionController.NotchGeometry(
+            minX: screen.frame.minX + leftArea.width,
+            maxX: screen.frame.maxX - rightArea.width,
+            top: screen.frame.maxY,
+            height: screen.safeAreaInsets.top,
+            botWidth: Self.botWidth
+        )
+    }
+
     /// 펼쳤을 때 노치 안에 보여 줄 내용과 그 크기. header는 맨 윗줄 노치 왼쪽 자리에 놓인다.
     func setPanelContent<Content: View, Header: View>(_ content: Content, header: Header, width: CGFloat, maxHeight: CGFloat) {
         panelContent = AnyView(content)

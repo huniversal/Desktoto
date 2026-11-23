@@ -54,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var unseenFinishedIDs: Set<String> = []
     private var runningCount = 0
     private let notchBotController = NotchBotWindowController()
+    private let placementTransition = PlacementTransitionController()
     private var isWaiting = false
     private var rest: IconRest?
 
@@ -286,9 +287,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             settings.colorMode = colorMode
             applyIconState()
         case .selectPlacement(let placement):
+            let wasNotch = isNotchBotActive
             settings.iconPlacement = placement
             closePanel()
-            applyPlacement()
+            changePlacement(wasNotch: wasNotch)
         case .selectCharacter(let character):
             settings.iconCharacter = character
             applyIconState()
@@ -613,6 +615,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let isNotch = isNotchBotActive
         statusItem.isVisible = !isNotch
         notchBotController.setVisible(isNotch)
+    }
+
+    /// 노치와 메뉴바 사이를 바꿀 때 물방울 전환을 재생한 뒤 실제로 바꾼다.
+    /// 움직임 줄이기 설정이 켜져 있거나, 위치가 그대로거나, 노치 좌표를 못 얻으면 바로 바꾼다.
+    private func changePlacement(wasNotch: Bool) {
+        let isNotch = isNotchBotActive
+        guard wasNotch != isNotch,
+              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+              let notch = notchBotController.notchGeometry else {
+            applyPlacement()
+            return
+        }
+        if isNotch {
+            // 메뉴바 → 노치: 메뉴바 아이콘 자리에서 출발한다. 출발하는 순간 아이콘 그림을 숨기고, 끝나면 노치 봇으로 바꾼다.
+            guard let iconFrame = statusItem.button?.window?.frame else { applyPlacement(); return }
+            statusItem.button?.alphaValue = 0
+            placementTransition.play(toNotch: true, notch: notch, iconFrame: iconFrame) { [weak self] in
+                self?.statusItem.button?.alphaValue = 1
+                self?.applyPlacement()
+            }
+        } else {
+            // 노치 → 메뉴바: 노치 봇을 바로 숨기고(물방울이 대신 그린다), 메뉴바 아이콘은 그림 없이 자리만 먼저 잡아 도착 좌표를 얻는다.
+            notchBotController.setVisible(false)
+            statusItem.button?.alphaValue = 0
+            statusItem.isVisible = true
+            // 메뉴바가 새 아이콘 자리를 배치한 다음에 좌표를 읽는다.
+            DispatchQueue.main.async { [weak self] in
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    guard let iconFrame = self.statusItem.button?.window?.frame else {
+                        self.statusItem.button?.alphaValue = 1
+                        self.applyPlacement()
+                        return
+                    }
+                    self.placementTransition.play(toNotch: false, notch: notch, iconFrame: iconFrame) { [weak self] in
+                        self?.statusItem.button?.alphaValue = 1
+                        self?.applyPlacement()
+                    }
+                }
+            }
+        }
     }
 
     /// 유리 패널을 띄울 기준 영역. 메뉴바 아이콘이다.
