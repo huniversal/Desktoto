@@ -96,6 +96,8 @@
   }
   /* 좌우 여백은 본문 틀이 갖고, 헤더(nav)는 페이지 전체 너비를 쓴다. */
   .wrap, .nav-inner { max-width: 1080px; margin-inline: auto; box-sizing: content-box; }
+  /* 헤더는 히어로 무대 폭(최대 1240px)에 맞춰 왼쪽, 오른쪽 끝을 맞춘다. */
+  .nav-inner { max-width: 1240px; }
   .wrap, nav { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   :root { --section-pad: clamp(144px, 19vw, 216px); }
   /* 위 여백이 커서 섹션 맨 위가 아니라 제목이 헤더 바로 아래에 오도록, 이동 위치에서 여백만큼 뺀다. */
@@ -256,8 +258,14 @@
     border-radius: 28px; overflow: hidden; border: 1px solid var(--line); user-select: none;
     background: var(--wallpaper);
   }
-  /* 히어로 무대는 본문 폭(1080px)을 넘어 최대 1240px까지 넓힌다. 좁은 화면에서는 본문 폭을 그대로 채운다. */
-  .hero-stage { --stage-w: min(1240px, calc(100vw - 32px)); width: max(100%, var(--stage-w)); margin-inline: min(0px, calc((100% - var(--stage-w)) / 2)); }
+  /* 히어로(문구와 무대)는 본문 폭(1080px)을 넘어 최대 1240px까지 넓혀 헤더와 끝을 맞춘다. 좁은 화면에서는 본문 폭을 그대로 채운다. */
+  .hero { --stage-w: min(1240px, calc(100vw - 32px)); width: max(100%, var(--stage-w)); margin-inline: min(0px, calc((100% - var(--stage-w)) / 2)); box-sizing: border-box; }
+  .hero-stage { width: 100%; }
+  /* 히어로 문구 위아래 여백. 위는 헤더와, 아래는 데모 무대와 숨 쉴 틈을 둔다. */
+  .hero.hero { padding-block: clamp(40px, 7vw, 96px) 0; }
+  .hero-stage { margin-top: clamp(16px, 3vw, 40px); }
+  /* 제목이 좁은 화면에서 줄을 바꿀 때 쉼표 뒤에서만 바뀌도록 두 구절을 각각 묶는다. */
+  .hero h1 .nw { white-space: nowrap; }
   /* MacBook 화면과 같은 16:10 비율. 좁은 화면에서는 데모 창이 들어가도록 최소 높이를 지킨다. */
   .hero-stage .tour { height: auto; aspect-ratio: 16 / 10; min-height: 480px; }
   /* 노트북 화면 모양: 검은 베젤을 두르고, 노치가 베젤 위쪽과 이어진다. */
@@ -634,8 +642,8 @@
       <span class="eb-confetti c3" aria-hidden="true"></span>
       <span class="eb-confetti c4" aria-hidden="true"></span>
     </aside>
-    <h1 data-i18n="hero.title">AI가 일하는 동안,<br>메뉴바에서 지켜보세요.</h1>
-    <p class="lead" data-i18n="hero.lead"><span class="ln">Desktoto는 AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.</span><span class="ln">작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.</span></p>
+    <h1 data-i18n="hero.title"><span class="nw">AI가 일하는 동안,</span> <span class="nw">지켜보세요.</span></h1>
+    <p class="lead" data-i18n="hero.lead"><span class="ln">Desktoto는 AI Agent 세션의 진행 상태를 메뉴바나 노치의 작은 캐릭터로 보여줘요.</span><span class="ln">작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.</span></p>
     <div class="cta">
       <a class="btn" href="#install"><span data-i18n="hero.cta1">다운로드 바로 가기</span></a>
     </div>
@@ -1675,8 +1683,8 @@
   /* 영어 문구. 한국어는 HTML에 들어 있는 원문을 그대로 쓰므로 사전에는 영어만 둔다. */
   var EN = {
     "nav.states": "States", "nav.features": "Features", "nav.privacy": "Privacy", "nav.install": "Install", "nav.github": "GitHub repository",
-    "hero.title": "While AI works,<br>watch it from your menu bar.",
-    "hero.lead": "<span class=\"ln\">Desktoto shows the status of your AI agent sessions as a small character in the menu bar.</span><span class=\"ln\">See when a task has finished, or when it's waiting for you, without opening a window.</span>",
+    "hero.title": "<span class=\"nw\">While AI works,</span> <span class=\"nw\">keep an eye on it.</span>",
+    "hero.lead": "<span class=\"ln\">Desktoto shows the status of your AI agent sessions as a small character in the menu bar or notch.</span><span class=\"ln\">See when a task has finished, or when it's waiting for you, without opening a window.</span>",
     "hero.cta1": "Go to download",
     "banner.aria": "New characters", "banner.close": "Close banner", "banner.alt": "Chiikawa, Hachiware and Usagi waving",
     "banner.title": "Chiikawa, Hachiware and Usagi<br>just moved into your menu bar!",
