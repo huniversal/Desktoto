@@ -19,7 +19,9 @@ final class PlacementTransitionController {
     static let duration: TimeInterval = 3
     /// 노치 봇 위 물방울 지름(노치 높이 대비)과 메뉴바 토토 지름(메뉴바 아이콘 높이 대비)
     private static let botDropRatio: CGFloat = 0.78
-    private static let totoDropRatio: CGFloat = 0.75
+    /// 메뉴바 토토 몸은 아이콘 이미지 높이 20칸 중 18칸이다.
+    private static let totoDropRatio: CGFloat = 0.9
+    private static let botDropWidthRatio: CGFloat = 0.92
     /// 창 가장자리 여백. 물방울이 튀거나 출렁여도 잘리지 않게 둔다.
     private static let margin: CGFloat = 24
 
@@ -30,7 +32,7 @@ final class PlacementTransitionController {
     var isPlaying: Bool { panel != nil }
 
     /// 전환을 재생하고 끝나면 completion을 부른다. 재생 중에 다시 부르면 진행 중인 전환을 끝 상태로 마친 뒤 새로 시작한다.
-    func play(toNotch: Bool, notch: NotchGeometry, iconFrame: NSRect, completion: @escaping () -> Void) {
+    func play(toNotch: Bool, notch: NotchGeometry, iconFrame: NSRect, tint: PlacementTransitionView.Tint, completion: @escaping () -> Void) {
         finishNow()
 
         let minX = notch.minX - Self.margin
@@ -44,12 +46,13 @@ final class PlacementTransitionController {
             direction: toNotch ? .toNotch : .toMenuBar,
             start: toCanvas(CGPoint(x: notch.maxX + notch.botWidth / 2, y: notch.top - notch.height / 2)),
             end: toCanvas(CGPoint(x: iconFrame.midX, y: iconFrame.midY)),
-            startSize: notch.height * Self.botDropRatio,
+            // 물방울이 봇 자리(봇 폭 x 노치 높이) 밖으로 불룩하게 나오지 않게 봇 폭 안에 맞춘다.
+            startSize: min(notch.height * Self.botDropRatio, notch.botWidth * Self.botDropWidthRatio),
             endSize: iconFrame.height * Self.totoDropRatio,
             botWidth: notch.botWidth,
             duration: Self.duration
         )
-        let view = PlacementTransitionView(motion: motion, notchMinX: notch.minX - minX, notchMaxX: notch.maxX - minX, notchHeight: notch.height, startDate: Date())
+        let view = PlacementTransitionView(motion: motion, tint: tint, notchMinX: notch.minX - minX, notchMaxX: notch.maxX - minX, notchHeight: notch.height, startDate: Date())
 
         let panel = NSPanel(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.isOpaque = false

@@ -21,6 +21,8 @@ public struct PlacementTransitionMotion: Sendable {
         public var scaleY: CGFloat
         /// 노치 오른쪽에 붙은 봇 몸이 노치 밖으로 나와 있는 폭. 봇 폭이면 다 붙었고 0이면 다 떨어졌다.
         public var attachedWidth: CGFloat
+        /// 둥근 물방울(0)에서 메뉴바 토토의 만두 모양(1)으로 바뀐 정도
+        public var triangle: CGFloat = 0
     }
 
     public let direction: Direction
@@ -48,13 +50,16 @@ public struct PlacementTransitionMotion: Sendable {
     /// 재생 중 elapsed초 지점의 모습. 범위 밖은 처음이나 끝 모습이다.
     public func frame(at elapsed: Double) -> Frame {
         let progress = min(max(elapsed / duration, 0), 1)
-        var frame = switch direction {
-        case .toMenuBar: detachFrame(progress)
-        case .toNotch: attachFrame(progress)
+        switch direction {
+        case .toMenuBar:
+            var frame = detachFrame(progress)
+            // 노치 밖 봇 몸은 물방울이 봇 자리에서 오른쪽으로 벗어난 만큼 줄어든다.
+            frame.attachedWidth = min(max(botWidth - (frame.center.x - start.x), 0), botWidth)
+            return frame
+        case .toNotch:
+            // 붙을 때는 물방울이 닿기 전까지 노치 폭이 그대로이고, 빨려 들어가는 동안에만 봇 자리가 채워진다(attachFrame이 정한다).
+            return attachFrame(progress)
         }
-        // 노치 밖 봇 몸은 물방울이 봇 자리에서 오른쪽으로 벗어난 만큼 줄어든다(돌아올 때는 들어온 만큼 는다).
-        frame.attachedWidth = min(max(botWidth - (frame.center.x - start.x), 0), botWidth)
-        return frame
     }
 
     // MARK: - 떨어지기
@@ -126,14 +131,15 @@ public struct PlacementTransitionMotion: Sendable {
         let landPhase = 1 - pow(1 - Self.landShare, 1 / 2.4)
         let settle = (phase - landPhase) / (1 - landPhase)
         let wobble = CGFloat(0.18 * exp(-4 * settle) * cos(settle * .pi * 4))
-        return Frame(center: CGPoint(x: x, y: baseY), size: size, scaleX: 1 + wobble, scaleY: 1 - wobble, attachedWidth: 0)
+        // 자리 잡으며 둥근 물방울이 삼각김밥 모양으로 바뀐다.
+        return Frame(center: CGPoint(x: x, y: baseY), size: size, scaleX: 1 + wobble, scaleY: 1 - wobble, attachedWidth: 0, triangle: CGFloat(smoothStep(settle / 0.7)))
     }
 
     // MARK: - 붙기
 
     /// 구간 비율. 웅크리기, 튀어 오기, 노치 옆에서 천천히 밀고 들어오기다.
     private static let attachCrouchEnd = 0.1
-    private static let attachHopEnd = 0.41
+    private static let attachHopEnd = 0.33
     /// 튀어 와서 멈추는 노치 옆 자리(봇 자리 가운데에서 오른쪽으로)
     private static let nearOffset: CGFloat = 40
 
@@ -141,7 +147,7 @@ public struct PlacementTransitionMotion: Sendable {
         let near = CGPoint(x: start.x + Self.nearOffset, y: start.y)
         if progress < Self.attachCrouchEnd {
             let crouch = CGFloat(sin(progress / Self.attachCrouchEnd * .pi))
-            return Frame(center: end, size: endSize, scaleX: 1 + 0.2 * crouch, scaleY: 1 - 0.22 * crouch, attachedWidth: 0)
+            return Frame(center: end, size: endSize, scaleX: 1 + 0.2 * crouch, scaleY: 1 - 0.22 * crouch, attachedWidth: 0, triangle: 1)
         }
         if progress < Self.attachHopEnd {
             let phase = (progress - Self.attachCrouchEnd) / (Self.attachHopEnd - Self.attachCrouchEnd)
@@ -149,37 +155,59 @@ public struct PlacementTransitionMotion: Sendable {
             let x = lerp(end.x, near.x, CGFloat(phase))
             let y = lerp(end.y, near.y, CGFloat(phase)) - hop.lift
             let size = lerp(endSize, startSize * 0.9, CGFloat(phase))
-            return Frame(center: CGPoint(x: x, y: y), size: size, scaleX: hop.scaleX, scaleY: hop.scaleY, attachedWidth: 0)
+            // 튀어 오르며 삼각김밥 모양이 둥근 물방울로 풀린다.
+            return Frame(center: CGPoint(x: x, y: y), size: size, scaleX: hop.scaleX, scaleY: hop.scaleY, attachedWidth: 0, triangle: CGFloat(1 - smoothStep(phase / 0.35)))
         }
         return absorbFrame((progress - Self.attachHopEnd) / (1 - Self.attachHopEnd), near: near)
     }
 
-    /// 물방울이 노치에 흡수된다. 천천히 다가가며 노치 쪽으로 끌려 길어지고, 닿으면 점점 빨라지며 쭉 빨려 들어가
-    /// 작아지며 사라지고, 노치 봇 자리가 한두 번 물결치듯 출렁이다 멈춘다.
+    /// 물이 스며들듯 흡수되지만 토토는 들어가기 싫어한다. 노치에 살짝 닿아 끈적하게 이어진 채로, 노치 쪽 끝은 붙여 둔 채
+    /// 몸을 바깥쪽으로 기울이며 늘여 빠져나가려 하고 부르르 떤다. 두 번 버티지만 그때마다 조금씩 더 스며들고,
+    /// 결국 힘이 빠져 점점 빨라지며 흡수된 뒤 봇 자리가 출렁이다 멈춘다.
     private func absorbFrame(_ phase: Double, near: CGPoint) -> Frame {
-        let approachEnd = 0.5
-        let swallowEnd = 0.8
-        // 노치 몸에 막 닿는 자리. 물방울 왼쪽 끝이 봇 자리 오른쪽 끝에 닿는다.
-        let touchX = start.x + botWidth / 2 + startSize * 0.3
-        if phase < approachEnd {
-            let approach = smoothStep(phase / approachEnd)
-            let pull = CGFloat(0.18 * approach)
-            let x = lerp(near.x, touchX, CGFloat(approach)) - startSize * pull / 2
-            return Frame(center: CGPoint(x: x, y: start.y), size: startSize * 0.9, scaleX: 1 + pull, scaleY: 1 - pull * 0.5, attachedWidth: 0)
+        let touchEnd = 0.18
+        let resistEnd = 0.7
+        let swallowEnd = 0.88
+        let notchRight = start.x - botWidth / 2
+        let size = startSize * 0.9
+        // 물방울 왼쪽 끝이 노치 오른쪽 끝에 살짝 겹치는 자리. 흐림이 둘을 끈적하게 이어 준다.
+        let touchX = notchRight + size / 2 - 3
+        // 버티다 지쳐 조금 더 스며든 자리
+        let tiredX = touchX - size * 0.22
+
+        if phase < touchEnd {
+            // 노치 옆으로 천천히 다가가 살짝 닿는다.
+            let approach = smoothStep(phase / touchEnd)
+            return Frame(center: CGPoint(x: lerp(near.x, touchX, CGFloat(approach)), y: start.y), size: size, scaleX: 1, scaleY: 1, attachedWidth: 0)
+        }
+        if phase < resistEnd {
+            // 싫어서 버틴다. 노치 쪽 끝은 붙여 둔 채 몸을 바깥쪽으로 늘이고(왼쪽 끝은 그대로라 가운데가 오른쪽으로 간다),
+            // 부르르 떨며 위아래로 살짝 흔든다. 버틸 때마다 조금씩 더 스며든다.
+            let resist = (phase - touchEnd) / (resistEnd - touchEnd)
+            let local = resist * 2
+            let attempt = min(Int(local), 1)
+            let within = local - Double(attempt)
+            let effort = CGFloat(sin(within * .pi)) * (attempt == 0 ? 1 : 0.7)
+            let quiver = CGFloat(0.05 * sin(within * .pi * 22)) * effort
+            let scaleX = 1 + 0.3 * effort + quiver
+            let scaleY = 1 - 0.18 * effort - quiver
+            let leftEdge = lerp(touchX, tiredX, CGFloat(smoothStep(resist))) - size / 2
+            let x = leftEdge + size * scaleX / 2
+            let shake = CGFloat(1.4 * sin(within * .pi * 6)) * effort
+            return Frame(center: CGPoint(x: x, y: start.y + shake), size: size, scaleX: scaleX, scaleY: scaleY, attachedWidth: 0)
         }
         if phase < swallowEnd {
-            // 점점 빨라지며 빨려 들어간다. 노치 쪽으로 길쭉해졌다가 줄어들며 작아진다.
-            let swallow = pow((phase - approachEnd) / (swallowEnd - approachEnd), 2)
-            let x = lerp(touchX - startSize * 0.09, start.x, CGFloat(swallow))
-            let stretch = CGFloat(0.18 + 0.2 * sin(swallow * .pi))
-            let size = lerp(startSize * 0.9, startSize * 0.7, CGFloat(swallow))
-            return Frame(center: CGPoint(x: x, y: start.y), size: size, scaleX: 1 + stretch, scaleY: 1 - stretch * 0.5, attachedWidth: 0)
+            // 힘이 빠져 점점 빨라지며 스며든다. 물방울이 작아지는 만큼 노치 봇 자리가 채워진다.
+            let swallow = pow((phase - resistEnd) / (swallowEnd - resistEnd), 2)
+            let x = lerp(tiredX, start.x, CGFloat(swallow))
+            let shrink = lerp(size, startSize * 0.7, CGFloat(swallow))
+            return Frame(center: CGPoint(x: x, y: start.y), size: shrink, scaleX: 1, scaleY: 1, attachedWidth: botWidth * CGFloat(smoothStep(swallow)))
         }
-        // 다 빨려 들어간 뒤 봇 자리가 물결치듯 출렁이다 멈춘다. 끝에서는 정확히 봇 자리에 멈춰 노치 봇과 이어진다.
+        // 다 흡수된 뒤 봇 자리가 출렁이다 멈춘다. 끝에서는 정확히 봇 자리에 멈춰 노치 봇과 이어진다.
         let ripple = (phase - swallowEnd) / (1 - swallowEnd)
-        let wobble = CGFloat(0.14 * exp(-4.5 * ripple) * cos(ripple * .pi * 3)) * (phase >= 1 ? 0 : 1)
-        let size = lerp(startSize * 0.7, startSize, CGFloat(smoothStep(ripple)))
-        return Frame(center: start, size: size, scaleX: 1 + wobble, scaleY: 1 - wobble, attachedWidth: 0)
+        let wobble = CGFloat(0.12 * exp(-4.5 * ripple) * cos(ripple * .pi * 3)) * (phase >= 1 ? 0 : 1)
+        let settle = lerp(startSize * 0.7, startSize, CGFloat(smoothStep(ripple)))
+        return Frame(center: start, size: settle, scaleX: 1 + wobble, scaleY: 1 - wobble, attachedWidth: botWidth)
     }
 
     // MARK: - 공통

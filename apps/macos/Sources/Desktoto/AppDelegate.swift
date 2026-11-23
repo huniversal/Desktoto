@@ -243,7 +243,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
             // 노치 봇 모드에서는 메뉴바 아이콘이 숨어 있으니 봇 바로 아래에 메뉴를 띄운다.
             if isNotchBotActive, let botFrame = notchBotController.botFrame {
-                menu.popUp(positioning: nil, at: NSPoint(x: botFrame.minX, y: botFrame.minY), in: nil)
+                // 메뉴가 메뉴바 줄에 조금이라도 걸치면 macOS가 메뉴를 잘라 첫 항목을 숨기고 스크롤 화살표를 단다.
+                // 봇 아래 끝은 노치에 맞춰 1~2pt 달라질 수 있어서, 메뉴바를 뺀 화면 영역의 맨 위보다 조금 아래에 띄운다.
+                let screenTop = NSScreen.screens.first(where: { $0.frame.contains(botFrame.origin) })?.visibleFrame.maxY ?? botFrame.minY
+                let menuTop = min(botFrame.minY, screenTop) - 4
+                menu.popUp(positioning: nil, at: NSPoint(x: botFrame.minX, y: menuTop), in: nil)
             } else {
                 statusItem.menu = menu
                 statusItem.button?.performClick(nil)
@@ -632,7 +636,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             log.notice("전환 재생(메뉴바→노치): icon=\(NSStringFromRect(iconFrame), privacy: .public) notchMaxX=\(notch.maxX)")
             statusItem.button?.alphaValue = 0
-            placementTransition.play(toNotch: true, notch: notch, iconFrame: iconFrame) { [weak self] in
+            placementTransition.play(toNotch: true, notch: notch, iconFrame: iconFrame, tint: transitionTint) { [weak self] in
                 // 메뉴바 아이콘은 꺼질 때 macOS가 잠깐 흐려지며 사라지게 한다. 그동안 투명도를 되돌리면 토토가 다시 보이므로,
                 // 투명도는 그대로 두고 다음에 메뉴바 아이콘을 보일 때 applyPlacement가 되돌린다.
                 self?.applyPlacement()
@@ -652,12 +656,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     return
                 }
                 log.notice("전환 재생(노치→메뉴바): icon=\(NSStringFromRect(iconFrame), privacy: .public) notchMaxX=\(notch.maxX)")
-                self.placementTransition.play(toNotch: false, notch: notch, iconFrame: iconFrame) { [weak self] in
+                self.placementTransition.play(toNotch: false, notch: notch, iconFrame: iconFrame, tint: self.transitionTint) { [weak self] in
                     self?.statusItem.button?.alphaValue = 1
                     self?.applyPlacement()
                 }
             }
         }
+    }
+
+    /// 전환하는 동안 물방울이 띨 몸 색. 노치 봇과 토토처럼 승인 대기가 작업 중보다 먼저 보인다.
+    private var transitionTint: PlacementTransitionView.Tint {
+        if isWaiting { return .waiting }
+        return runningCount > 0 ? .working : .none
     }
 
     /// 메뉴바 아이콘 좌표를 기다리는 횟수와 간격. 최대 약 0.5초다.
