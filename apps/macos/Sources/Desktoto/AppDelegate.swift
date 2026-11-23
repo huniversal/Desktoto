@@ -613,6 +613,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 메뉴바 캐릭터와 노치 봇 중 하나만 보이게 한다.
     private func applyPlacement() {
         let isNotch = isNotchBotActive
+        // 노치로 옮겨 갈 때 숨겨 둔 아이콘 그림을, 메뉴바 아이콘을 다시 보일 때 되살린다.
+        if !isNotch { statusItem.button?.alphaValue = 1 }
         statusItem.isVisible = !isNotch
         notchBotController.setVisible(isNotch)
     }
@@ -632,7 +634,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let iconFrame = statusItem.button?.window?.frame else { applyPlacement(); return }
             statusItem.button?.alphaValue = 0
             placementTransition.play(toNotch: true, notch: notch, iconFrame: iconFrame) { [weak self] in
-                self?.statusItem.button?.alphaValue = 1
+                // 메뉴바 아이콘은 꺼질 때 macOS가 잠깐 흐려지며 사라지게 한다. 그동안 투명도를 되돌리면 토토가 다시 보이므로,
+                // 투명도는 그대로 두고 다음에 메뉴바 아이콘을 보일 때 applyPlacement가 되돌린다.
                 self?.applyPlacement()
             }
         } else {
