@@ -356,6 +356,17 @@
   @media (max-width: 760px) { .tour.has-nb { --k: 1.1; } .nb-usage + .nb-usage { display: none; } }
   @media (max-width: 560px) { .nb { --nb-notch: 96px; } .nb-usage { display: none; } }
   @media (prefers-reduced-motion: reduce) { .nb, .nb-head, .nb-panel, .nb-row, .mb-panel { transition: none !important; } .toto-color { animation: none; } .nb-color { animation: none; } .nb-eyes i { transition: none; } }
+  /* Dock: 화면 아래 가운데에 뜬 유리 막대. 아이콘은 이 Mac에 설치된 각 앱의 공식 아이콘 파일(.icns)을 PNG로 바꾼 것이다(dock-icons/).
+     데모에 나오는 터미널과 Claude 아래에 실행 중 점을 찍는다. */
+  .dock { --ic: clamp(24px, 3.2vw, 46px); position: absolute; z-index: 5; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: calc(var(--ic) * 0.06);
+    padding: calc(var(--ic) * 0.1) calc(var(--ic) * 0.14) calc(var(--ic) * 0.14); border-radius: calc(var(--ic) * 0.42);
+    background: rgba(255, 255, 255, 0.22); border: 0.5px solid rgba(255, 255, 255, 0.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 8px 24px rgba(0, 20, 80, 0.22); }
+  .dock i { position: relative; display: block; width: var(--ic); height: var(--ic); font-style: normal; }
+  .dock img { display: block; width: 100%; height: 100%; }
+  .dock i.run::after { content: ""; position: absolute; left: 50%; bottom: calc(var(--ic) * -0.11); width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: rgba(20, 20, 30, 0.75); }
+  .dock .sep { width: 1px; align-self: stretch; margin: 4px calc(var(--ic) * 0.12); background: rgba(255, 255, 255, 0.45); }
+  @media (max-width: 560px) { .dock .opt { display: none; } }
   .tour-line { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
   .tour .menubar { position: absolute; inset: 0 0 auto; z-index: 6; background: rgba(18, 26, 58, 0.5); }
   .tour-win {
@@ -1113,6 +1124,13 @@
         '<svg class="tour-line" viewBox="0 0 680 410" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><filter id="tourBlur"><feGaussianBlur stdDeviation="0.7"/></filter></defs>' +
           '<path d="M-80 146 L0 164 C120 190 260 262 360 258 C480 252 600 150 680 42 C720 -12 760 -60 790 -95" fill="none" stroke="#fff" stroke-width="1.4" opacity="0.8" filter="url(#tourBlur)"/></svg>' +
         HERO_MENUBAR +
+        // 좁은 화면에서는 opt 아이콘을 숨겨 Dock이 화면 안에 들어가게 한다.
+        '<div class="dock" aria-hidden="true">' +
+          [["finder"], ["settings"], ["chrome", "opt"], ["claude", "run"], ["vscode"], ["notion"], ["terminal", "run"], ["slack", "opt"], ["figma", "opt"]].map(function (app) {
+            return '<i class="' + (app[1] || "") + '"><img src="dock-icons/' + app[0] + '.png" alt="" width="64" height="64" loading="lazy" decoding="async"></i>';
+          }).join("") +
+          '<span class="sep"></span><i><img src="dock-icons/trash.png" alt="" width="64" height="64" loading="lazy" decoding="async"></i>' +
+        '</div>' +
         '<div class="tour-win tour-term" aria-hidden="true"><div class="tour-bar">' + LIGHTS + '<span>claude — payments</span></div><div class="tour-text">' +
           '<div><span class="c-b">❯</span> claude</div>' +
           '<div><span class="c-g">●</span> <span data-st="tourT1"></span></div>' +
