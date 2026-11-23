@@ -63,15 +63,11 @@ final class MenuBarIconController {
     private static func pointHeight(for character: IconCharacter) -> CGFloat {
         switch character {
         case .claude: IconImageSet.defaultPointHeight
-        // 토토는 픽셀 격자가 없는 원이라 기본 높이보다 조금 크게 그려도 흐려지지 않는다. 메뉴바보다 커지지는 않게 한다.
-        case .toto: min(totoPointHeight, maxMenuBarHeight())
+        // 토토는 픽셀 격자가 없는 도형이라 크게 그려도 흐려지지 않는다. 메뉴바 높이를 다 써서 최대한 크게 그린다.
+        case .toto: maxMenuBarHeight()
         case .chiikawa, .hachiware, .usagi: maxMenuBarHeight()
         }
     }
-
-    /// 토토 원 지름(pt). 원은 캔버스 높이 20칸 중 18칸을 차지해서, 이미지 높이는 지름의 20/18배다.
-    private static let totoDiameter: CGFloat = 28
-    private static let totoPointHeight = totoDiameter * 20 / 18
 
     /// 그림 캐릭터 위와 아래에 비워 두는 여백(pt)
     private static let verticalMargin: CGFloat = 1

@@ -39,8 +39,8 @@ enum TotoArt {
     private static let diameter: CGFloat = 18
     private static let centerX = CharacterGrid.standingOriginX + CharacterGrid.characterWidth / 2
     private static let centerY = CharacterGrid.canvasHeight / 2
-    private static let eyeWidth: CGFloat = 2.2
-    private static let eyeHeight: CGFloat = 5
+    private static let eyeWidth: CGFloat = 2.4
+    private static let eyeHeight: CGFloat = 3.8
     /// 두 눈 중심 사이 거리
     private static let eyeDistance: CGFloat = 4.2
     /// 노치 봇처럼 눈을 살짝 기울인다.
@@ -80,7 +80,9 @@ enum TotoArt {
         if case .dizzy(let phase) = pose.expression { shakeX = phase.isMultiple(of: 2) ? -0.6 : 0.6 }
         let center = CGPoint(x: (centerX + shakeX) * unit, y: centerY * unit)
         let radius = diameter / 2 * unit
-        let circle = NSBezierPath(ovalIn: NSRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
+        // 몸은 모서리가 둥근 삼각형(삼각김밥)이다. 몸 색과 테두리도 같은 모양을 따른다.
+        let body = TotoShape.path(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
+        let circle = NSBezierPath(cgPath: body)
 
         NSColor.black.setFill()
         circle.fill()
@@ -91,7 +93,8 @@ enum TotoArt {
         circle.lineWidth = 0.35 * unit
         circle.stroke()
 
-        drawEyes(pose: pose, center: center, unit: unit)
+        // 눈은 삼각형 무게중심(가운데보다 조금 아래)에 둔다.
+        drawEyes(pose: pose, center: CGPoint(x: center.x, y: center.y + TotoShape.eyeCenterOffsetY * radius * 2), unit: unit)
     }
 
     /// 노치 봇과 같은 각도 그라데이션. 원 오른쪽 바깥을 중심으로 색이 부채꼴로 퍼지고, 단계마다 그 각도가 조금씩 돌아간다.
