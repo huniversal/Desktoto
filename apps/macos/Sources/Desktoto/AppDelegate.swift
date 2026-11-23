@@ -6,6 +6,7 @@ import Domain
 import Feedback
 import Foundation
 import MenuBarIcon
+import OSLog
 import Preferences
 import SessionMonitoring
 import SessionPanel
@@ -600,19 +601,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notchBotController.setVisible(isNotch)
     }
 
+    private static let placementLog = Logger(subsystem: "com.huniverse.desktoto", category: "placement")
+
     /// 노치와 메뉴바 사이를 바꿀 때 물방울 전환을 재생한 뒤 실제로 바꾼다.
     /// 움직임 줄이기 설정이 켜져 있거나, 위치가 그대로거나, 노치 좌표를 못 얻으면 바로 바꾼다.
     private func changePlacement(wasNotch: Bool) {
         let isNotch = isNotchBotActive
-        guard wasNotch != isNotch,
-              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
-              let notch = notchBotController.notchGeometry else {
+        let log = Self.placementLog
+        guard wasNotch != isNotch else {
+            log.notice("전환 생략: 표시 위치가 그대로다 (notch=\(isNotch))")
+            applyPlacement()
+            return
+        }
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
+            log.notice("전환 생략: 움직임 줄이기 설정")
+            applyPlacement()
+            return
+        }
+        guard let notch = notchBotController.notchGeometry else {
+            log.notice("전환 생략: 노치 좌표 없음")
             applyPlacement()
             return
         }
         if isNotch {
             // 메뉴바 → 노치: 메뉴바 아이콘 자리에서 출발한다. 출발하는 순간 아이콘 그림을 숨기고, 끝나면 노치 봇으로 바꾼다.
-            guard let iconFrame = statusItem.button?.window?.frame else { applyPlacement(); return }
+            guard let iconFrame = statusItem.button?.window?.frame else {
+                log.notice("전환 생략(메뉴바→노치): 메뉴바 아이콘 창 없음")
+                applyPlacement()
+                return
+            }
+            log.notice("전환 재생(메뉴바→노치): icon=\(NSStringFromRect(iconFrame), privacy: .public) notchMaxX=\(notch.maxX)")
             statusItem.button?.alphaValue = 0
             placementTransition.play(toNotch: true, notch: notch, iconFrame: iconFrame) { [weak self] in
                 // 메뉴바 아이콘은 꺼질 때 macOS가 잠깐 흐려지며 사라지게 한다. 그동안 투명도를 되돌리면 토토가 다시 보이므로,
@@ -624,20 +642,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             notchBotController.setVisible(false)
             statusItem.button?.alphaValue = 0
             statusItem.isVisible = true
-            // 메뉴바가 새 아이콘 자리를 배치한 다음에 좌표를 읽는다.
-            DispatchQueue.main.async { [weak self] in
-                MainActor.assumeIsolated {
-                    guard let self else { return }
-                    guard let iconFrame = self.statusItem.button?.window?.frame else {
-                        self.statusItem.button?.alphaValue = 1
-                        self.applyPlacement()
-                        return
-                    }
-                    self.placementTransition.play(toNotch: false, notch: notch, iconFrame: iconFrame) { [weak self] in
-                        self?.statusItem.button?.alphaValue = 1
-                        self?.applyPlacement()
-                    }
+            // 새로 켠 메뉴바 아이콘은 macOS가 자리를 잡는 데 잠깐 걸린다. 그 전에 읽으면 예전 자리나 화면 밖 좌표가 나와
+            // 물방울이 엉뚱한 곳으로 날아가므로, 좌표가 메뉴바 줄 안에 들어올 때까지 기다린 뒤 재생한다.
+            waitForIconFrame(notch: notch, attemptsLeft: Self.iconFrameAttempts) { [weak self] iconFrame in
+                guard let self else { return }
+                guard let iconFrame else {
+                    log.notice("전환 생략(노치→메뉴바): 메뉴바 아이콘 자리를 못 얻음 (마지막 좌표 \(NSStringFromRect(self.statusItem.button?.window?.frame ?? .zero), privacy: .public))")
+                    self.applyPlacement()
+                    return
                 }
+                log.notice("전환 재생(노치→메뉴바): icon=\(NSStringFromRect(iconFrame), privacy: .public) notchMaxX=\(notch.maxX)")
+                self.placementTransition.play(toNotch: false, notch: notch, iconFrame: iconFrame) { [weak self] in
+                    self?.statusItem.button?.alphaValue = 1
+                    self?.applyPlacement()
+                }
+            }
+        }
+    }
+
+    /// 메뉴바 아이콘 좌표를 기다리는 횟수와 간격. 최대 약 0.5초다.
+    private static let iconFrameAttempts = 16
+    private static let iconFrameInterval: TimeInterval = 0.03
+
+    /// 메뉴바 아이콘이 노치 오른쪽 메뉴바 줄 안에 자리 잡으면 그 좌표를, 끝내 못 잡으면 nil을 넘긴다.
+    private func waitForIconFrame(notch: PlacementTransitionController.NotchGeometry, attemptsLeft: Int, completion: @escaping (NSRect?) -> Void) {
+        if let frame = statusItem.button?.window?.frame, frame.width > 0,
+           frame.minX >= notch.maxX, frame.maxY >= notch.top - 2, frame.minY >= notch.top - notch.height - 4 {
+            completion(frame)
+            return
+        }
+        guard attemptsLeft > 0 else {
+            completion(nil)
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.iconFrameInterval) { [weak self] in
+            MainActor.assumeIsolated {
+                self?.waitForIconFrame(notch: notch, attemptsLeft: attemptsLeft - 1, completion: completion)
             }
         }
     }
