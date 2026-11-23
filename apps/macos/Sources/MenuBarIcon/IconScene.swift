@@ -68,6 +68,16 @@ enum IconScene {
 
     /// 그림 캐릭터의 배지. 치이카와는 달릴 때 오른쪽으로 이동해서 배지도 따라가고, 나머지는 서 있는 자리에 둔다.
     private static func pictureBadgePieces(frame: IconFrame, appearance: IconAppearance) -> [IconPiece] {
+        // 토토 이미지는 원만 담을 만큼 좁아서, 완료 점을 원 오른쪽 위 모서리에 겹쳐 그린다.
+        if appearance.character == .toto {
+            let originX = CharacterGrid.totoBadgeCharacterOriginX
+            switch frame {
+            case .sleeping, .fishing, .rest:
+                return appearance.hasUnseenDone ? badgePieces(.unseenDone, characterOriginX: originX) : []
+            case .standing, .gazing, .expression, .idle, .running, .working:
+                return badgePieces(appearance.badge, characterOriginX: originX)
+            }
+        }
         switch frame {
         case .running(let phase) where appearance.character == .chiikawa:
             return badgePieces(appearance.badge, characterOriginX: RunningFrame(phase: phase).originX)

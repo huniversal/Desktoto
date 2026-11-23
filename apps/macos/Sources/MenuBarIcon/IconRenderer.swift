@@ -26,7 +26,8 @@ enum IconRenderer {
         let backdrop = IconScene.backdrop(frame: frame, appearance: appearance)
         // 그림 캐릭터는 항상 풍경이 깔리므로 모서리를 둥글게 잘라 메뉴바에 어울리게 한다.
         let hasBackdrop = appearance.character.isPictureArt
-        return createCanvasImage(pointHeight: pointHeight, topMargin: topMargin, bottomMargin: bottomMargin, scale: scale) { unit in
+        let range = CharacterGrid.visibleRange(for: appearance.character)
+        return createCanvasImage(pointHeight: pointHeight, topMargin: topMargin, bottomMargin: bottomMargin, scale: scale, visibleRange: range) { unit in
             if hasBackdrop {
                 let canvas = NSRect(x: 0, y: 0, width: CharacterGrid.canvasWidth * unit, height: CharacterGrid.canvasHeight * unit)
                 NSBezierPath(roundedRect: canvas, xRadius: 3 * unit, yRadius: 3 * unit).addClip()
@@ -83,9 +84,10 @@ enum IconRenderer {
     }
 
     /// topMargin과 bottomMargin은 이미지 위와 아래에 비워 두는 투명한 띠(pt)다. 이미지 높이는 그대로 pointHeight이고, 그림은 그 사이에 맞춰 그린다.
-    private static func createCanvasImage(pointHeight: CGFloat, topMargin: CGFloat, bottomMargin: CGFloat, scale: CGFloat, draw: (CGFloat) -> Void) -> NSImage {
+    /// visibleRange는 이미지에 담을 가로 범위(칸)다. 그림은 전체 캔버스 좌표로 그리고 범위 밖은 잘린다.
+    private static func createCanvasImage(pointHeight: CGFloat, topMargin: CGFloat, bottomMargin: CGFloat, scale: CGFloat, visibleRange: (minX: CGFloat, width: CGFloat) = (0, CharacterGrid.canvasWidth), draw: (CGFloat) -> Void) -> NSImage {
         let unit = (pointHeight - topMargin - bottomMargin) / CharacterGrid.canvasHeight
-        let size = NSSize(width: unit * CharacterGrid.canvasWidth, height: pointHeight)
+        let size = NSSize(width: unit * visibleRange.width, height: pointHeight)
         let pixelWidth = Int((size.width * scale).rounded())
         let pixelHeight = Int((size.height * scale).rounded())
 
@@ -104,6 +106,8 @@ enum IconRenderer {
         context.translateBy(x: 0, y: size.height)
         context.scaleBy(x: 1, y: -1)
         context.translateBy(x: 0, y: topMargin)
+        // 잘라 쓸 범위의 왼쪽 끝이 이미지 왼쪽 끝이 되도록 그림을 옮긴다.
+        context.translateBy(x: -visibleRange.minX * unit, y: 0)
 
         let previousContext = NSGraphicsContext.current
         NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: true)

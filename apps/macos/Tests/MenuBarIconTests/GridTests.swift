@@ -61,3 +61,18 @@ import Testing
     #expect(wrapFrameIndex(25, count: 24) == 1)
     #expect(wrapFrameIndex(-1, count: 24) == 23)
 }
+
+@Test func totoUsesNarrowVisibleRangeCenteredOnCircle() {
+    let range = CharacterGrid.visibleRange(for: .toto)
+    #expect(range.width == 20)
+    // 원(지름 18칸)의 가운데가 잘라 낸 범위의 가운데와 같다.
+    #expect(range.minX + range.width / 2 == CharacterGrid.standingOriginX + CharacterGrid.characterWidth / 2)
+    #expect(CharacterGrid.visibleRange(for: .claude).width == CharacterGrid.canvasWidth)
+}
+
+@Test func totoDoneDotSitsInsideVisibleRange() {
+    let range = CharacterGrid.visibleRange(for: .toto)
+    let badgeX = BadgeGrid.originX(characterOriginX: CharacterGrid.totoBadgeCharacterOriginX)
+    #expect(badgeX >= range.minX)
+    #expect(badgeX + BadgeGrid.doneDotSize <= range.minX + range.width)
+}

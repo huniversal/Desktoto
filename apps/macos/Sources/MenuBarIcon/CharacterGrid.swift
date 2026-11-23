@@ -1,4 +1,5 @@
 import CoreGraphics
+import DesignSystem
 
 /// 칸(유닛) 단위 사각형. 원점은 왼쪽 위이고 한 칸은 기본 1pt다.
 struct UnitRect: Equatable, Sendable {
@@ -52,6 +53,18 @@ enum CharacterGrid {
     /// 서 있을 때는 점 자리까지 포함한 전체의 가운데에 둔다.
     static let standingOriginX: CGFloat = (canvasWidth - characterWidth) / 2
     static let maxBobHeight: CGFloat = 2
+    /// 메뉴바 이미지로 잘라 쓸 가로 범위(칸). 그리기는 늘 전체 캔버스 좌표로 하고, 이미지는 이 범위만 담는다.
+    /// 토토는 지름 18칸 원이라 원 양옆에 1칸씩만 남긴다(완료 점은 원 오른쪽 위에 겹쳐 그린다). 나머지는 달리는 길과 표시 자리가 필요해 전체를 쓴다.
+    static func visibleRange(for character: IconCharacter) -> (minX: CGFloat, width: CGFloat) {
+        switch character {
+        case .toto: (standingOriginX + characterWidth / 2 - totoVisibleWidth / 2, totoVisibleWidth)
+        case .claude, .chiikawa, .hachiware, .usagi: (0, canvasWidth)
+        }
+    }
+    static let totoVisibleWidth: CGFloat = 20
+    /// 토토의 완료 점은 원 오른쪽 위 모서리에 겹친다. 캐릭터 기준 위치로 바꾸어 배지 계산에 넘긴다.
+    static let totoBadgeCharacterOriginX: CGFloat = standingOriginX + characterWidth / 2 + totoVisibleWidth / 2 - 4 - characterWidth - 1
+
     /// 잠들면 몸이 한 칸 내려앉는다.
     static let sleepDropHeight: CGFloat = 1
 
