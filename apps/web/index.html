@@ -677,28 +677,28 @@
     <div class="states">
       <article class="state">
         <div class="strip"><canvas id="sRun"></canvas></div>
-        <h3 data-i18n="states.run.title">달리는 중</h3>
-        <p data-i18n="states.run.body">작업이 진행 중이에요. 여러 세션 중 하나라도 돌고 있으면 계속 달려요.</p>
+        <h3 data-i18n="states.run.title">작업 중</h3>
+        <p data-i18n="states.run.body">몸 색이 파랑과 보라로 돌아요.</p>
       </article>
       <article class="state">
         <div class="strip"><canvas id="sDone"></canvas></div>
-        <h3 data-i18n="states.done.title">폭죽</h3>
-        <p data-i18n="states.done.body">작업이 끝났어요. 캐릭터 뒤에서 작은 폭죽이 터지고 macOS 알림이 와요.</p>
+        <h3 data-i18n="states.done.title">완료</h3>
+        <p data-i18n="states.done.body">색이 빠지고 macOS 알림이 와요.</p>
       </article>
       <article class="state">
         <div class="strip"><canvas id="sWait"></canvas></div>
-        <h3 data-i18n="states.wait.title">물음표</h3>
-        <p data-i18n="states.wait.body">승인이나 답변이 필요해요. 사람을 기다리는 세션이 있으면 물음표가 떠요.</p>
+        <h3 data-i18n="states.wait.title">승인 대기</h3>
+        <p data-i18n="states.wait.body">몸 색이 주황과 노랑으로 바뀌어요.</p>
       </article>
       <article class="state">
         <div class="strip"><canvas id="sDot"></canvas></div>
         <h3 data-i18n="states.dot.title">보라색 점</h3>
-        <p data-i18n="states.dot.body">확인하지 않은 완료가 있어요. 패널을 열어서 확인하면 사라져요.</p>
+        <p data-i18n="states.dot.body">확인하지 않은 완료가 있어요.</p>
       </article>
       <article class="state">
         <div class="strip"><canvas id="sSleep"></canvas></div>
         <h3 data-i18n="states.sleep.title">졸음</h3>
-        <p data-i18n="states.sleep.body">10분 동안 아무 활동이 없으면 캐릭터가 눈을 감고 졸아요. 새 작업이 시작되면 바로 깨요.</p>
+        <p data-i18n="states.sleep.body">10분 동안 쉬면 눈을 감고 졸아요.</p>
       </article>
     </div>
     <div class="chars" id="characters">
@@ -1712,10 +1712,10 @@
     "problem.2": "An approval prompt is open and the AI is stuck, but you don't know and keep waiting.",
     "problem.3": "You can't tell how full the context is until you open the session.",
     "states.eyebrow": "States", "states.title": "The character tells you what's going on.",
-    "states.run.title": "Running", "states.run.body": "A task is in progress. The character keeps running as long as any session is working.",
-    "states.done.title": "Fireworks", "states.done.body": "A task has finished. Small fireworks go off behind the character and a macOS notification arrives.",
-    "states.wait.title": "Question mark", "states.wait.body": "A session needs your approval or an answer. A question mark appears while anything is waiting for you.",
-    "states.sleep.title": "Dozing off", "states.sleep.body": "After 10 minutes with no activity, the character closes its eyes and dozes off. It wakes up as soon as a new task starts.",
+    "states.run.title": "Working", "states.run.body": "Toto's body cycles through blue and purple.",
+    "states.done.title": "Done", "states.done.body": "The color fades and a macOS notification arrives.",
+    "states.wait.title": "Waiting", "states.wait.body": "Toto turns orange and yellow.",
+    "states.sleep.title": "Dozing off", "states.sleep.body": "After 10 idle minutes, Toto dozes off.",
     "chars.title": "You can pick your menu bar character, too.",
     "chars.lead": "Switch the character running in your menu bar between Claude, Chiikawa, Hachiware and Usagi.",
     "how.title": "How to switch characters", "how.menu": "Character",
@@ -1725,7 +1725,7 @@
     "chars.run": "Working", "chars.idle": "Idle",
     "chars.chiikawa": "Chiikawa", "chars.hachiware": "Hachiware", "chars.usagi": "Usagi",
     "chars.notice": "Chiikawa, Hachiware and Usagi are characters by nagano (©nagano). The character art in Desktoto is a non-commercial fan work and is not affiliated with any official product. If the rights holder asks or any issue comes up, we will remove or change it right away.",
-    "states.dot.title": "Purple dot", "states.dot.body": "There's a finished task you haven't looked at yet. The dot goes away once you open the panel.",
+    "states.dot.title": "Purple dot", "states.dot.body": "There's a finished task you haven't checked.",
     "features.eyebrow": "Features", "features.title": "Only what you need to see.",
     "f1.title": "Every session in one panel", "f1.body": "Shows the title, context usage and a bar. The model and token count appear only when you hover. Sessions that need approval or an answer rise to the top.",
     "f2.title": "Click a card to jump to that session", "f2.body": "Conversations in the Claude desktop app open in the app. Terminal sessions bring the matching iTerm2 or Terminal tab to the front.",
@@ -1899,11 +1899,61 @@
   });
 
   /* 상태 소개 카드 */
-  new Sprite(document.getElementById("sRun"), 3, { mode: "run" });
-  new Sprite(document.getElementById("sDone"), 3, { mode: "stand", loopFireworks: true });
-  new Sprite(document.getElementById("sWait"), 3, { mode: "stand", waiting: true });
-  new Sprite(document.getElementById("sDot"), 3, { mode: "stand", dot: true });
-  new Sprite(document.getElementById("sSleep"), 3, { mode: "sleep" });
+  /* 상태 줄: 기본 캐릭터 토토를 앱(TotoArt.swift)과 같은 모양으로 그린다.
+     검은 원, 옅은 테두리, 12도 기울어진 알약 눈이고, 작업 중에는 원 밖 오른쪽을 중심으로 몸 색이 돈다. */
+  (function () {
+    var WORKING = ["#298ff5", "#385cf5", "#6145e0", "#944cf0", "#bd4ddb", "#6b70fa", "#298ff5"];
+    var WAITING = ["#ff8c26", "#ffad33", "#facc47", "#ff9e2e", "#f57a24", "#ffbd3d", "#ff8c26"];
+    var COLOR_TURN_MS = 6000, DONE_CYCLE_MS = 6000;
+    function createToto(canvas, mode) {
+      var W = 120, H = 92, D = 58, dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + "px"; canvas.style.height = H + "px";
+      canvas.style.imageRendering = "auto";
+      var ctx = canvas.getContext("2d"), cx = W / 2, cy = H / 2, r = D / 2, unit = D / 18;
+      var nextBlink = 1500 + Math.random() * 2500, blinkUntil = 0;
+      // 완료 장면: 작업 색으로 돌다가 서서히 빠지고, 잠시 검게 있다가 다시 물든다.
+      function strengthAt(t) {
+        if (mode === "run" || mode === "wait") return 1;
+        if (mode !== "done") return 0;
+        var p = (t % DONE_CYCLE_MS) / DONE_CYCLE_MS;
+        if (p < 0.35) return 1;
+        if (p < 0.6) return 1 - (p - 0.35) / 0.25;
+        if (p < 0.85) return 0;
+        return (p - 0.85) / 0.15;
+      }
+      function drawEye(x, y, w, h) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(-12 * Math.PI / 180);
+        ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, Math.min(w, h) / 2); ctx.fill(); ctx.restore();
+      }
+      function draw(t) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+        ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = "#000"; ctx.fill(); ctx.clip();
+        var strength = strengthAt(t);
+        if (strength > 0 && ctx.createConicGradient) {
+          var colors = mode === "wait" ? WAITING : WORKING;
+          var g = ctx.createConicGradient((t % COLOR_TURN_MS) / COLOR_TURN_MS * Math.PI * 2, cx + r * 1.6, cy);
+          colors.forEach(function (c, i) { g.addColorStop(i / (colors.length - 1), c); });
+          ctx.globalAlpha = 0.85 * strength; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+        }
+        ctx.restore();
+        ctx.beginPath(); ctx.arc(cx, cy, r - 0.5, 0, Math.PI * 2); ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = "#fff";
+        var isAsleep = mode === "sleep", isBlinking = t < blinkUntil;
+        var w = 2.2 * unit * (isAsleep ? 1.3 : 1), h = 5 * unit * (isAsleep ? 0.18 : isBlinking ? 0.15 : 1), dy = isAsleep ? 0.8 * unit : 0;
+        drawEye(cx - 2.1 * unit, cy + dy, w, h); drawEye(cx + 2.1 * unit, cy + dy, w, h);
+        // 확인하지 않은 완료 점. 앱처럼 캐릭터 오른쪽 위에 작은 보라색 사각형을 둔다.
+        if (mode === "dot") { ctx.fillStyle = "#ad85ff"; ctx.fillRect(cx + r + 4, cy - r, 4 * unit * 0.75, 4 * unit * 0.75); }
+        if (!isAsleep && t > nextBlink) { blinkUntil = t + 140; nextBlink = t + 2600 + Math.random() * 2200; }
+      }
+      return draw;
+    }
+    var drawers = [["sRun", "run"], ["sDone", "done"], ["sWait", "wait"], ["sDot", "dot"], ["sSleep", "sleep"]].map(function (item) {
+      return createToto(document.getElementById(item[0]), item[1]);
+    });
+    // 움직임을 줄인 설정에서는 색이 다 물든 한 장면만 그린다.
+    if (reduceMotion) { drawers.forEach(function (draw) { draw(0); }); return; }
+    (function frame(t) { if (!document.hidden) drawers.forEach(function (draw) { draw(t); }); requestAnimationFrame(frame); })(0);
+  })();
 
   applyLang(getInitialLang());
   // 처음 열 때 선택 표시가 한국어 위치에서 미끄러져 오지 않도록, 첫 적용이 끝난 뒤에 전환 효과를 켠다.
