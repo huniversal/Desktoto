@@ -43,7 +43,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let loginItem = LoginItem()
     private let fileSystem: any FileSystem
     private let menuBuilder = SettingsMenuBuilder()
-    private let gameHost = GameHost()
     private let panelController: PanelController
     private let iconController: MenuBarIconController
     // NSSound는 재생이 끝나기 전에 해제되면 멈추므로 들고 있는다. 완료와 승인 대기가 동시에 나도 서로 끊지 않게 따로 둔다.
@@ -241,11 +240,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 isFeedbackAvailable: feedbackWindowController != nil
             )
             let menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
-            // 미니게임(실험): 설정 메뉴 맨 위에 시작 항목을 둔다.
-            let gameItem = NSMenuItem(title: "셔틀콕 게임", action: #selector(handleGameMenuClick), keyEquivalent: "")
-            gameItem.target = self
-            menu.insertItem(gameItem, at: 0)
-            menu.insertItem(.separator(), at: 1)
             // 노치 봇 모드에서는 메뉴바 아이콘이 숨어 있으니 봇 바로 아래에 메뉴를 띄운다.
             if isNotchBotActive, let botFrame = notchBotController.botFrame {
                 menu.popUp(positioning: nil, at: NSPoint(x: botFrame.minX, y: botFrame.minY), in: nil)
@@ -328,19 +322,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - 패널
-
-    @objc private func handleGameMenuClick() {
-        closePanel()
-        startGame(RallyScene())
-    }
-
-    /// 게임을 시작한다. 시작되면 메뉴바의 실제 캐릭터는 숨기고, 끝나면 되돌린다.
-    private func startGame(_ scene: any GameScene) {
-        gameHost.onFinish = { [weak self] in self?.iconController.setGameMode(false) }
-        if gameHost.start(scene: scene, buttonWindow: statusItem.button?.window, colorMode: settings.colorMode) {
-            iconController.setGameMode(true)
-        }
-    }
 
     @objc private func handleStatusItemClick() {
         handleCharacterClick(isRightClick: NSApp.currentEvent?.type == .rightMouseUp)
