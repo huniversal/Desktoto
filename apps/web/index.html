@@ -159,8 +159,43 @@
   body.lang-fade [data-i18n], body.lang-fade [data-st] { opacity: 0; }
 
   /* 히어로 */
-  .hero { padding-block: 20px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; justify-items: start; }
-  .hero .lead { margin-top: 4px; }
+  /* 히어로: 첫 화면 전체를 Mac 화면 데모로 채우고, 카메라 연출이 끝나면 반투명 막과 문구를 그 위에 얹는다. */
+  /* 히어로는 헤더 뒤까지 올라가서, 반투명 헤더 뒤로도 같은 검정이 비친다. 노트북과 문구는 헤더 아래 남은 영역의 가운데에 둔다. */
+  .hero { --nav-h: 68px; position: relative; margin-top: calc(-1 * var(--nav-h)); height: 100svh; min-height: 588px; overflow: hidden; background: #000; }
+  /* 노트북 화면: 검은 바탕 가운데에 16:10 베젤 화면을 두고, 카메라가 확대해도 화면 밖으로 넘치지 않게 베젤 안에서 자른다. */
+  .hero-stage { --gap: clamp(16px, 3vw, 40px); position: absolute; left: 50%; top: calc(var(--nav-h) + (100% - var(--nav-h)) / 2); translate: -50% -50%; overflow: hidden;
+    width: min(calc(100% - var(--gap) * 2), calc((100svh - var(--nav-h) - var(--gap) * 2) * 1.6)); aspect-ratio: 16 / 10;
+    border: clamp(8px, 1.1vw, 14px) solid #0c0c0e; border-radius: clamp(20px, 2.6vw, 32px); box-shadow: 0 0 0 1.5px #3a3a3f; }
+  /* 줌아웃이 끝나면 노트북이 오른쪽으로 비켜나 일부가 화면 밖으로 잘리고, 왼쪽 빈 검정에 문구가 놓인다. 1100px보다 좁은 화면은 옆으로 비킬 자리가 없어 가운데에 겹친 배치를 유지한다. */
+  @media (min-width: 1100px) {
+    .hero.shifted .hero-stage { transform: translate(26%, 7%); }
+    /* 노트북 오른쪽이 화면 밖으로 잘리므로, 토토와 입력기 사이에 시스템 아이콘을 두어 토토가 보이는 쪽에 오게 하고,
+       패널은 잘린 만큼(--mb-shift, 스크립트가 잼)만 왼쪽으로 옮겨 다 보이게 한다. */
+    .hero-stage .mb-panel { right: calc(14px + var(--mb-shift, 0px)); }
+
+  }
+  /* 시스템 아이콘은 노치와 부딪히지 않을 만큼 넓은 화면에서만 보인다. */
+  @media (min-width: 1100px) { .hero-stage .mb-sys { display: inline-flex; } }
+  @media (max-width: 640px) { .hero-stage { width: calc(100% - 24px); height: calc(100% - var(--nav-h) - 24px); aspect-ratio: auto; } }
+  /* 막은 헤더 아래부터 깐다. 반투명 헤더 뒤까지 깔면 막의 그라데이션이 헤더에 비쳐 얼룩진다. */
+  .hero-scrim { position: absolute; inset: var(--nav-h) 0 0; z-index: 20; pointer-events: none; opacity: 0; transition: opacity 1.2s ease;
+    /* 문구가 놓인 왼쪽 아래를 검정으로 짙게 덮고, 토토와 패널이 있는 오른쪽 위로 갈수록 걷어 낸다. 라이트와 다크 모드 모두 같은 막을 쓴다. */
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.6) 30%, rgba(0, 0, 0, 0.15) 55%, rgba(0, 0, 0, 0) 70%); }
+  .hero-copy { position: absolute; inset: var(--nav-h) 0 0; z-index: 21; pointer-events: none; display: grid; align-content: center; gap: 20px; justify-items: start;
+    padding-inline: max(16px, 6vw, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+  .hero-copy > * { opacity: 0; transform: translateY(14px); transition: opacity 0.8s ease, transform 0.8s ease; }
+  .hero-copy { color: #f5f5f7; }
+  .hero-copy .lead { margin-top: 4px; color: rgba(245, 245, 247, 0.78); }
+  .hero-copy .btn { background: #f5f5f7; color: #1d1d1f; }
+  .hero-copy .btn:hover { background: #fff; }
+  .hero-copy .cta { pointer-events: auto; }
+  .hero.revealed .hero-scrim { opacity: 1; }
+  .hero.revealed .hero-copy > * { opacity: 1; transform: none; }
+  .hero.revealed .hero-copy > :nth-child(2) { transition-delay: 0.15s; }
+  .hero.revealed .hero-copy > :nth-child(3) { transition-delay: 0.3s; }
+  .hero.revealed .hero-copy > :nth-child(4) { transition-delay: 0.45s; }
+  @media (max-width: 640px) { .hero-scrim { background: linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.55) 60%, rgba(0, 0, 0, 0.2) 100%); } }
+  @media (prefers-reduced-motion: reduce) { .hero-scrim, .hero-copy > * { transition: none; } }
 
   /* 이벤트 배너: 새 캐릭터 소식. 공식 사이트 상단처럼 단색 분홍 위로 캐릭터가 아래에서 고개를 내민다. */
   .event-banner {
@@ -248,6 +283,9 @@
   .menubar .left { display: flex; gap: 18px; color: var(--glass-muted); white-space: nowrap; overflow: hidden; }
   .menubar .left b { color: var(--glass-ink); font-weight: 700; }
   .menubar .right { display: flex; align-items: center; gap: 14px; margin-left: auto; white-space: nowrap; }
+  /* 상단바 시스템 아이콘(배터리, 검색, 제어 센터). 넓은 화면의 히어로에서만 보인다. */
+  .mb-sys { display: none; align-items: center; gap: 16px; color: var(--glass-ink); }
+  .mb-sys svg { display: block; height: 15px; width: auto; }
   .menubar .pill { background: rgba(255, 255, 255, 0.85); color: #1d1d1f; border-radius: 5px; padding: 0 6px; font-size: 12px; line-height: 18px; }
   @media (max-width: 560px) { .menubar .left span.extra { display: none; } }
 
@@ -257,18 +295,16 @@
     border-radius: 28px; overflow: hidden; border: 1px solid var(--line); user-select: none;
     background: var(--wallpaper);
   }
-  /* 히어로(문구와 무대)는 본문 폭(1080px)을 넘어 최대 1240px까지 넓혀 헤더와 끝을 맞춘다. 좁은 화면에서는 본문 폭을 그대로 채운다. */
-  .hero { --stage-w: min(1240px, calc(100vw - 32px)); width: max(100%, var(--stage-w)); margin-inline: min(0px, calc((100% - var(--stage-w)) / 2)); box-sizing: border-box; }
-  .hero-stage { width: 100%; }
-  /* 히어로 문구 위아래 여백. 위는 헤더와, 아래는 데모 무대와 숨 쉴 틈을 둔다. */
-  .hero.hero { padding-block: clamp(40px, 7vw, 96px) 0; }
-  .hero-stage { margin-top: clamp(16px, 3vw, 40px); }
   /* 제목이 좁은 화면에서 줄을 바꿀 때 쉼표 뒤에서만 바뀌도록 두 구절을 각각 묶는다. */
   .hero h1 .nw { white-space: nowrap; }
-  /* MacBook 화면과 같은 16:10 비율. 좁은 화면에서는 데모 창이 들어가도록 최소 높이를 지킨다. */
-  .hero-stage .tour { height: auto; aspect-ratio: 16 / 10; min-height: 480px; }
-  /* 노트북 화면 모양: 검은 베젤을 두르고, 노치가 베젤 위쪽과 이어진다. */
-  .hero-stage .tour { border: clamp(8px, 1.1vw, 14px) solid #0c0c0e; border-radius: clamp(20px, 2.6vw, 32px); box-shadow: 0 0 0 1.5px #3a3a3f; box-sizing: border-box; }
+  /* 히어로 무대는 화면 전체를 채우고 베젤 없이 Mac 화면 그 자체로 보인다.
+     카메라는 무대에 transform(왼쪽 위 기준 이동과 확대)을 걸어 움직인다. */
+  /* 카메라는 노트북(베젤 포함) 전체에 transform(왼쪽 위 기준 이동과 확대)을 걸어, 캐릭터가 있는 곳을 화면 가운데로 끌어온다. */
+  .hero-stage .tour { height: 100%; border: 0; border-radius: 0; }
+  /* will-change를 두면 확대 전 크기로 그린 그림을 늘려서 곡선이 계단처럼 깨지므로 두지 않는다. */
+  .hero-stage { transform-origin: 0 0; }
+  .hero-stage.cam-glide { transition: transform 1.8s cubic-bezier(0.65, 0, 0.35, 1); }
+  .hero-stage .tour.intro .tour-cursor { visibility: hidden; }
 
   /* 노치 봇: 앱(NotchBotView.swift)처럼 노치와 그 오른쪽 봇을 한 덩어리 검정으로 그리고, 봇 자리에만 작업 색과 알약 눈을 둔다.
      치수는 앱 값(노치 높이 32pt, 봇 폭 26pt, 접힌 모서리 12pt, 펼친 모서리 22pt, 오목 곡선 6pt, 펼친 폭 520pt)에 데모 배율 --k를 곱한다.
@@ -296,8 +332,8 @@
     -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent calc(var(--nb-flare) - 0.5px), #000 var(--nb-flare)); mask-image: radial-gradient(circle at 100% 100%, transparent calc(var(--nb-flare) - 0.5px), #000 var(--nb-flare)); }
   .nb.working:not(.open) .nb-color { opacity: 0.85; transition: opacity 1.5s ease-in-out; }
   @keyframes nbTurn { to { --nb-turn: 360deg; } }
-  .nb-eyes { z-index: 2; position: absolute; top: 0; right: 0; width: var(--nb-bot); height: var(--nb-h); display: flex; justify-content: center; align-items: center; gap: calc(var(--nb-h) * 0.108); transform: rotate(-12deg); }
-  .nb-eyes i { width: calc(var(--nb-h) * 0.12); height: calc(var(--nb-h) * 0.24); border-radius: 99px; background: #fff;
+  .nb-eyes { z-index: 2; position: absolute; top: 0; right: 0; width: var(--nb-bot); height: var(--nb-h); display: flex; justify-content: center; align-items: center; gap: calc(var(--nb-h) * 0.117); transform: rotate(-12deg); }
+  .nb-eyes i { width: calc(var(--nb-h) * 0.13); height: calc(var(--nb-h) * 0.21); border-radius: 99px; background: #fff;
     translate: var(--nb-gx, 0px) var(--nb-gy, 0px); transition: translate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), scale 0.12s ease-out; }
   .nb.blink .nb-eyes i { scale: 1 0.1; transition: translate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), scale 0.06s ease-in; }
   /* 펼친 노치 안의 내용. 펼칠 때는 노치가 거의 다 커진 뒤에 나타나고, 접을 때는 먼저 빠르게 사라진다. */
@@ -332,22 +368,26 @@
   .toto-color { position: absolute; inset: 0; opacity: 0; transition: opacity 0.12s ease-out;
     background: conic-gradient(from var(--nb-turn) at 130% 50%, #298ff5, #385cf5, #6145e0, #944cf0, #bd4ddb, #6b70fa, #298ff5); animation: nbTurn 6s linear infinite; }
   .toto.working .toto-color { opacity: 0.85; transition: opacity 1.5s ease-in-out; }
-  .em-eyes { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; gap: 0.11em; transform: rotate(-12deg); }
-  .em-eyes i { width: 0.122em; height: 0.27em; border-radius: 99px; background: #fff; translate: var(--nb-gx, 0px) var(--nb-gy, 0px); transition: translate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), scale 0.12s ease-out; }
+  /* 눈 비율은 앱과 같다. 노치 봇 눈은 노치 높이의 0.13 x 0.21, 토토 눈은 몸 크기의 0.133 x 0.211이다. */
+  .em-eyes { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; gap: 0.1em; transform: rotate(-12deg); }
+  .em-eyes i { width: 0.133em; height: 0.211em; border-radius: 99px; background: #fff; translate: var(--nb-gx, 0px) var(--nb-gy, 0px); transition: translate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), scale 0.12s ease-out; }
   .toto.blink .em-eyes i { scale: 1 0.1; transition: scale 0.06s ease-in; }
   /* 봇이 떨어진 노치는 봇 자리만 빠지고, 양쪽 오목 곡선은 그대로 둔다. */
   .nb.bare { width: var(--nb-notch); transition: none; }
   .nb.bare .nb-eyes, .nb.bare .nb-color { visibility: hidden; }
   .nb.hide { visibility: hidden; }
-  /* 물방울 층: 흐린 뒤 투명도 경계를 자르는 SVG 필터(#nbGoo)를 걸어서, 노치 몸통과 물방울이 가까우면 서로 끈적하게 이어진다.
-     층을 무대 위로 40px 올려 필터 영역이 노치 위쪽에서 잘리지 않게 하고, 진짜 노치(봇 없는 상태)를 그 위에 그대로 둬서 노치 모양은 늘 같다. */
-  .goo { position: absolute; inset: -40px 0 0 0; z-index: 7; pointer-events: none; filter: url(#nbGoo); display: none; }
-  .goo.on { display: block; }
-  .goo-notch { position: absolute; top: 0; background: #000; border-radius: 0 0 calc(12px * var(--k)) calc(12px * var(--k)); }
-  .goo-drop, .drop-eyes { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; }
-  .goo-drop { background: #000; }
-  .drop-eyes { z-index: 9; pointer-events: none; display: none; }
-  .drop-eyes.on { display: block; }
+  /* 물방울 전환 캔버스. 앱(PlacementTransitionView.swift)처럼 노치 몸, 물방울, 만두, 위쪽 오목 곡선, 몸 색, 눈을 한 캔버스에 매 프레임 그린다.
+     그리는 동안 진짜 노치 봇은 숨기고, 끝나면 캔버스 마지막 모습과 똑같은 노치 봇이나 메뉴바 토토로 바꾼다. */
+  .nb-canvas { position: absolute; left: 0; top: 0; z-index: 8; pointer-events: none; display: none; }
+  .nb-canvas.on { display: block; }
+  .nb.moving { visibility: hidden; }
+  /* 히어로 메뉴바 토토. 앱의 TotoShape처럼 아래가 넓은 만두 몸이고, 눈은 가운데보다 조금 아래(몸 높이의 8%)에 둔다.
+     앱처럼 메뉴바 높이에 맞춰 크게 둔다(메뉴바 44px에 몸 34px). */
+  .hero-stage .mb-slot { width: 38px; height: 38px; }
+  .hero-stage .toto { inset: 5%; border-radius: 0; clip-path: url(#totoShape); box-shadow: none; font-size: 34.2px; }
+  .hero-stage .toto .em-eyes { transform: translateY(0.08em) rotate(-12deg); }
+  /* 색을 이어받는 순간에는 서서히 켜지는 전환을 꺼서 색이 끊기지 않게 한다. */
+  .carry .toto-color, .carry .nb-color { transition: none !important; }
   /* 메뉴바 모드에서 토토를 누르면 열리는 패널. 앱의 메뉴바 패널처럼 유리 카드 두 장이다. */
   .mb-panel { position: absolute; right: 14px; top: 54px; z-index: 7; width: min(300px, calc(100% - 28px)); display: flex; flex-direction: column; gap: 8px;
     opacity: 0; transform: translateY(-6px) scale(0.97); transform-origin: top right; pointer-events: none; transition: opacity 0.22s, transform 0.22s; }
@@ -604,8 +644,10 @@
   </div>
 </nav>
 
-<div class="wrap">
-  <header class="hero">
+<header class="hero" id="hero">
+  <div id="heroStage" class="hero-stage"></div>
+  <div class="hero-scrim" aria-hidden="true"></div>
+  <div class="hero-copy">
     <aside class="event-banner" id="eventBanner" hidden aria-label="새 캐릭터 소식" data-i18n-aria="banner.aria">
       <div class="eb-copy">
         <span class="eb-badge">NEW</span>
@@ -625,8 +667,10 @@
     <div class="cta">
       <a class="btn" href="#install"><span data-i18n="hero.cta1">다운로드 바로 가기</span></a>
     </div>
-    <div id="heroStage" class="hero-stage"></div>
-  </header>
+  </div>
+</header>
+
+<div class="wrap">
 
   <section id="problem">
     <p class="eyebrow" data-i18n="problem.eyebrow">문제</p>
@@ -867,10 +911,12 @@
     '</div>';
 
   // 히어로 메뉴바는 오른쪽 캐릭터 아이콘 대신 가운데 노치 봇을 쓴다.
+  // 상단바 시스템 아이콘(배터리, 검색, 제어 센터). 넓은 화면의 히어로에서 토토 오른쪽에 둔다.
+  var MENUBAR_SYSTEM_ICONS = '<span class="mb-sys" aria-hidden="true"><svg viewBox="0 0 28 14"><rect x="0.75" y="0.75" width="23" height="12.5" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.6"/><rect x="2.5" y="2.5" width="15" height="9" rx="2" fill="currentColor"/><path d="M25.5 5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity="0.6"/></svg><svg viewBox="0 0 14 14"><circle cx="5.8" cy="5.8" r="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9.2 9.2l3.9 3.9" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><svg viewBox="0 0 16 14"><rect x="0.8" y="0.8" width="14.4" height="5.4" rx="2.7" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="12.5" cy="3.5" r="1.7" fill="currentColor"/><rect x="0.8" y="7.8" width="14.4" height="5.4" rx="2.7" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="3.5" cy="10.5" r="1.7" fill="currentColor"/></svg></span>';
   var HERO_MENUBAR =
     '<div class="menubar" aria-hidden="true">' +
       '<div class="left"><b>Finder</b><span data-st="file">파일</span><span data-st="edit">편집</span><span class="extra" data-st="view">보기</span><span class="extra" data-st="go">이동</span></div>' +
-      '<div class="right"><span class="mb-slot"><span class="toto"><span class="toto-color"></span><span class="em-eyes"><i></i><i></i></span></span></span><span class="pill" data-st="input">한</span><span data-st="clock">오전 10:24</span></div>' +
+      '<div class="right"><span class="mb-slot"><span class="toto"><span class="toto-color"></span><span class="em-eyes"><i></i><i></i></span></span></span>' + MENUBAR_SYSTEM_ICONS + '<span class="pill" data-st="input">한</span><span data-st="clock">오전 10:24</span></div>' +
     '</div>';
 
   /* 히어로: 마우스가 노치 봇을 눌러 패널을 열고, 카드를 누르면 그 세션의 창(터미널 또는 앱)이 앞으로 나오는 장면을 번갈아 반복한다. */
@@ -922,9 +968,11 @@
           '<span class="nb-eyes"><i></i><i></i></span>' +
         '</div>' +
         '<span class="nb-cam" aria-hidden="true"></span>' +
-        '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="nbGoo"><feGaussianBlur stdDeviation="5"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"/></filter></svg>' +
-        '<div class="goo" aria-hidden="true"><div class="goo-notch"></div><div class="goo-drop"></div></div>' +
-        '<div class="drop-eyes" aria-hidden="true"><span class="em-eyes"><i></i><i></i></span></div>' +
+        // 끈적임 필터: 흐린 뒤 투명도 0.5에서 잘라(앱의 blur + alphaThreshold) 가까운 모양끼리 이어 붙인다. 흐림 정도는 전환마다 캔버스 배율에 맞춰 정한다.
+        '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="nbGoo"><feGaussianBlur stdDeviation="4"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 40 -20"/></filter></svg>' +
+        '<canvas class="nb-canvas" aria-hidden="true"></canvas>' +
+        // 메뉴바 토토의 만두 모양(앱 TotoShape.swift와 같은 곡선). 상자 크기에 맞춰 늘고 준다.
+        '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><clipPath id="totoShape" clipPathUnits="objectBoundingBox"><path d="M0.5 0.94 C0.16 0.95 0.05 0.88 0.06 0.7 C0.07 0.36 0.24 0.07 0.5 0.07 C0.76 0.07 0.93 0.36 0.94 0.7 C0.95 0.88 0.84 0.95 0.5 0.94 Z"/></clipPath></svg>' +
         '<div class="mb-panel" aria-hidden="true">' +
           '<div class="tour-glass tour-usage">' +
             USAGE.map(function (group) {
@@ -953,11 +1001,11 @@
     var botEyes = root.querySelector(".nb-eyes");
     var toto = root.querySelector(".toto");
     var slot = root.querySelector(".mb-slot");
-    var GOO_LIFT = 40; // CSS .goo의 위쪽 inset과 같은 값
-    var goo = root.querySelector(".goo");
-    var gooNotch = root.querySelector(".goo-notch");
-    var gooDrop = root.querySelector(".goo-drop");
-    var dropEyes = root.querySelector(".drop-eyes");
+    var nbCanvas = root.querySelector(".nb-canvas");
+    var gooBlur = root.querySelector("#nbGoo feGaussianBlur");
+    var botColor = root.querySelector(".nb-color");
+    // 전환 중 물방울 가운데(무대 좌표). 카메라가 이 점을 따라간다. 전환 중이 아니면 null이다.
+    var dropFocus = null;
     var mbPanel = root.querySelector(".mb-panel");
     // 두 표시 위치. 노치에서는 노치 봇 자신이 펼쳐지고, 메뉴바에서는 토토 아래로 유리 패널이 열린다.
     var MODES = {
@@ -969,9 +1017,27 @@
     function fitPanel() { bot.style.setProperty("--nb-panel-h", nbPanel.scrollHeight + "px"); }
     fitPanel();
     window.addEventListener("resize", fitPanel);
+    // 넓은 화면(1100px 이상)에서 노트북이 오른쪽으로 26% 비켜나 화면 밖으로 잘리는 만큼만 상단바 오른쪽 묶음과 패널을 왼쪽으로 옮긴다.
+    // 화면(베젤 안쪽) 오른쪽 끝이 히어로 오른쪽 끝에 오도록 맞추므로, 패널은 원래처럼 화면 끝에서 14px 떨어져 보인다.
+    function fitMenubarShift() {
+      var heroEl = root.closest(".hero");
+      if (!heroEl) return;
+      var hidden = root.offsetLeft + root.offsetWidth * 0.76 - root.clientLeft - heroEl.clientWidth;
+      var shift = window.innerWidth >= 1100 ? Math.max(0, Math.ceil(hidden)) : 0;
+      stage.style.setProperty("--mb-shift", shift + "px");
+    }
+    fitMenubarShift();
+    window.addEventListener("resize", fitMenubarShift);
 
-    // 움직임을 줄인 설정에서는 노치가 펼쳐진 정지 장면만 보여 준다.
+    var hero = root.closest(".hero");
+    // 첫 화면은 히어로 연출로 시작하므로, 섹션 주소(#install 등)로 들어온 경우가 아니면 브라우저의 스크롤 복원을 끄고 맨 위에서 시작한다.
+    if (hero && !location.hash && "scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+      window.scrollTo(0, 0);
+    }
+    // 움직임을 줄인 설정에서는 카메라 연출 없이 노치가 펼쳐진 정지 장면에 막과 문구를 바로 얹는다.
     if (reduceMotion) {
+      if (hero) hero.classList.add("shifted", "revealed");
       bot.classList.add("open");
       wins[0].classList.add("front");
       cursor.style.display = "none";
@@ -988,10 +1054,10 @@
         return new Promise(function (resolve) { (function check() { if (isVisible && !document.hidden) resolve(); else setTimeout(check, 200); })(); });
       });
     }
-    // 무대 안 요소는 베젤 테두리 안쪽을 기준으로 놓이므로, 테두리 두께(clientLeft, clientTop)를 빼고 잰다.
+    // 무대 안 요소의 위치를 무대 좌표로 잰다. 카메라가 무대를 확대하고 있어도 같은 값이 나오도록 배율로 나눈다.
     function rectOf(el) {
-      var s = stage.getBoundingClientRect(), r = el.getBoundingClientRect();
-      return { left: r.left - s.left - stage.clientLeft, top: r.top - s.top - stage.clientTop, width: r.width, height: r.height };
+      var s = stage.getBoundingClientRect(), r = el.getBoundingClientRect(), k = s.width / stage.offsetWidth || 1;
+      return { left: (r.left - s.left) / k - stage.clientLeft, top: (r.top - s.top) / k - stage.clientTop, width: r.width / k, height: r.height / k };
     }
     function pointOf(el, fx, fy) {
       var r = rectOf(el);
@@ -1060,152 +1126,359 @@
       await wait(900);
     }
 
-    // 물방울이 봇 자리에서 떨어져 나와 통통 세 번 튀며 토토 자리로 가는 길. 닿을 때마다 납작해지고, 공중에서는 살짝 길어진다.
-    // 물방울 움직임은 시간(ms)마다 위치, 크기, 찌그러짐, 노치 폭을 돌려주는 함수로 정하고, 16ms마다 찍어서 키프레임으로 만든다.
+    // 물방울 전환 움직임. 앱(apps/macos/Sources/MenuBarIcon/PlacementTransitionMotion.swift)의 계산을 그대로 옮겼다.
+    // 진행률(0...1)마다 물방울 가운데, 지름, 가로세로 늘어난 비율, 노치 밖에 붙은 봇 폭(attached), 만두 모양으로 바뀐 정도(triangle)를 돌려준다.
     function lerp(a, b, t) { return a + (b - a) * t; }
     function clamp01(t) { return Math.max(0, Math.min(1, t)); }
-    function easeInOut(t) { t = clamp01(t); return t * t * (3 - 2 * t); }
+    function smoothStep(t) { t = clamp01(t); return t * t * (3 - 2 * t); }
     function easeOut(t) { t = clamp01(t); return 1 - Math.pow(1 - t, 3); }
-    // 통통 튀는 이동. v(0...1)만큼 가고, 닿을 때마다 납작해지며 튈수록 낮아진다.
-    function hopAt(v, from, to, fromSize, toSize, hops) {
-      var local = v * hops, hop = Math.min(Math.floor(local), hops - 1), f = local - hop;
-      var contact = Math.max(0, 1 - Math.min(f, 1 - f) / 0.14);
-      return {
-        x: lerp(from[0], to[0], v), y: lerp(from[1], to[1], v) - 9 * (1 - hop * 0.3) * 4 * f * (1 - f),
-        size: lerp(fromSize, toSize, v), sx: 1 + 0.22 * contact - 0.04 * (1 - contact), sy: 1 - 0.2 * contact + 0.05 * (1 - contact)
-      };
+    function createFrame(x, y, size, sx, sy, attached, triangle) { return { x: x, y: y, size: size, sx: sx, sy: sy, attached: attached, triangle: triangle || 0 }; }
+    // 통통 세 번 튀는 높이와 찌그러짐. 닿을 때마다 납작해지고 튈수록 낮아진다.
+    function getHop(phase) {
+      var local = phase * 3, index = Math.min(Math.floor(local), 2), within = local - index;
+      var contact = Math.max(0, 1 - Math.min(within, 1 - within) / 0.14);
+      return { lift: 9 * (1 - index * 0.3) * 4 * within * (1 - within), sx: 1 + 0.22 * contact - 0.04 * (1 - contact), sy: 1 - 0.2 * contact + 0.05 * (1 - contact) };
     }
-    // 노치에서 떨어져 메뉴바 토토 자리에 앉는다.
-    function createDetachMotion(g) {
-      var BALL = 250, TUG = 1900, SETTLE = 3150, YANK = 30, TUGS = 2, TUG_END = 0.84, LAND = 0.78;
-      return { duration: SETTLE, at: function (t) {
-        if (t < BALL) {
-          // 나가기 전에 제자리에서 살짝 웅크린다. 노치 폭은 캐릭터 위치를 따르므로 아직 그대로다.
-          var c = Math.sin(t / BALL * Math.PI);
-          return { x: g.start[0], y: g.start[1], size: g.size, sx: 1 - 0.06 * c, sy: 1 + 0.06 * c };
+    function createTransitionMotion(toMenubar, g) {
+      var CROUCH_END = 0.08, TUG_END = 0.6, TUG_COUNT = 2, TUG_SHARE = 0.84, YANK = 30, LAND_SHARE = 0.78;
+      var start = g.start, end = g.end, startSize = g.startSize, endSize = g.endSize, botWidth = g.botWidth;
+      // 젤리처럼 끙끙대며 두 번 당기고, 마지막에 눈물방울처럼 길쭉해졌다가 똑 끊긴다.
+      function getTugFrame(phase) {
+        if (phase < TUG_SHARE) {
+          var local = phase / TUG_SHARE * TUG_COUNT, tug = Math.min(Math.floor(local), TUG_COUNT - 1), within = local - tug;
+          var strength = 0.45 + 0.55 * tug / Math.max(TUG_COUNT - 1, 1);
+          var shape = within < 0.6 ? smoothStep(within / 0.6) : 1 - 0.85 * easeOut((within - 0.6) / 0.4);
+          var quiver = (within > 0.35 && within < 0.7) ? 0.05 * strength * Math.sin(within * Math.PI * 40) : 0;
+          var recoil = within > 0.6 ? 0.12 * strength * Math.sin((within - 0.6) / 0.4 * Math.PI) : 0;
+          var stretch = 0.06 + 0.64 * strength * shape;
+          var sx = 1 + stretch + quiver - recoil, sy = 1 - stretch * 0.42 - quiver + recoil;
+          // 노치 안에서 작게 시작한 물방울이 끙끙대는 동안 조금씩 부풀며 밖으로 맺혀 나온다.
+          var size = lerp(startSize * 0.72, startSize, smoothStep(phase / TUG_SHARE));
+          var x = start[0] + size * (sx - 1) / 2 + 3 * strength * shape + (startSize - size) * 0.5;
+          return createFrame(x, start[1] + 1.5 * Math.sin(local * Math.PI * 2) * strength, size, sx, sy, 0);
         }
-        if (t < TUG) {
-          // 젤리 괴물처럼 끙끙대며 두 번 당긴다. 갈수록 세게 당기고, 가장 늘어났을 때 부르르 떨다가 놓치면 튕겨 돌아오며 위아래로 불룩해진다.
-          // 왼쪽 끝은 노치에 붙인 채 몸만 오른쪽으로 늘어나고, 마지막에 쭉 당겨지며 목이 끊긴다.
-          var w = (t - BALL) / (TUG - BALL);
-          if (w < TUG_END) {
-            var local = w / TUG_END * TUGS, k = Math.min(Math.floor(local), TUGS - 1), f = local - k;
-            var strength = 0.45 + 0.55 * k / (TUGS - 1);
-            var shape = f < 0.6 ? easeInOut(f / 0.6) : 1 - 0.85 * easeOut((f - 0.6) / 0.4);
-            var quiver = (f > 0.35 && f < 0.7) ? 0.05 * strength * Math.sin(f * Math.PI * 40) : 0;
-            var recoil = f > 0.6 ? 0.12 * strength * Math.sin((f - 0.6) / 0.4 * Math.PI) : 0;
-            // 가장 세게 당길 때 몸이 1.7배까지 늘어난다.
-            var stretch = 0.06 + 0.64 * strength * shape;
-            var sx = 1 + stretch + quiver - recoil, sy = 1 - stretch * 0.42 - quiver + recoil;
-            return { x: g.start[0] + g.size * (sx - 1) / 2 + 3 * strength * shape, y: g.start[1] + 1.5 * Math.sin(local * Math.PI * 2) * strength, size: g.size, sx: sx, sy: sy };
-          }
-          var yank = easeOut((w - TUG_END) / (1 - TUG_END)), snapStretch = 0.5 * Math.sin(yank * Math.PI) * (1 - yank * 0.4);
-          var fromX = g.start[0] + g.size * 0.07;
-          return { x: lerp(fromX, g.start[0] + YANK, yank), y: g.start[1], size: g.size, sx: 1 + snapStretch, sy: 1 - snapStretch * 0.45 };
-        }
-        // 튀어 가기와 자리 잡기를 한 감속 곡선으로 잇는다. 처음엔 빠르게 튀고 점점 느려지다가 속도가 0이 되며 토토 자리에 멈춘다.
-        // 앞쪽(LAND까지)에서 세 번 튀고, 그 뒤로는 바닥에 닿은 채 미끄러지며 젤리처럼 출렁이다 잦아든다.
-        var u = (t - TUG) / (SETTLE - TUG), progress = 1 - Math.pow(1 - u, 2.4);
-        var fromX = g.start[0] + YANK, x = lerp(fromX, g.end[0], progress), baseY = lerp(g.start[1], g.end[1], progress);
-        var size = lerp(g.size * 0.92, g.endSize, easeInOut(progress));
-        if (progress < LAND) {
-          var local = progress / LAND * 3, hop = Math.min(Math.floor(local), 2), f = local - hop;
-          var contact = Math.max(0, 1 - Math.min(f, 1 - f) / 0.14);
-          return { x: x, y: baseY - 9 * (1 - hop * 0.3) * 4 * f * (1 - f), size: size, sx: 1 + 0.22 * contact - 0.04 * (1 - contact), sy: 1 - 0.2 * contact + 0.05 * (1 - contact) };
-        }
-        var landU = 1 - Math.pow(1 - LAND, 1 / 2.4), settle = (u - landU) / (1 - landU);
-        var wobble = 0.18 * Math.exp(-4 * settle) * Math.cos(settle * Math.PI * 4);
-        return { x: x, y: baseY, size: size, sx: 1 + wobble, sy: 1 - wobble };
-      } };
-    }
-    // 토토 자리에서 튀어 올라 노치로 돌아간다. 노치가 물방울 쪽으로 늘어나 마중 나가고, 닿으면 천천히 빨려 들어간다.
-    function createAttachMotion(g) {
-      var CROUCH = 260, HOP = 1050, MERGE = 2550, NEAR = 40;
-      var near = [g.start[0] + NEAR, g.start[1]];
-      return { duration: MERGE, at: function (t) {
-        if (t < CROUCH) {
-          var c = Math.sin(t / CROUCH * Math.PI);
-          return { x: g.end[0], y: g.end[1], size: g.endSize, sx: 1 + 0.2 * c, sy: 1 - 0.22 * c };
-        }
-        if (t < HOP) {
-          var hop = hopAt((t - CROUCH) / (HOP - CROUCH), g.end, near, g.endSize, g.size * 0.9, 3);
-          return hop;
-        }
-        // 노치 옆에서 천천히 밀고 들어온다. 노치 폭은 캐릭터 위치를 따르므로 들어온 만큼 늘어난다.
-        var m = (t - HOP) / (MERGE - HOP);
-        return { x: lerp(near[0], g.start[0], easeInOut(m)), y: g.start[1], size: lerp(g.size * 0.9, g.size, easeInOut(m)), sx: 1, sy: 1 };
-      } };
-    }
-    // 실제 재생 시간(ms). 장면 함수의 구간 비율은 그대로 두고 이 길이에 맞춰 늘린다.
-    var DETACH_DURATION = 5000, ATTACH_DURATION = 4800;
-    function createMotionFrames(motion, lift) {
-      var drop = [], dropInGoo = [], notch = [], STEP = 16, count = Math.ceil(motion.duration / STEP);
-      for (var i = 0; i <= count; i++) {
-        var t = Math.min(i * STEP, motion.duration), offset = t / motion.duration, p = motion.at(t), scale = p.size / motion.baseSize;
-        // 노치 폭은 캐릭터가 봇 자리에서 오른쪽으로 벗어난 만큼만 줄어든다(돌아올 때는 들어온 만큼 늘어난다).
-        var g = motion.geometry;
-        p.notch = Math.max(g.bare, Math.min(g.full, g.full - (p.x - g.start[0])));
-        var transform = function (y) { return "translate(" + p.x.toFixed(2) + "px," + y.toFixed(2) + "px) scale(" + (scale * p.sx).toFixed(3) + "," + (scale * p.sy).toFixed(3) + ")"; };
-        drop.push({ offset: offset, transform: transform(p.y) });
-        dropInGoo.push({ offset: offset, transform: transform(p.y + lift) });
-        notch.push({ offset: offset, width: p.notch.toFixed(2) + "px" });
+        var yank = easeOut((phase - TUG_SHARE) / (1 - TUG_SHARE));
+        var snap = 0.65 * Math.sin(yank * Math.PI) * (1 - yank * 0.3);
+        return createFrame(lerp(start[0] + startSize * 0.07, start[0] + YANK, yank), start[1], startSize, 1 + snap, 1 - snap * 0.45, 0);
       }
-      return { drop: drop, dropInGoo: dropInGoo, notch: notch };
+      // 세 번 튀고, 바닥에 닿은 뒤 미끄러지며 출렁이다 만두 모양으로 토토 자리에 앉는다.
+      function getHopAndSettleFrame(phase) {
+        var travel = 1 - Math.pow(1 - phase, 2.4);
+        var x = lerp(start[0] + YANK, end[0], travel), baseY = lerp(start[1], end[1], travel);
+        var size = lerp(startSize * 0.92, endSize, smoothStep(travel));
+        if (travel < LAND_SHARE) {
+          var hop = getHop(travel / LAND_SHARE);
+          var ring = 0.22 * Math.exp(-7 * phase) * Math.sin(phase * Math.PI * 9);
+          return createFrame(x, baseY - hop.lift, size, hop.sx - ring, hop.sy + ring, 0);
+        }
+        var landPhase = 1 - Math.pow(1 - LAND_SHARE, 1 / 2.4), settle = (phase - landPhase) / (1 - landPhase);
+        var wobble = 0.18 * Math.exp(-4 * settle) * Math.cos(settle * Math.PI * 4);
+        return createFrame(x, baseY, size, 1 + wobble, 1 - wobble, 0, smoothStep(settle / 0.7));
+      }
+      function getDetachFrame(p) {
+        var frame;
+        if (p < CROUCH_END) {
+          var phase = p / CROUCH_END, crouch = Math.sin(phase * Math.PI), blend = smoothStep(phase), target = getTugFrame(0);
+          frame = createFrame(lerp(start[0], target.x, blend), lerp(start[1], target.y, blend), lerp(startSize, target.size, blend),
+            lerp(1, target.sx, blend) - 0.06 * crouch, lerp(1, target.sy, blend) + 0.06 * crouch, 0);
+        } else if (p < TUG_END) frame = getTugFrame((p - CROUCH_END) / (TUG_END - CROUCH_END));
+        else frame = getHopAndSettleFrame((p - TUG_END) / (1 - TUG_END));
+        // 노치 밖 봇 몸은 물방울이 봇 자리에서 오른쪽으로 벗어난 만큼 줄어든다.
+        frame.attached = Math.min(Math.max(botWidth - (frame.x - start[0]), 0), botWidth);
+        return frame;
+      }
+      var ATTACH_CROUCH_END = 0.1, ATTACH_HOP_END = 0.33, NEAR = 40;
+      var near = [start[0] + NEAR, start[1]];
+      // 노치에 닿아 싫다는 듯 두 번 버티다가, 힘이 빠져 점점 빨라지며 흡수되고 봇 자리가 출렁이다 멈춘다.
+      function getAbsorbFrame(phase) {
+        var TOUCH_END = 0.18, RESIST_END = 0.7, SWALLOW_END = 0.88;
+        var notchRight = start[0] - botWidth / 2, size = startSize * 0.9;
+        var touchX = notchRight + size / 2 - 3, tiredX = touchX - size * 0.22;
+        if (phase < TOUCH_END) return createFrame(lerp(near[0], touchX, smoothStep(phase / TOUCH_END)), start[1], size, 1, 1, 0);
+        if (phase < RESIST_END) {
+          var resist = (phase - TOUCH_END) / (RESIST_END - TOUCH_END), local = resist * 2, attempt = Math.min(Math.floor(local), 1), within = local - attempt;
+          var effort = Math.sin(within * Math.PI) * (attempt === 0 ? 1 : 0.7);
+          var quiver = 0.05 * Math.sin(within * Math.PI * 22) * effort;
+          var sx = 1 + 0.3 * effort + quiver, sy = 1 - 0.18 * effort - quiver;
+          var leftEdge = lerp(touchX, tiredX, smoothStep(resist)) - size / 2;
+          return createFrame(leftEdge + size * sx / 2, start[1] + 1.4 * Math.sin(within * Math.PI * 6) * effort, size, sx, sy, 0);
+        }
+        if (phase < SWALLOW_END) {
+          var swallow = Math.pow((phase - RESIST_END) / (SWALLOW_END - RESIST_END), 2);
+          return createFrame(lerp(tiredX, start[0], swallow), start[1], lerp(size, startSize * 0.7, swallow), 1, 1, botWidth * smoothStep(swallow));
+        }
+        var ripple = (phase - SWALLOW_END) / (1 - SWALLOW_END);
+        var wobble = phase >= 1 ? 0 : 0.12 * Math.exp(-4.5 * ripple) * Math.cos(ripple * Math.PI * 3);
+        return createFrame(start[0], start[1], lerp(startSize * 0.7, startSize, smoothStep(ripple)), 1 + wobble, 1 - wobble, botWidth);
+      }
+      function getAttachFrame(p) {
+        if (p < ATTACH_CROUCH_END) {
+          var crouch = Math.sin(p / ATTACH_CROUCH_END * Math.PI);
+          return createFrame(end[0], end[1], endSize, 1 + 0.2 * crouch, 1 - 0.22 * crouch, 0, 1);
+        }
+        if (p < ATTACH_HOP_END) {
+          var phase = (p - ATTACH_CROUCH_END) / (ATTACH_HOP_END - ATTACH_CROUCH_END), hop = getHop(phase);
+          return createFrame(lerp(end[0], near[0], phase), lerp(end[1], near[1], phase) - hop.lift, lerp(endSize, startSize * 0.9, phase), hop.sx, hop.sy, 0, 1 - smoothStep(phase / 0.35));
+        }
+        return getAbsorbFrame((p - ATTACH_HOP_END) / (1 - ATTACH_HOP_END));
+      }
+      return toMenubar ? getDetachFrame : getAttachFrame;
     }
-    // 노치 봇과 메뉴바 토토 사이를 물방울처럼 오간다.
-    async function switchMode(toMenubar) {
+    // 앱과 같은 재생 시간(PlacementTransitionController.duration)
+    var TRANSITION_DURATION = 3000;
+    // 노치 봇 작업 색(.nb-color, .toto-color와 같은 색과 순서)
+    var WORKING_COLORS = ["#298ff5", "#385cf5", "#6145e0", "#944cf0", "#bd4ddb", "#6b70fa", "#298ff5"];
+    // 앱의 NotchBotStyle.colorFadeWidth. 봇 색이 노치 안쪽 검정으로 스며드는 폭(pt)
+    var COLOR_FADE = 14;
+    // 캔버스를 무대 위쪽 밖으로 더 크게 두는 폭. 확대할 때 캔버스 맨 윗줄이 반투명해져 뒤의 밝은 상단바가 선처럼 비치지 않게, 가장자리를 무대 밖(잘리는 곳)으로 뺀다.
+    var CANVAS_PAD = 4;
+    function createLayer(width, height) {
+      var canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      return canvas;
+    }
+    // 노치 위쪽 끝이 화면 가장자리로 오목하게 녹아드는 곡선. 진짜 노치(.nb::before, ::after)처럼 사분원으로 깎는다.
+    // 몸과 맞닿는 쪽은 1px 겹쳐 그려서, 두 모양의 경계 픽셀이 둘 다 반투명해져 뒤가 비치는 틈이 생기지 않게 한다.
+    function addFlarePath(ctx, edgeX, flare, isLeft) {
+      var outerX = isLeft ? edgeX - flare : edgeX + flare, innerX = isLeft ? edgeX + 1 : edgeX - 1;
+      ctx.moveTo(innerX, -CANVAS_PAD);
+      ctx.lineTo(outerX, -CANVAS_PAD);
+      ctx.lineTo(outerX, 0);
+      if (isLeft) ctx.arc(outerX, flare, flare, -Math.PI / 2, 0, false);
+      else ctx.arc(outerX, flare, flare, -Math.PI / 2, Math.PI, true);
+      ctx.lineTo(innerX, flare);
+      ctx.closePath();
+    }
+    // 메뉴바 토토의 만두 모양(앱 TotoShape.swift와 같은 곡선)
+    function addTotoPath(ctx, x, y, w, h) {
+      var p = function (fx, fy) { return [x + fx * w, y + fy * h]; };
+      var a = p(0.5, 0.94);
+      ctx.moveTo(a[0], a[1]);
+      [[[0.16, 0.95], [0.05, 0.88], [0.06, 0.7]], [[0.07, 0.36], [0.24, 0.07], [0.5, 0.07]], [[0.76, 0.07], [0.93, 0.36], [0.94, 0.7]], [[0.95, 0.88], [0.84, 0.95], [0.5, 0.94]]].forEach(function (c) {
+        var c1 = p(c[0][0], c[0][1]), c2 = p(c[1][0], c[1][1]), e = p(c[2][0], c[2][1]);
+        ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], e[0], e[1]);
+      });
+      ctx.closePath();
+    }
+    // 지금 노치 봇 색이 돌고 있는 각도. 전환 시작과 끝에 색 무늬가 튀지 않게 진짜 노치 봇의 회전과 맞춘다.
+    function getColorTurn() {
+      var turn = botColor.getAnimations().filter(function (a) { return a.animationName === "nbTurn"; })[0];
+      return turn ? (turn.currentTime % 6000) / 6000 * Math.PI * 2 : 0;
+    }
+    // 앱 PlacementTransitionView처럼 한 프레임을 그린다. 좌표는 캔버스 CSS 픽셀이다.
+    function drawTransitionFrame(view, f) {
+      var ctx = view.ctx, scale = view.scale, w = view.width, h = view.height, g = view.g, ty = CANVAS_PAD * scale;
+      var notchMinX = g.notchMinX, notchMaxX = g.notchMaxX, notchH = g.notchH, flare = g.flare;
+      var attachedRatio = clamp01(f.attached / g.botWidth);
+      var dropW = f.size * f.sx, dropH = f.size * f.sy;
+      var dropX = f.x - dropW / 2, dropY = f.y - dropH / 2;
+
+      // 1. 노치 몸, 봇 몸, 물방울, 만두를 검정으로 그린 뒤 끈적임 필터로 이어 붙인다.
+      // 흐림이 캔버스 위쪽 끝에서 깎이지 않게, 이 층만 위로 LIFT만큼 더 크게 두고 노치 몸을 그 위까지 그린다.
+      var goo = view.goo.getContext("2d"), lift = view.lift;
+      goo.setTransform(1, 0, 0, 1, 0, 0); goo.clearRect(0, 0, view.goo.width, view.goo.height);
+      goo.setTransform(scale, 0, 0, scale, 0, (lift + CANVAS_PAD) * scale);
+      goo.fillStyle = "#000";
+      goo.beginPath();
+      goo.roundRect(notchMinX, -lift, notchMaxX - notchMinX + f.attached, notchH + lift, [0, 0, g.radius, g.radius]);
+      goo.fill();
+      var tri = f.triangle, roundness = 1 - tri;
+      if (roundness > 0.01) {
+        goo.beginPath();
+        goo.ellipse(f.x, f.y, Math.max(0.1, dropW / 2 * (1 - 0.4 * tri)), Math.max(0.1, dropH / 2 * (1 - 0.4 * tri)), 0, 0, Math.PI * 2);
+        goo.fill();
+      }
+      if (tri > 0.01) {
+        var grow = 0.6 + 0.4 * tri, tw = dropW * grow, th = dropH * grow;
+        goo.beginPath();
+        addTotoPath(goo, f.x - tw / 2, f.y - th / 2, tw, th);
+        goo.fill();
+      }
+      var shape = view.shape.getContext("2d");
+      shape.setTransform(1, 0, 0, 1, 0, 0); shape.clearRect(0, 0, view.shape.width, view.shape.height);
+      shape.filter = "url(#nbGoo)";
+      shape.drawImage(view.goo, 0, -lift * scale);
+      shape.filter = "none";
+      // 오른쪽 오목 곡선은 봇 몸 끝을 따라가고, 흐림에 깎이지 않게 필터 없이 얹는다.
+      shape.setTransform(scale, 0, 0, scale, 0, ty);
+      shape.fillStyle = "#000";
+      shape.beginPath(); addFlarePath(shape, notchMaxX + f.attached, flare, false); shape.fill();
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, view.canvas.width, view.canvas.height);
+      ctx.drawImage(view.shape, 0, 0);
+      ctx.setTransform(scale, 0, 0, scale, 0, ty);
+      ctx.fillStyle = "#000";
+      ctx.beginPath(); addFlarePath(ctx, notchMinX, flare, true); ctx.fill();
+
+      // 2. 몸 색: 같은 끈적한 모양으로 오려 낸 각도 그라데이션을 검정 위에 85%로 얹는다.
+      if (view.isWorking) {
+        var color = view.color.getContext("2d");
+        color.setTransform(1, 0, 0, 1, 0, 0); color.globalCompositeOperation = "source-over";
+        color.clearRect(0, 0, view.color.width, view.color.height);
+        color.setTransform(scale, 0, 0, scale, 0, ty);
+        // 붙어 있을 때는 노치 봇처럼 봇 오른쪽 끝을, 떨어지면 토토처럼 몸 오른쪽 바깥(지름의 0.8배)을 중심으로 색이 돈다.
+        var pivotX = f.x + lerp(f.size * 0.8, g.botWidth / 2, attachedRatio);
+        var conic = color.createConicGradient(getColorTurn() - Math.PI / 2, pivotX, f.y);
+        WORKING_COLORS.forEach(function (c, i) { conic.addColorStop(i / (WORKING_COLORS.length - 1), c); });
+        color.fillStyle = conic;
+        color.fillRect(0, -CANVAS_PAD, w, h + CANVAS_PAD);
+        color.globalCompositeOperation = "destination-in";
+        color.setTransform(1, 0, 0, 1, 0, 0);
+        color.drawImage(view.shape, 0, 0);
+        // 노치 안쪽으로 스며드는 색은 봇 몸이 노치 밖에 나와 있는 만큼만 진하고, 노치 바깥은 늘 제 색이다.
+        color.setTransform(scale, 0, 0, scale, 0, ty);
+        // 봇 몸이 다 떨어지면 노치 오른쪽 끝과 오목 곡선은 노치의 일부라 검정으로 둔다(곡선 바깥부터 물든다).
+        // 단, 물방울이 노치 끝에 닿아 있으면(돌아와 버틸 때) 앱처럼 노치 끝에서 3pt 안에 다 물들어 물방울이 어두워지지 않게 한다.
+        var gap = clamp01((f.x - dropW / 2 - notchMaxX) / flare) * (1 - attachedRatio);
+        var holdX = notchMaxX + (flare + 1) * gap, fadeFrom = notchMaxX - COLOR_FADE * g.k, fullX = holdX + 3;
+        var fade = color.createLinearGradient(fadeFrom, 0, fullX, 0), span = fullX - fadeFrom, dim = "rgba(0,0,0," + attachedRatio.toFixed(3) + ")";
+        fade.addColorStop(0, "rgba(0,0,0,0)");
+        fade.addColorStop((notchMaxX - fadeFrom) / span, dim);
+        fade.addColorStop((holdX - fadeFrom) / span, dim);
+        fade.addColorStop(1, "#000");
+        color.fillStyle = fade;
+        color.fillRect(0, -CANVAS_PAD, w, h + CANVAS_PAD);
+        color.globalCompositeOperation = "source-over";
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 0.85;
+        ctx.drawImage(view.color, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.setTransform(scale, 0, 0, scale, 0, ty);
+      }
+
+      // 3. 알약 눈 두 개. 봇 몸이 노치에 붙어 있는 만큼 노치 봇 눈 크기로 바뀌고, 만두일 때는 조금 아래로 내려간다.
+      var botEyeW = notchH * 0.13;
+      var eyeW = (f.size * 0.135 + (botEyeW - f.size * 0.135) * attachedRatio) * f.sx;
+      var eyeH = (f.size * 0.215 + (notchH * 0.21 - f.size * 0.215) * attachedRatio) * f.sy;
+      var distance = (f.size * 0.233 + (botEyeW * 1.9 - f.size * 0.233) * attachedRatio) * f.sx;
+      ctx.save();
+      ctx.translate(f.x, f.y + 0.08 * f.size * tri);
+      ctx.rotate(-12 * Math.PI / 180);
+      ctx.fillStyle = "#fff";
+      [-1, 1].forEach(function (side) {
+        ctx.beginPath();
+        ctx.roundRect(side * distance / 2 - eyeW / 2, -eyeH / 2, eyeW, eyeH, Math.min(eyeW, eyeH) / 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+    // 노치 봇과 메뉴바 토토 사이를 물방울처럼 오간다. zoom은 카메라 확대 배율이라 그만큼 캔버스를 촘촘하게 그린다.
+    function switchMode(toMenubar, zoom) {
       // 돌아올 때는 노치가 봇 없는 폭이라, 잴 때만 잠깐 봇이 붙은 폭으로 돌려서 원래 봇 자리를 잰다.
-      // 노치 폭에는 전환 애니메이션이 걸려 있어서 잴 때만 끈다(화면에 그려지기 전에 되돌린다).
       bot.style.transition = "none";
       bot.classList.remove("bare");
       var slotRect = rectOf(slot), notchRect = rectOf(bot);
-      var botWidth = botEyes.offsetWidth, botHeight = bot.offsetHeight;
+      var botWidth = botEyes.offsetWidth, notchH = bot.offsetHeight;
       if (!toMenubar) bot.classList.add("bare");
       void bot.offsetWidth;
       bot.style.transition = "";
-      var size = botHeight * 0.78;
-      var geometry = {
-        start: [notchRect.left + notchRect.width - botWidth / 2, notchRect.top + botHeight / 2],
-        end: [slotRect.left + slotRect.width / 2, slotRect.top + slotRect.height / 2],
-        size: size, endSize: slotRect.height, botWidth: botWidth, full: notchRect.width, bare: notchRect.width - botWidth
+      var k = parseFloat(getComputedStyle(stage).getPropertyValue("--k")) || 1;
+      var flare = 6 * k, margin = 24;
+      var originX = notchRect.left - margin - flare;
+      var width = Math.ceil(slotRect.left + slotRect.width + margin - originX);
+      var height = Math.ceil(Math.max(notchH, slotRect.top + slotRect.height) + margin);
+      var notchMinX = notchRect.left - originX, notchMaxX = notchMinX + notchRect.width - botWidth;
+      // 앱처럼 물방울이 봇 자리(봇 폭 x 노치 높이) 밖으로 불룩하게 나오지 않게 봇 폭 안에 맞춘다.
+      var size = Math.min(notchH * 0.78, botWidth * 0.92);
+      var g = {
+        k: k, flare: flare, radius: 12 * k, notchH: notchH, notchMinX: notchMinX, notchMaxX: notchMaxX, botWidth: botWidth,
+        start: [notchMaxX + botWidth / 2, notchH / 2],
+        end: [slotRect.left + slotRect.width / 2 - originX, slotRect.top + slotRect.height / 2],
+        startSize: size, endSize: slotRect.height * 0.9
       };
-      var motion = toMenubar ? createDetachMotion(geometry) : createAttachMotion(geometry);
-      motion.baseSize = size;
-      motion.geometry = geometry;
-      [gooDrop, dropEyes].forEach(function (el) {
-        el.style.width = size + "px"; el.style.height = size + "px";
-        el.style.marginLeft = (-size / 2) + "px"; el.style.marginTop = (-size / 2) + "px";
-      });
-      dropEyes.style.fontSize = size + "px";
-      gooNotch.style.left = notchRect.left + "px";
-      gooNotch.style.height = (notchRect.height + GOO_LIFT) + "px"; // 위로 올린 만큼 더 길게
-      // 물방울 층은 무대보다 GOO_LIFT만큼 위에서 시작하므로 그 층 안의 물방울만 아래로 옮긴다.
-      var frames = createMotionFrames(motion, GOO_LIFT);
-      var timing = { duration: toMenubar ? DETACH_DURATION : ATTACH_DURATION, easing: "linear", fill: "both" };
-      // 진짜 노치도 물방울 층의 노치와 같은 폭으로 늘고 줄게 해서, 필터가 없는 진짜 노치의 오목 곡선이 늘 끝을 따라간다.
-      // 물방울 층은 그 뒤에서 목과 물방울만 보인다.
-      var animations = [gooDrop.animate(frames.dropInGoo, timing), dropEyes.animate(frames.drop, timing), gooNotch.animate(frames.notch, timing), bot.animate(frames.notch, timing)];
-      goo.classList.add("on"); dropEyes.classList.add("on");
-      bot.classList.add("bare");
+      var scale = (window.devicePixelRatio || 1) * (zoom || 1);
+      nbCanvas.style.left = originX + "px"; nbCanvas.style.top = -CANVAS_PAD + "px";
+      nbCanvas.style.width = width + "px"; nbCanvas.style.height = (height + CANVAS_PAD) + "px";
+      nbCanvas.width = Math.ceil(width * scale); nbCanvas.height = Math.ceil((height + CANVAS_PAD) * scale);
+      // 흐림 반지름은 앱(3.5pt)에 노치 배율을 곱하고, 캔버스 픽셀 단위로 바꾼다.
+      gooBlur.setAttribute("stdDeviation", (3.5 * k * scale).toFixed(2));
+      var view = {
+        canvas: nbCanvas, ctx: nbCanvas.getContext("2d"), scale: scale, width: width, height: height, g: g,
+        lift: 24, goo: createLayer(nbCanvas.width, nbCanvas.height + Math.ceil(24 * scale)), shape: createLayer(nbCanvas.width, nbCanvas.height), color: createLayer(nbCanvas.width, nbCanvas.height),
+        isWorking: mode.host.classList.contains("working")
+      };
+      var getFrame = createTransitionMotion(toMenubar, g);
+      var nextHost = toMenubar ? toto : bot;
+      drawTransitionFrame(view, getFrame(0));
+      nbCanvas.classList.add("on");
+      bot.classList.add("bare", "moving");
       toto.classList.remove("on");
-      await Promise.all(animations.map(function (a) { return a.finished; }));
-      if (toMenubar) toto.classList.add("on");
-      else {
-        // 노치 폭 전환 애니메이션이 다시 돌면 좁은 폭에서 한 번 더 늘어나며 튕겨 보이므로, 끈 채로 원래 폭에 둔다.
-        bot.style.transition = "none";
-        bot.classList.remove("bare");
-        void bot.offsetWidth;
-        bot.style.transition = "";
-      }
-      goo.classList.remove("on"); dropEyes.classList.remove("on");
-      animations.forEach(function (a) { a.cancel(); });
-      mode = toMenubar ? MODES.menubar : MODES.notch;
+      return new Promise(function (resolve) {
+        var startTime = performance.now();
+        (function tick(now) {
+          var progress = clamp01((now - startTime) / TRANSITION_DURATION), f = getFrame(progress);
+          drawTransitionFrame(view, f);
+          dropFocus = [f.x + originX, f.y];
+          if (progress < 1) { requestAnimationFrame(tick); return; }
+          // 캔버스 마지막 모습과 같은 진짜 캐릭터로 바꾼다. 진행 중이던 색은 서서히 켜지는 전환 없이 그대로 이어받는다.
+          if (view.isWorking) {
+            mode.host.classList.remove("working");
+            nextHost.classList.add("carry", "working");
+          }
+          if (toMenubar) toto.classList.add("on");
+          else { bot.style.transition = "none"; bot.classList.remove("bare"); }
+          bot.classList.remove("moving");
+          void bot.offsetWidth;
+          bot.style.transition = "";
+          nextHost.classList.remove("carry");
+          nbCanvas.classList.remove("on");
+          dropFocus = null;
+          mode = toMenubar ? MODES.menubar : MODES.notch;
+          resolve();
+        })(startTime);
+      });
+    }
+
+    // 카메라: 무대의 한 점(x, y)을 zoom배로 확대해 히어로 정가운데에 둔다. 노트북 전체(root)를 움직이므로 바깥 검정까지 함께 보인다.
+    function setCamera(x, y, zoom) {
+      // 노트북은 translate(-50%, -50%)로 가운데를 맞추므로 offsetLeft, offsetTop이 곧 헤더 아래 영역의 가운데이자 카메라 중심이다.
+      var cx = root.offsetLeft, cy = root.offsetTop;
+      var fx = cx - root.offsetWidth / 2, fy = cy - root.offsetHeight / 2;
+      var lx = root.clientLeft + x, ly = root.clientTop + y;
+      var tx = cx - fx - lx * zoom, ty = cy - fy - ly * zoom;
+      root.style.transform = "translate(" + tx.toFixed(1) + "px," + ty.toFixed(1) + "px) scale(" + zoom + ")";
+    }
+    function centerOf(el) { var r = rectOf(el); return [r.left + r.width / 2, r.top + r.height / 2]; }
+    // 첫 장면: 노치의 토토를 확대해 잡고, 물방울로 떨어져 상단바로 가는 동안 따라간 뒤, 줌아웃하며 막과 문구를 띄운다.
+    async function playIntro() {
+      var zoom = stage.offsetWidth < 640 ? 2.4 : 3.2;
+      stage.classList.add("intro");
+      var start = centerOf(botEyes);
+      setCamera(start[0], start[1], zoom);
+      bot.classList.add("working");
+      await wait(1800);
+      var focus = start.slice(), following = true;
+      (function follow() {
+        if (!following) return;
+        var target = dropFocus || focus;
+        // 바로 붙지 않고 조금씩 따라가 카메라가 부드럽게 움직인다.
+        focus = [focus[0] + (target[0] - focus[0]) * 0.08, focus[1] + (target[1] - focus[1]) * 0.08];
+        setCamera(focus[0], focus[1], zoom);
+        requestAnimationFrame(follow);
+      })();
+      await switchMode(true, zoom);
+      await wait(900);
+      following = false;
+      // 확대를 풀면서 노트북을 제자리(넓은 화면에서는 오른쪽으로 비켜난 자리, .hero.shifted)로 옮긴다.
+      root.classList.add("cam-glide");
+      root.style.transform = "";
+      if (hero) hero.classList.add("shifted");
+      else root.style.transform = "none";
+      await wait(1900);
+      root.classList.remove("cam-glide");
+      stage.classList.remove("intro");
+      if (hero) hero.classList.add("revealed");
+      await wait(600);
     }
 
     (async function loop() {
       var turn = 0;
+      if (hero) await playIntro();
       while (true) {
         await playOnce(turn % wins.length);
+        // 세션이 다시 진행 중인 상태에서 위치를 바꿔, 색을 띤 채 옮겨 가는 모습을 보여 준다.
+        mode.host.classList.add("working");
+        await wait(1500);
         await switchMode(mode === MODES.notch);
         await wait(700);
         turn++;
