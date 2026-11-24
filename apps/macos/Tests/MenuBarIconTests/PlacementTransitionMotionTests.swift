@@ -69,3 +69,14 @@ private func makeMotion(_ direction: PlacementTransitionMotion.Direction) -> Pla
         }
     }
 }
+
+@Test func detachHasNoJumpWhereTheCrouchHandsOverToTheTug() {
+    // 웅크리기 끝(진행 8%)과 버티기 시작이 같은 모습이라 크기와 위치가 끊기지 않는다.
+    let motion = makeMotion(.toMenuBar)
+    let boundary = 0.08 * motion.duration
+    let before = motion.frame(at: boundary - 0.001)
+    let after = motion.frame(at: boundary + 0.001)
+    #expect(abs(before.size - after.size) < 0.2)
+    #expect(abs(before.center.x - after.center.x) < 0.2)
+    #expect(abs(before.scaleX - after.scaleX) < 0.02)
+}

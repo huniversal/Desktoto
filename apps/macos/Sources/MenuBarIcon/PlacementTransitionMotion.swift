@@ -77,9 +77,18 @@ public struct PlacementTransitionMotion: Sendable {
 
     private func detachFrame(_ progress: Double) -> Frame {
         if progress < Self.crouchEnd {
-            // 나가기 전에 제자리에서 살짝 웅크린다.
-            let crouch = CGFloat(sin(progress / Self.crouchEnd * .pi))
-            return Frame(center: start, size: startSize, scaleX: 1 - 0.06 * crouch, scaleY: 1 + 0.06 * crouch, attachedWidth: 0)
+            // 나가기 전에 제자리에서 살짝 웅크리며, 끝에서는 버티기가 시작하는 모습(작게 맺힌 물방울)과 정확히 같아진다.
+            let phase = progress / Self.crouchEnd
+            let crouch = CGFloat(sin(phase * .pi))
+            let blend = CGFloat(smoothStep(phase))
+            let target = tugFrame(0)
+            return Frame(
+                center: CGPoint(x: lerp(start.x, target.center.x, blend), y: lerp(start.y, target.center.y, blend)),
+                size: lerp(startSize, target.size, blend),
+                scaleX: lerp(1, target.scaleX, blend) - 0.06 * crouch,
+                scaleY: lerp(1, target.scaleY, blend) + 0.06 * crouch,
+                attachedWidth: 0
+            )
         }
         if progress < Self.tugEnd {
             return tugFrame((progress - Self.crouchEnd) / (Self.tugEnd - Self.crouchEnd))
