@@ -54,7 +54,7 @@ enum CharacterGrid {
     static let standingOriginX: CGFloat = (canvasWidth - characterWidth) / 2
     static let maxBobHeight: CGFloat = 2
     /// 메뉴바 이미지로 잘라 쓸 가로 범위(칸). 그리기는 늘 전체 캔버스 좌표로 하고, 이미지는 이 범위만 담는다.
-    /// 토토는 지름 18칸 원이라 원 양옆에 1칸씩만 남긴다(완료 점은 원 오른쪽 위에 겹쳐 그린다). 나머지는 달리는 길과 표시 자리가 필요해 전체를 쓴다.
+    /// 토토는 몸 폭이 18칸이라 양옆에 1칸씩만 남긴다(표시 점을 그리지 않고 몸 색으로 상태를 보여 준다). 나머지는 달리는 길과 표시 자리가 필요해 전체를 쓴다.
     static func visibleRange(for character: IconCharacter) -> (minX: CGFloat, width: CGFloat) {
         switch character {
         case .toto: (standingOriginX + characterWidth / 2 - totoVisibleWidth / 2, totoVisibleWidth)
@@ -62,8 +62,6 @@ enum CharacterGrid {
         }
     }
     static let totoVisibleWidth: CGFloat = 20
-    /// 토토의 완료 점은 원 오른쪽 위 모서리에 겹친다. 캐릭터 기준 위치로 바꾸어 배지 계산에 넘긴다.
-    static let totoBadgeCharacterOriginX: CGFloat = standingOriginX + characterWidth / 2 + totoVisibleWidth / 2 - 4 - characterWidth - 1
 
     /// 잠들면 몸이 한 칸 내려앉는다.
     static let sleepDropHeight: CGFloat = 1

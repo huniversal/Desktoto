@@ -61,6 +61,11 @@ enum TotoArt {
         NSColor(srgbRed: 0.16, green: 0.56, blue: 0.96, alpha: 1)
     ]
     private static let workingOpacity: CGFloat = 0.85
+    /// 확인하지 않은 완료 몸 색. 작업 중(블루 퍼플), 승인 대기(주황 노랑)와 한눈에 구분되는 민트 초록이다.
+    private static let unseenDoneColors = (
+        light: NSColor(srgbRed: 0.42, green: 0.9, blue: 0.72, alpha: 1),
+        dark: NSColor(srgbRed: 0.16, green: 0.68, blue: 0.53, alpha: 1)
+    )
     /// 승인 대기 중 몸 색. 주황에서 노랑 사이를 오간다.
     private static let waitingColors: [NSColor] = [
         NSColor(srgbRed: 1.00, green: 0.55, blue: 0.15, alpha: 1),
@@ -73,19 +78,27 @@ enum TotoArt {
     ]
 
     /// isWaiting이면 몸 색이 승인 대기 색(주황과 노랑)으로 돈다.
-    static func draw(frame: IconFrame, isWaiting: Bool, unit: CGFloat) {
+    /// hasUnseenDone이면 확인하지 않은 완료가 있다는 뜻으로 몸을 민트 초록으로 칠한다. 작업 중이나 승인 대기 색이 있으면 그 색이 위에 덮인다.
+    static func draw(frame: IconFrame, isWaiting: Bool, hasUnseenDone: Bool = false, unit: CGFloat) {
         let pose = TotoPose(frame: frame)
         // 어지러울 때는 몸이 좌우로 살짝 흔들린다.
         var shakeX: CGFloat = 0
         if case .dizzy(let phase) = pose.expression { shakeX = phase.isMultiple(of: 2) ? -0.6 : 0.6 }
         let center = CGPoint(x: (centerX + shakeX) * unit, y: centerY * unit)
         let radius = diameter / 2 * unit
-        // 몸은 모서리가 둥근 삼각형(삼각김밥)이다. 몸 색과 테두리도 같은 모양을 따른다.
+        // 몸은 둥근 만두 모양이다. 몸 색과 테두리도 같은 모양을 따른다.
         let body = TotoShape.path(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
         let circle = NSBezierPath(cgPath: body)
 
         NSColor.black.setFill()
         circle.fill()
+        if hasUnseenDone {
+            // 돌지 않는 잔잔한 민트 초록. 왼쪽 위가 밝고 오른쪽 아래가 짙다(이 그리기 좌표는 위쪽이 0이라 45도다).
+            NSGraphicsContext.saveGraphicsState()
+            circle.addClip()
+            NSGradient(starting: unseenDoneColors.light, ending: unseenDoneColors.dark)?.draw(in: circle.bounds, angle: 45)
+            NSGraphicsContext.restoreGraphicsState()
+        }
         if let phase = pose.colorPhase, pose.colorStrength > 0 {
             drawWorkingColor(in: circle, center: center, radius: radius, phase: phase, strength: pose.colorStrength, colors: isWaiting ? waitingColors : workingColors)
         }

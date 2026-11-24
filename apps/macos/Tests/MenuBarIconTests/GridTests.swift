@@ -70,9 +70,9 @@ import Testing
     #expect(CharacterGrid.visibleRange(for: .claude).width == CharacterGrid.canvasWidth)
 }
 
-@Test func totoDoneDotSitsInsideVisibleRange() {
-    let range = CharacterGrid.visibleRange(for: .toto)
-    let badgeX = BadgeGrid.originX(characterOriginX: CharacterGrid.totoBadgeCharacterOriginX)
-    #expect(badgeX >= range.minX)
-    #expect(badgeX + BadgeGrid.doneDotSize <= range.minX + range.width)
+@Test func totoDrawsNoBadgeAndShowsUnseenDoneWithBodyColor() {
+    // 토토는 완료 점이나 물음표를 그리지 않는다. 확인하지 않은 완료는 몸 색(TotoArt)으로 보여 준다.
+    let appearance = IconAppearance(hasUnseenDone: true, isWaiting: true, character: .toto)
+    #expect(IconScene.pieces(frame: .standing, appearance: appearance).isEmpty)
+    #expect(IconScene.pieces(frame: .sleeping(frame: 0), appearance: appearance).isEmpty)
 }
