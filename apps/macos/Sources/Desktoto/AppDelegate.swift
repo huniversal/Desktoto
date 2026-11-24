@@ -55,6 +55,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var runningCount = 0
     private let notchBotController = NotchBotWindowController()
     private let placementTransition = PlacementTransitionController()
+    /// 표시 위치를 바꿀 때마다 1씩 늘린다. 늦게 끝난 이전 요청의 전환 마무리나 아이콘 위치 기다림은 이 값이 다르면 무시한다.
+    private var placementRequest = 0
     private var isWaiting = false
     private var rest: IconRest?
 
@@ -612,6 +614,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func changePlacement(wasNotch: Bool) {
         let isNotch = isNotchBotActive
         let log = Self.placementLog
+        placementRequest += 1
+        let request = placementRequest
+        // 진행 중인 전환이 있으면 화면에서 걷어 낸다. 그 마무리는 요청 번호가 달라서 끝 화면을 보이게 하지 않는다.
+        placementTransition.finishNow()
         guard wasNotch != isNotch else {
             log.notice("전환 생략: 표시 위치가 그대로다 (notch=\(isNotch))")
             applyPlacement()
@@ -637,9 +643,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             log.notice("전환 재생(메뉴바→노치): icon=\(NSStringFromRect(iconFrame), privacy: .public) notchMaxX=\(notch.maxX)")
             statusItem.button?.alphaValue = 0
             placementTransition.play(toNotch: true, notch: notch, iconFrame: iconFrame, tint: transitionTint) { [weak self] in
+                // 더 새로운 요청에 밀려난 전환은 끝 화면을 보이게 하지 않는다. 새 전환의 마무리가 맡는다.
+                guard let self, request == self.placementRequest else { return }
                 // 메뉴바 아이콘은 꺼질 때 macOS가 잠깐 흐려지며 사라지게 한다. 그동안 투명도를 되돌리면 토토가 다시 보이므로,
                 // 투명도는 그대로 두고 다음에 메뉴바 아이콘을 보일 때 applyPlacement가 되돌린다.
-                self?.applyPlacement()
+                self.applyPlacement()
             }
         } else {
             // 노치 → 메뉴바: 노치 봇을 바로 숨기고(물방울이 대신 그린다), 메뉴바 아이콘은 그림 없이 자리만 먼저 잡아 도착 좌표를 얻는다.
@@ -649,7 +657,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 새로 켠 메뉴바 아이콘은 macOS가 자리를 잡는 데 잠깐 걸린다. 그 전에 읽으면 예전 자리나 화면 밖 좌표가 나와
             // 물방울이 엉뚱한 곳으로 날아가므로, 좌표가 메뉴바 줄 안에 들어올 때까지 기다린 뒤 재생한다.
             waitForIconFrame(notch: notch, attemptsLeft: Self.iconFrameAttempts) { [weak self] iconFrame in
-                guard let self else { return }
+                // 기다리는 사이 다시 표시 위치를 바꿨으면 이 기다림은 버린다.
+                guard let self, request == self.placementRequest else { return }
                 guard let iconFrame else {
                     log.notice("전환 생략(노치→메뉴바): 메뉴바 아이콘 자리를 못 얻음 (마지막 좌표 \(NSStringFromRect(self.statusItem.button?.window?.frame ?? .zero), privacy: .public))")
                     self.applyPlacement()
@@ -657,8 +666,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 log.notice("전환 재생(노치→메뉴바): icon=\(NSStringFromRect(iconFrame), privacy: .public) notchMaxX=\(notch.maxX)")
                 self.placementTransition.play(toNotch: false, notch: notch, iconFrame: iconFrame, tint: self.transitionTint) { [weak self] in
-                    self?.statusItem.button?.alphaValue = 1
-                    self?.applyPlacement()
+                    guard let self, request == self.placementRequest else { return }
+                    self.statusItem.button?.alphaValue = 1
+                    self.applyPlacement()
                 }
             }
         }
