@@ -68,6 +68,11 @@ public struct IconAnimation: Equatable, Sendable {
         fireworkFrame = 0
     }
 
+    /// 남은 폭죽을 끝낸다. 캐릭터가 바뀌면 이전 캐릭터의 폭죽을 새 캐릭터 그림 위에 겹치지 않는다.
+    public mutating func stopFirework() {
+        fireworkFrame = nil
+    }
+
     public mutating func tickRunning(isRunning: Bool) -> RunningTick {
         runningPhase = (runningPhase + 1) % IconTiming.runningFrameCount
         let frame: IconFrame = isRunning ? .running(phase: runningPhase) : .standing

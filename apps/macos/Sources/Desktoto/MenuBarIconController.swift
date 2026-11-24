@@ -111,6 +111,8 @@ final class MenuBarIconController {
         )
         // 캐릭터가 바뀌면 이미지 높이도 달라지므로 이미지 묶음을 새로 만들고, 돌고 있는 타이머는 새 캐릭터의 주기로 다시 만든다.
         if appearance.character != images.appearance.character {
+            // 남은 폭죽은 이전 캐릭터의 전체 폭으로 그려져서, 폭이 좁은 캐릭터(토토)의 아이콘을 넓힌다. 바꾸는 순간 끝낸다.
+            animation.stopFirework()
             images = Self.createImageSet(appearance: appearance)
             if animationTimer != nil { startAnimation() }
             stopIdleAnimation()
