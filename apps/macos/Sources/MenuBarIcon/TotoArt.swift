@@ -39,8 +39,8 @@ enum TotoArt {
     private static let diameter: CGFloat = 18
     private static let centerX = CharacterGrid.standingOriginX + CharacterGrid.characterWidth / 2
     private static let centerY = CharacterGrid.canvasHeight / 2
-    private static let eyeWidth: CGFloat = 2.2
-    private static let eyeHeight: CGFloat = 5
+    private static let eyeWidth: CGFloat = 2.4
+    private static let eyeHeight: CGFloat = 3.8
     /// 두 눈 중심 사이 거리
     private static let eyeDistance: CGFloat = 4.2
     /// 노치 봇처럼 눈을 살짝 기울인다.
@@ -61,6 +61,11 @@ enum TotoArt {
         NSColor(srgbRed: 0.16, green: 0.56, blue: 0.96, alpha: 1)
     ]
     private static let workingOpacity: CGFloat = 0.85
+    /// 확인하지 않은 완료 몸 색. 작업 중(블루 퍼플), 승인 대기(주황 노랑)와 한눈에 구분되는 민트 초록이다.
+    private static let unseenDoneColors = (
+        light: NSColor(srgbRed: 0.42, green: 0.9, blue: 0.72, alpha: 1),
+        dark: NSColor(srgbRed: 0.16, green: 0.68, blue: 0.53, alpha: 1)
+    )
     /// 승인 대기 중 몸 색. 주황에서 노랑 사이를 오간다.
     private static let waitingColors: [NSColor] = [
         NSColor(srgbRed: 1.00, green: 0.55, blue: 0.15, alpha: 1),
@@ -73,17 +78,42 @@ enum TotoArt {
     ]
 
     /// isWaiting이면 몸 색이 승인 대기 색(주황과 노랑)으로 돈다.
-    static func draw(frame: IconFrame, isWaiting: Bool, unit: CGFloat) {
+    /// 졸릴 때(눈꺼풀이 내려온 상태)는 살짝, 잠들면 더 납작하게 퍼진다. 폭과 높이 배율이다.
+    private static func sleepySquash(_ pose: TotoPose) -> (width: CGFloat, height: CGFloat) {
+        if pose.isAsleep { return (1.1, 0.74) }
+        if case .yawn = pose.expression { return (1.05, 0.85) }
+        return (1, 1)
+    }
+
+    /// hasUnseenDone이면 확인하지 않은 완료가 있다는 뜻으로 몸을 민트 초록으로 칠한다. 작업 중이나 승인 대기 색이 있으면 그 색이 위에 덮인다.
+    static func draw(frame: IconFrame, isWaiting: Bool, hasUnseenDone: Bool = false, unit: CGFloat) {
         let pose = TotoPose(frame: frame)
         // 어지러울 때는 몸이 좌우로 살짝 흔들린다.
         var shakeX: CGFloat = 0
         if case .dizzy(let phase) = pose.expression { shakeX = phase.isMultiple(of: 2) ? -0.6 : 0.6 }
         let center = CGPoint(x: (centerX + shakeX) * unit, y: centerY * unit)
         let radius = diameter / 2 * unit
-        let circle = NSBezierPath(ovalIn: NSRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
+        // 몸은 둥근 만두 모양이다. 몸 색과 테두리도 같은 모양을 따른다.
+        // 졸리거나 잠들면 몸이 바닥에 붙은 채 위쪽이 내려앉아 납작해진다.
+        let squash = sleepySquash(pose)
+        let bodyRect = CGRect(
+            x: center.x - radius * squash.width,
+            y: center.y + radius - radius * 2 * squash.height,
+            width: radius * 2 * squash.width,
+            height: radius * 2 * squash.height
+        )
+        let body = TotoShape.path(in: bodyRect)
+        let circle = NSBezierPath(cgPath: body)
 
         NSColor.black.setFill()
         circle.fill()
+        if hasUnseenDone {
+            // 돌지 않는 잔잔한 민트 초록. 왼쪽 위가 밝고 오른쪽 아래가 짙다(이 그리기 좌표는 위쪽이 0이라 45도다).
+            NSGraphicsContext.saveGraphicsState()
+            circle.addClip()
+            NSGradient(starting: unseenDoneColors.light, ending: unseenDoneColors.dark)?.draw(in: circle.bounds, angle: 45)
+            NSGraphicsContext.restoreGraphicsState()
+        }
         if let phase = pose.colorPhase, pose.colorStrength > 0 {
             drawWorkingColor(in: circle, center: center, radius: radius, phase: phase, strength: pose.colorStrength, colors: isWaiting ? waitingColors : workingColors)
         }
@@ -91,7 +121,8 @@ enum TotoArt {
         circle.lineWidth = 0.35 * unit
         circle.stroke()
 
-        drawEyes(pose: pose, center: center, unit: unit)
+        // 눈은 삼각형 무게중심(가운데보다 조금 아래)에 둔다.
+        drawEyes(pose: pose, center: CGPoint(x: bodyRect.midX, y: bodyRect.midY + TotoShape.eyeCenterOffsetY * bodyRect.height), unit: unit)
     }
 
     /// 노치 봇과 같은 각도 그라데이션. 원 오른쪽 바깥을 중심으로 색이 부채꼴로 퍼지고, 단계마다 그 각도가 조금씩 돌아간다.

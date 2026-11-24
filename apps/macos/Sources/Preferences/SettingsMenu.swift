@@ -154,8 +154,8 @@ private extension IconCharacter {
 private extension IconPlacement {
     var menuTitle: String {
         switch self {
-        case .menuBar: "메뉴바 캐릭터"
-        case .notch: "노치 봇"
+        case .menuBar: "상단바"
+        case .notch: "노치"
         }
     }
 }
