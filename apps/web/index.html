@@ -573,12 +573,27 @@
   .problems p { padding-block: 18px; border-bottom: 1px solid var(--line); font-size: 1.12rem; letter-spacing: -0.01em; }
 
   /* 상태 */
-  .states { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px; }
-  .state { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 14px 14px 22px; display: grid; gap: 14px; align-content: start; }
-  .strip { background: var(--strip); border-radius: 12px; height: 92px; display: grid; place-items: center; }
-  .strip canvas { image-rendering: pixelated; display: block; }
-  .state h3 { padding-inline: 6px; }
-  .state p { padding-inline: 6px; color: var(--muted); font-size: 0.96rem; }
+  /* 상태 갤러리: 애플 제품 페이지처럼 큰 검정 카드를 가로로 넘겨 본다. 카드 위쪽에 작은 상태 이름과 큰 한 줄 설명, 아래에 큰 토토를 둔다.
+     갤러리는 본문 폭 밖까지 화면 끝으로 이어지고(--bleed), 첫 카드는 본문 왼쪽 끝에 맞춘다. */
+  #states { --bleed: max(16px, env(safe-area-inset-left, 0px), (100vw - 1080px) / 2); }
+  /* 갤러리가 본문 폭 밖으로 넓어지며 생기는 가로 스크롤을 페이지에서 잘라 낸다(clip은 스크롤 영역을 만들지 않아 고정 헤더가 그대로 동작한다). */
+  body { overflow-x: clip; }
+  .states { margin: 36px calc(-1 * var(--bleed)) 0; padding: 4px var(--bleed) 8px; display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--bleed); scroll-behavior: smooth; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .states::-webkit-scrollbar { display: none; }
+  .state { flex: 0 0 clamp(272px, 30vw, 360px); height: clamp(420px, 40vw, 500px); scroll-snap-align: start; display: flex; flex-direction: column; padding: 30px 28px 0; border-radius: 28px; background: #1d1d1f; color: #f5f5f7; overflow: hidden; }
+  .state h3 { font-size: 0.95rem; font-weight: 600; letter-spacing: -0.01em; color: #a1a1a6; }
+  .state p { margin-top: 8px; font-size: clamp(1.35rem, 2.1vw, 1.6rem); font-weight: 700; line-height: 1.3; letter-spacing: -0.02em; text-wrap: balance; }
+  .state .strip { flex: 1; display: grid; place-items: center; }
+  .state .strip canvas { display: block; }
+  .state-nav { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .state-dots { display: flex; gap: 8px; }
+  .state-dots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: var(--line); cursor: pointer; transition: background 0.25s, width 0.25s; }
+  .state-dots button[aria-current="true"] { width: 22px; border-radius: 99px; background: var(--fg); }
+  .state-arrows { display: flex; gap: 12px; }
+  .state-arrows button { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--btn-ghost); color: var(--fg); cursor: pointer; transition: opacity 0.2s, transform 0.12s; }
+  .state-arrows button:active { transform: scale(0.92); }
+  .state-arrows button:disabled { opacity: 0.35; cursor: default; }
+  @media (prefers-reduced-motion: reduce) { .states { scroll-behavior: auto; } }
 
 
   /* 기능: 상태 카드와 같은 카드에, 히어로 데모와 같은 배경과 유리 패널로 앱 화면을 작게 보여 준다. */
@@ -692,32 +707,39 @@
   <section id="states">
     <p class="eyebrow" data-i18n="states.eyebrow">상태</p>
     <h2 style="margin-top:14px" data-i18n="states.title">캐릭터가 지금 상황을 알려 줘요.</h2>
-    <div class="states">
+    <div class="states" id="stateGallery">
       <article class="state">
-        <div class="strip"><canvas id="sRun"></canvas></div>
         <h3 data-i18n="states.run.title">작업 중</h3>
         <p data-i18n="states.run.body">몸 색이 파랑과 보라로 돌아요.</p>
+        <div class="strip"><canvas id="sRun"></canvas></div>
       </article>
       <article class="state">
-        <div class="strip"><canvas id="sDone"></canvas></div>
         <h3 data-i18n="states.done.title">완료</h3>
         <p data-i18n="states.done.body">색이 빠지고 macOS 알림이 와요.</p>
+        <div class="strip"><canvas id="sDone"></canvas></div>
       </article>
       <article class="state">
-        <div class="strip"><canvas id="sWait"></canvas></div>
         <h3 data-i18n="states.wait.title">승인 대기</h3>
         <p data-i18n="states.wait.body">몸 색이 주황과 노랑으로 바뀌어요.</p>
+        <div class="strip"><canvas id="sWait"></canvas></div>
       </article>
       <article class="state">
-        <div class="strip"><canvas id="sDot"></canvas></div>
-        <h3 data-i18n="states.dot.title">보라색 점</h3>
+        <h3 data-i18n="states.dot.title">민트 초록</h3>
         <p data-i18n="states.dot.body">확인하지 않은 완료가 있어요.</p>
+        <div class="strip"><canvas id="sDot"></canvas></div>
       </article>
       <article class="state">
-        <div class="strip"><canvas id="sSleep"></canvas></div>
         <h3 data-i18n="states.sleep.title">졸음</h3>
-        <p data-i18n="states.sleep.body">10분 동안 쉬면 눈을 감고 졸아요.</p>
+        <p data-i18n="states.sleep.body">10분 동안 쉬면 몸이 납작해지며 눈을 감고 졸아요.</p>
+        <div class="strip"><canvas id="sSleep"></canvas></div>
       </article>
+    </div>
+    <div class="state-nav">
+      <div class="state-dots" role="group" aria-label="상태 고르기" data-i18n-aria="states.dots"></div>
+      <div class="state-arrows">
+        <button type="button" class="state-prev" aria-label="이전 상태" data-i18n-aria="states.prev"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M9 2L4 7l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="state-next" aria-label="다음 상태" data-i18n-aria="states.next"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
     </div>
   </section>
 
@@ -1770,8 +1792,8 @@
     "states.run.title": "Working", "states.run.body": "Toto's body cycles through blue and purple.",
     "states.done.title": "Done", "states.done.body": "The color fades and a macOS notification arrives.",
     "states.wait.title": "Waiting", "states.wait.body": "Toto turns orange and yellow.",
-    "states.sleep.title": "Dozing off", "states.sleep.body": "After 10 idle minutes, Toto dozes off.",
-    "states.dot.title": "Purple dot", "states.dot.body": "There's a finished task you haven't checked.",
+    "states.sleep.title": "Dozing off", "states.sleep.body": "After 10 idle minutes, Toto flattens out and dozes off.",
+    "states.dot.title": "Mint green", "states.dots": "Choose a state", "states.prev": "Previous state", "states.next": "Next state", "states.dot.body": "There's a finished task you haven't checked.",
     "features.eyebrow": "Features", "features.title": "Only what you need to see.",
     "f1.title": "Every session in one panel", "f1.body": "Shows the title, context usage and a bar. The model and token count appear only when you hover. Sessions that need approval or an answer rise to the top.",
     "f2.title": "Click a card to jump to that session", "f2.body": "Conversations in the Claude desktop app open in the app. Terminal sessions bring the matching iTerm2 or Terminal tab to the front.",
@@ -1933,16 +1955,34 @@
 
   /* 상태 소개 카드 */
   /* 상태 줄: 기본 캐릭터 토토를 앱(TotoArt.swift)과 같은 모양으로 그린다.
-     검은 원, 옅은 테두리, 12도 기울어진 알약 눈이고, 작업 중에는 원 밖 오른쪽을 중심으로 몸 색이 돈다. */
+     만두 모양 몸(TotoShape.swift), 옅은 테두리, 12도 기울어진 알약 눈이고, 작업 중에는 몸 밖 오른쪽을 중심으로 몸 색이 돈다.
+     확인하지 않은 완료는 민트 초록 몸, 잠들면 바닥에 붙은 채 납작해진 몸이다. */
   (function () {
     var WORKING = ["#298ff5", "#385cf5", "#6145e0", "#944cf0", "#bd4ddb", "#6b70fa", "#298ff5"];
     var WAITING = ["#ff8c26", "#ffad33", "#facc47", "#ff9e2e", "#f57a24", "#ffbd3d", "#ff8c26"];
+    // 앱의 unseenDoneColors. 왼쪽 위가 밝고 오른쪽 아래가 짙은 민트 초록이다.
+    var UNSEEN_DONE = ["#6be6b8", "#29ad87"];
     var COLOR_TURN_MS = 6000, DONE_CYCLE_MS = 6000;
+    // 앱 TotoShape.swift와 같은 만두 곡선
+    function addTotoPath(ctx, x, y, w, h) {
+      var p = function (fx, fy) { return [x + fx * w, y + fy * h]; };
+      var a = p(0.5, 0.94);
+      ctx.moveTo(a[0], a[1]);
+      [[[0.16, 0.95], [0.05, 0.88], [0.06, 0.7]], [[0.07, 0.36], [0.24, 0.07], [0.5, 0.07]], [[0.76, 0.07], [0.93, 0.36], [0.94, 0.7]], [[0.95, 0.88], [0.84, 0.95], [0.5, 0.94]]].forEach(function (c) {
+        var c1 = p(c[0][0], c[0][1]), c2 = p(c[1][0], c[1][1]), e = p(c[2][0], c[2][1]);
+        ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], e[0], e[1]);
+      });
+      ctx.closePath();
+    }
     function createToto(canvas, mode) {
-      var W = 120, H = 92, D = 58, dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      var W = 260, H = 220, D = 140, dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
       canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + "px"; canvas.style.height = H + "px";
       canvas.style.imageRendering = "auto";
       var ctx = canvas.getContext("2d"), cx = W / 2, cy = H / 2, r = D / 2, unit = D / 18;
+      var isAsleep = mode === "sleep";
+      // 앱의 sleepySquash: 잠들면 폭 1.1배, 높이 0.74배로 바닥에 붙은 채 위가 내려앉는다.
+      var squashW = isAsleep ? 1.1 : 1, squashH = isAsleep ? 0.74 : 1;
+      var body = { x: cx - r * squashW, y: cy + r - r * 2 * squashH, w: r * 2 * squashW, h: r * 2 * squashH };
       var nextBlink = 1500 + Math.random() * 2500, blinkUntil = 0;
       // 완료 장면: 작업 색으로 돌다가 서서히 빠지고, 잠시 검게 있다가 다시 물든다.
       function strengthAt(t) {
@@ -1960,7 +2000,14 @@
       }
       function draw(t) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
-        ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = "#000"; ctx.fill(); ctx.clip();
+        ctx.save();
+        ctx.beginPath(); addTotoPath(ctx, body.x, body.y, body.w, body.h);
+        ctx.fillStyle = "#000"; ctx.fill(); ctx.clip();
+        if (mode === "dot") {
+          var mint = ctx.createLinearGradient(body.x, body.y, body.x + body.w, body.y + body.h);
+          mint.addColorStop(0, UNSEEN_DONE[0]); mint.addColorStop(1, UNSEEN_DONE[1]);
+          ctx.fillStyle = mint; ctx.fillRect(body.x, body.y, body.w, body.h);
+        }
         var strength = strengthAt(t);
         if (strength > 0 && ctx.createConicGradient) {
           var colors = mode === "wait" ? WAITING : WORKING;
@@ -1969,17 +2016,48 @@
           ctx.globalAlpha = 0.85 * strength; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
         }
         ctx.restore();
-        ctx.beginPath(); ctx.arc(cx, cy, r - 0.5, 0, Math.PI * 2); ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 1; ctx.stroke();
+        ctx.beginPath(); addTotoPath(ctx, body.x, body.y, body.w, body.h);
+        ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 0.35 * unit; ctx.stroke();
+        // 앱처럼 눈은 2.4 x 3.8칸, 두 눈 가운데 사이 4.2칸이고, 몸 가운데보다 몸 높이의 8%만큼 아래에 둔다. 잠들면 가는 선으로 감는다.
         ctx.fillStyle = "#fff";
-        var isAsleep = mode === "sleep", isBlinking = t < blinkUntil;
-        var w = 2.2 * unit * (isAsleep ? 1.3 : 1), h = 5 * unit * (isAsleep ? 0.18 : isBlinking ? 0.15 : 1), dy = isAsleep ? 0.8 * unit : 0;
-        drawEye(cx - 2.1 * unit, cy + dy, w, h); drawEye(cx + 2.1 * unit, cy + dy, w, h);
-        // 확인하지 않은 완료 점. 앱처럼 캐릭터 오른쪽 위에 작은 보라색 사각형을 둔다.
-        if (mode === "dot") { ctx.fillStyle = "#ad85ff"; ctx.fillRect(cx + r + 4, cy - r, 4 * unit * 0.75, 4 * unit * 0.75); }
+        var isBlinking = t < blinkUntil;
+        var w = 2.4 * unit * (isAsleep ? 1.3 : 1), h = 3.8 * unit * (isAsleep ? 0.18 : isBlinking ? 0.15 : 1);
+        var ey = body.y + body.h / 2 + 0.08 * body.h + (isAsleep ? 0.8 * unit : 0);
+        drawEye(cx - 2.1 * unit, ey, w, h); drawEye(cx + 2.1 * unit, ey, w, h);
         if (!isAsleep && t > nextBlink) { blinkUntil = t + 140; nextBlink = t + 2600 + Math.random() * 2200; }
       }
       return draw;
     }
+    // 갤러리: 점과 이전, 다음 버튼으로 카드 하나씩 넘긴다. 손가락이나 트랙패드로 밀어도 카드 단위로 멈춘다.
+    (function () {
+      var gallery = document.getElementById("stateGallery");
+      var cards = [].slice.call(gallery.querySelectorAll(".state"));
+      var dotsBox = document.querySelector(".state-dots"), prev = document.querySelector(".state-prev"), next = document.querySelector(".state-next");
+      var dots = cards.map(function (card, i) {
+        var dot = document.createElement("button");
+        dot.type = "button";
+        dot.addEventListener("click", function () { scrollToCard(i); });
+        dotsBox.appendChild(dot);
+        return dot;
+      });
+      function labelDots() { dots.forEach(function (dot, i) { dot.setAttribute("aria-label", cards[i].querySelector("h3").textContent); }); }
+      function getStep() { return cards[1] ? cards[1].offsetLeft - cards[0].offsetLeft : gallery.clientWidth; }
+      function getIndex() { return Math.max(0, Math.min(cards.length - 1, Math.round(gallery.scrollLeft / getStep()))); }
+      function scrollToCard(i) { gallery.scrollTo({ left: i * getStep() }); }
+      function update() {
+        var index = getIndex(), atEnd = gallery.scrollLeft + gallery.clientWidth >= gallery.scrollWidth - 2;
+        dots.forEach(function (dot, i) { dot.setAttribute("aria-current", i === index ? "true" : "false"); });
+        prev.disabled = gallery.scrollLeft <= 2;
+        next.disabled = atEnd;
+      }
+      prev.addEventListener("click", function () { scrollToCard(getIndex() - 1); });
+      next.addEventListener("click", function () { scrollToCard(getIndex() + 1); });
+      gallery.addEventListener("scroll", update, { passive: true });
+      window.addEventListener("resize", update);
+      document.addEventListener("desktoto:lang", labelDots);
+      labelDots();
+      update();
+    })();
     var drawers = [["sRun", "run"], ["sDone", "done"], ["sWait", "wait"], ["sDot", "dot"], ["sSleep", "sleep"]].map(function (item) {
       return createToto(document.getElementById(item[0]), item[1]);
     });
