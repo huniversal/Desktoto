@@ -580,15 +580,18 @@
   body { overflow-x: clip; }
   .states { margin: 36px calc(-1 * var(--bleed)) 0; padding: 4px var(--bleed) 8px; display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--bleed); scroll-behavior: smooth; scrollbar-width: none; overscroll-behavior-x: contain; }
   .states::-webkit-scrollbar { display: none; }
-  .state { flex: 0 0 clamp(272px, 30vw, 360px); height: clamp(420px, 40vw, 500px); scroll-snap-align: start; display: flex; flex-direction: column; padding: 30px 28px 0; border-radius: 28px; background: #1d1d1f; color: #f5f5f7; overflow: hidden; }
-  .state h3 { font-size: 0.95rem; font-weight: 600; letter-spacing: -0.01em; color: #a1a1a6; }
-  .state p { margin-top: 8px; font-size: clamp(1.35rem, 2.1vw, 1.6rem); font-weight: 700; line-height: 1.3; letter-spacing: -0.02em; text-wrap: balance; }
-  .state .strip { flex: 1; display: grid; place-items: center; }
-  .state .strip canvas { display: block; }
-  .state-nav { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-  .state-dots { display: flex; gap: 8px; }
-  .state-dots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: var(--line); cursor: pointer; transition: background 0.25s, width 0.25s; }
-  .state-dots button[aria-current="true"] { width: 22px; border-radius: 99px; background: var(--fg); }
+  /* 기능 섹션 카드(.fgrid .state)가 쓰는 기본 카드 */
+  .state { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 14px 14px 22px; display: grid; gap: 14px; align-content: start; }
+  .state h3 { padding-inline: 6px; }
+  .state p { padding-inline: 6px; color: var(--muted); font-size: 0.96rem; }
+  /* 아래는 상태 갤러리 카드에만 쓴다. */
+  .states .state { flex: 0 0 clamp(272px, 30vw, 360px); height: clamp(420px, 40vw, 500px); scroll-snap-align: start; display: flex; flex-direction: column; padding: 30px 28px 0; border-radius: 28px; background: #1d1d1f; color: #f5f5f7; overflow: hidden; }
+  .states .state { gap: 0; border: 0; }
+  .states .state h3 { padding-inline: 0; font-size: 0.95rem; font-weight: 600; letter-spacing: -0.01em; color: #a1a1a6; }
+  .states .state p { padding-inline: 0; color: inherit; margin-top: 8px; font-size: clamp(1.35rem, 2.1vw, 1.6rem); font-weight: 700; line-height: 1.3; letter-spacing: -0.02em; text-wrap: balance; }
+  .states .state .strip { flex: 1; display: grid; place-items: center; }
+  .states .state .strip canvas { display: block; }
+  .state-nav { margin-top: 24px; display: flex; justify-content: flex-end; }
   .state-arrows { display: flex; gap: 12px; }
   .state-arrows button { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--btn-ghost); color: var(--fg); cursor: pointer; transition: opacity 0.2s, transform 0.12s; }
   .state-arrows button:active { transform: scale(0.92); }
@@ -735,7 +738,6 @@
       </article>
     </div>
     <div class="state-nav">
-      <div class="state-dots" role="group" aria-label="상태 고르기" data-i18n-aria="states.dots"></div>
       <div class="state-arrows">
         <button type="button" class="state-prev" aria-label="이전 상태" data-i18n-aria="states.prev"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M9 2L4 7l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <button type="button" class="state-next" aria-label="다음 상태" data-i18n-aria="states.next"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -1793,7 +1795,7 @@
     "states.done.title": "Done", "states.done.body": "The color fades and a macOS notification arrives.",
     "states.wait.title": "Waiting", "states.wait.body": "Toto turns orange and yellow.",
     "states.sleep.title": "Dozing off", "states.sleep.body": "After 10 idle minutes, Toto flattens out and dozes off.",
-    "states.dot.title": "Mint green", "states.dots": "Choose a state", "states.prev": "Previous state", "states.next": "Next state", "states.dot.body": "There's a finished task you haven't checked.",
+    "states.dot.title": "Mint green", "states.prev": "Previous state", "states.next": "Next state", "states.dot.body": "There's a finished task you haven't checked.",
     "features.eyebrow": "Features", "features.title": "Only what you need to see.",
     "f1.title": "Every session in one panel", "f1.body": "Shows the title, context usage and a bar. The model and token count appear only when you hover. Sessions that need approval or an answer rise to the top.",
     "f2.title": "Click a card to jump to that session", "f2.body": "Conversations in the Claude desktop app open in the app. Terminal sessions bring the matching iTerm2 or Terminal tab to the front.",
@@ -2028,25 +2030,16 @@
       }
       return draw;
     }
-    // 갤러리: 점과 이전, 다음 버튼으로 카드 하나씩 넘긴다. 손가락이나 트랙패드로 밀어도 카드 단위로 멈춘다.
+    // 갤러리: 이전, 다음 버튼으로 카드 하나씩 넘긴다. 손가락이나 트랙패드로 밀어도 카드 단위로 멈춘다.
     (function () {
       var gallery = document.getElementById("stateGallery");
       var cards = [].slice.call(gallery.querySelectorAll(".state"));
-      var dotsBox = document.querySelector(".state-dots"), prev = document.querySelector(".state-prev"), next = document.querySelector(".state-next");
-      var dots = cards.map(function (card, i) {
-        var dot = document.createElement("button");
-        dot.type = "button";
-        dot.addEventListener("click", function () { scrollToCard(i); });
-        dotsBox.appendChild(dot);
-        return dot;
-      });
-      function labelDots() { dots.forEach(function (dot, i) { dot.setAttribute("aria-label", cards[i].querySelector("h3").textContent); }); }
+      var prev = document.querySelector(".state-prev"), next = document.querySelector(".state-next");
       function getStep() { return cards[1] ? cards[1].offsetLeft - cards[0].offsetLeft : gallery.clientWidth; }
       function getIndex() { return Math.max(0, Math.min(cards.length - 1, Math.round(gallery.scrollLeft / getStep()))); }
       function scrollToCard(i) { gallery.scrollTo({ left: i * getStep() }); }
       function update() {
-        var index = getIndex(), atEnd = gallery.scrollLeft + gallery.clientWidth >= gallery.scrollWidth - 2;
-        dots.forEach(function (dot, i) { dot.setAttribute("aria-current", i === index ? "true" : "false"); });
+        var atEnd = gallery.scrollLeft + gallery.clientWidth >= gallery.scrollWidth - 2;
         prev.disabled = gallery.scrollLeft <= 2;
         next.disabled = atEnd;
       }
@@ -2054,8 +2047,6 @@
       next.addEventListener("click", function () { scrollToCard(getIndex() + 1); });
       gallery.addEventListener("scroll", update, { passive: true });
       window.addEventListener("resize", update);
-      document.addEventListener("desktoto:lang", labelDots);
-      labelDots();
       update();
     })();
     var drawers = [["sRun", "run"], ["sDone", "done"], ["sWait", "wait"], ["sDot", "dot"], ["sSleep", "sleep"]].map(function (item) {
