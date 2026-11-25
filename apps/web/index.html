@@ -182,6 +182,8 @@
     /* 문구는 위쪽에 붙이고, 노트북은 문구 바로 아래(버튼에서 40px)에 둔다. 정확한 위치는 스크립트가 문구 높이를 재서 정하고, 그 전에는 400px에 둔다. */
     .hero-stage { width: 720px; height: 450px; aspect-ratio: auto; left: calc(100% - 708px); top: var(--stage-top, 400px); translate: none; }
     .hero .hero-copy { align-content: start; padding-top: 16px; gap: 12px; }
+    /* 줌아웃이 끝나면 노트북을 0.65배로 줄여 더 많이 보이게 한다. 오른쪽 끝(잘리는 베젤)은 그대로 두도록 줄어든 폭(720 x 0.35)만큼 오른쪽으로 민다. */
+    .hero.shifted .hero-stage { transform: translateX(252px) scale(0.65); }
     .hero .hero-copy .lead { font-size: 1rem; }
   }
   /* 막은 헤더 아래부터 깐다. 반투명 헤더 뒤까지 깔면 막의 그라데이션이 헤더에 비쳐 얼룩진다. */
@@ -1513,7 +1515,8 @@
     function centerOf(el) { var r = rectOf(el); return [r.left + r.width / 2, r.top + r.height / 2]; }
     // 첫 장면: 노치의 토토를 확대해 잡고, 물방울로 떨어져 상단바로 가는 동안 따라간 뒤, 줌아웃하며 막과 문구를 띄운다.
     async function playIntro() {
-      var zoom = window.innerWidth <= 640 ? 2.6 : 3.2;
+      // 모바일은 화면이 좁아 덜 확대해서, 노치와 토토가 갈 상단바 자리가 함께 보이게 한다.
+      var zoom = window.innerWidth <= 640 ? 1.6 : 3.2;
       stage.classList.add("intro");
       var start = centerOf(botEyes);
       setCamera(start[0], start[1], zoom);
