@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>:root{color-scheme:light}body{margin:0}</style>
 <title>Desktoto</title>
-<meta name="description" content="Desktoto는 AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요. 작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.">
+<meta name="description" content="Desktoto는 AI Agent 세션의 진행 상태를 상단바나 노치의 작은 캐릭터로 보여줘요. 작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.">
 <!-- 링크 미리보기(카카오톡, 슬랙 등). 이미지는 apps/web/og-v2.png(원본: og-source.html)를 같은 주소 아래에 올려서 쓴다. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Desktoto">
 <meta property="og:title" content="Desktoto">
-<meta property="og:description" content="AI Agent 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.">
+<meta property="og:description" content="AI Agent 세션의 진행 상태를 상단바나 노치의 작은 캐릭터로 보여줘요.">
 <meta property="og:url" content="https://desktoto.pages.dev/">
 <meta property="og:image" content="https://desktoto.pages.dev/og-v2.png">
 <meta property="og:image:width" content="1200">
@@ -391,8 +391,10 @@
   /* 히어로 메뉴바 토토. 앱의 TotoShape처럼 아래가 넓은 만두 몸이고, 눈은 가운데보다 조금 아래(몸 높이의 8%)에 둔다.
      앱처럼 메뉴바 높이에 맞춰 크게 둔다(메뉴바 44px에 몸 34px). */
   .hero-stage .mb-slot { width: 38px; height: 38px; }
-  .hero-stage .toto { inset: 5%; border-radius: 0; clip-path: url(#totoShape); box-shadow: none; font-size: 34.2px; }
-  .hero-stage .toto .em-eyes { transform: translateY(0.08em) rotate(-12deg); }
+  /* 상단바 토토(히어로와 설치 데모 모두)는 만두 모양 몸이다. 자리(.mb-slot)의 90% 크기다. */
+  .toto { inset: 5%; border-radius: 0; clip-path: url(#totoShape); box-shadow: none; font-size: 27px; }
+  .toto .em-eyes { transform: translateY(0.08em) rotate(-12deg); }
+  .hero-stage .toto { font-size: 34.2px; }
   /* 색을 이어받는 순간에는 서서히 켜지는 전환을 꺼서 색이 끊기지 않게 한다. */
   .carry .toto-color, .carry .nb-color { transition: none !important; }
   /* 메뉴바 모드에서 토토를 누르면 열리는 패널. 앱의 메뉴바 패널처럼 유리 카드 두 장이다. */
@@ -700,7 +702,7 @@
       <span class="eb-confetti c4" aria-hidden="true"></span>
     </aside>
     <h1 data-i18n="hero.title"><span class="nw">AI가 일하는 동안,</span> <span class="nw">지켜보세요.</span></h1>
-    <p class="lead" data-i18n="hero.lead"><span class="ln">Desktoto는 AI Agent 세션의 진행 상태를 메뉴바나 노치의 작은 캐릭터로 보여줘요.</span><span class="ln">작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.</span></p>
+    <p class="lead" data-i18n="hero.lead"><span class="ln">Desktoto는 AI Agent 세션의 진행 상태를 상단바나 노치의 작은 캐릭터로 보여줘요.</span><span class="ln">작업이 끝났는지, 내 답을 기다리는지 창을 열지 않고도 알 수 있어요.</span></p>
     <div class="cta">
       <a class="btn" href="#install"><span data-i18n="hero.cta1">다운로드 바로 가기</span></a>
     </div>
@@ -886,7 +888,7 @@
               <li><span data-i18n="install.step1">Desktoto.dmg를 받아 열고, Desktoto를 응용 프로그램 폴더로 끌어다 놓아요.</span></li>
               <li><span data-i18n="install.step2">처음 열면 &lsquo;열지 않음&rsquo; 경고가 떠요. &lsquo;휴지통으로 이동&rsquo;이 아니라 &lsquo;완료&rsquo;를 눌러요.</span></li>
               <li><span data-i18n="install.step3">시스템 설정, 개인정보 보호 및 보안의 &lsquo;보안&rsquo; 영역에서 &ldquo;그래도 열기&rdquo;를 누르고 암호를 입력해요. 이 버튼은 앱을 열려고 한 뒤 약 1시간 동안만 보여요.</span></li>
-              <li><span data-i18n="install.step4">다시 열면 메뉴바에 캐릭터가 나타나요.</span></li>
+              <li><span data-i18n="install.step4">다시 열면 상단바에 캐릭터가 나타나요.</span></li>
             </ol>
             <span data-i18n="install.term.lead">터미널이 편하다면 이 명령으로 경고 없이 열 수도 있어요.</span>
             <span class="cmd small"><span class="prompt" aria-hidden="true">$</span><code>xattr -dr <span class="nw">com.apple.quarantine</span> <span class="nw">/Applications/Desktoto.app</span></code><button type="button" class="copy" data-copy="xattr -dr com.apple.quarantine /Applications/Desktoto.app" data-i18n-aria="install.copyAria" aria-label="명령 복사" aria-live="polite"><span class="label" data-i18n="install.copy">복사</span><span class="done" data-i18n="install.copied">복사됨</span></button></span>
@@ -921,7 +923,7 @@
       tourMe: "로그인이 가끔 실패하는 이유를 찾아줘", tourAi: "토큰이 만료될 때 갱신 요청이 두 번 나가고 있어요. 한 번만 보내도록 고칠게요.", tourInput: "메시지를 입력하세요",
       nbRun: "진행 중", nbSess: "세션", nbReset0: "3시간 12분 후 초기화", nbReset1: "4시간 40분 후 초기화",
       tourH5: "5시간", tourWk: "주간", tourR1: "3시간 12분", tourR2: "4일 2시간", tourR3: "4시간 40분", tourR4: "6일 1시간",
-      gkLabel: "경고창에서 ‘완료’를 누르고, 시스템 설정의 개인정보 보호 및 보안에서 ‘그래도 열기’를 눌러 암호를 입력하면 메뉴바에 캐릭터가 나타나는 장면의 예시",
+      gkLabel: "경고창에서 ‘완료’를 누르고, 시스템 설정의 개인정보 보호 및 보안에서 ‘그래도 열기’를 눌러 암호를 입력하면 상단바에 캐릭터가 나타나는 장면의 예시",
       gkAlertTitle: "‘Desktoto’을(를) 열지 않음", gkAlertBody: "Apple은 ‘Desktoto’에 사용자의 Mac에 손상을 입히거나 사용자의 개인정보에 침입할 수 있는 악성 코드가 없음을 확인할 수 없습니다.",
       gkTrash: "휴지통으로 이동", gkDone: "완료",
       gkSb1: "Wi-Fi", gkSb2: "일반", gkSb3: "손쉬운 사용", gkSb4: "디스플레이", gkSbPriv: "개인정보 보호 및 보안", gkSb6: "잠금 화면",
@@ -931,7 +933,7 @@
       gkBlockDesc: "Apple은 사용자의 Mac에 손상을 입히거나 사용자의 개인정보에 침입할 수 있는 악성 코드가 ‘Desktoto’에 없음을 확인할 수 없습니다.",
       gkFv: "FileVault", gkLock: "차단 모드", gkPwTitle: "암호를 입력하세요", gkCancel: "취소", gkOk: "확인",
       gkCap2: "경고창에서는 ‘휴지통으로 이동’이 아니라 ‘완료’를 눌러요.", gkCap3a: "시스템 설정에서 ‘개인정보 보호 및 보안’을 열어요.",
-      gkCap3b: "‘보안’ 영역에서 ‘그래도 열기’를 눌러요.", gkCap3c: "암호를 입력하고 ‘확인’을 눌러요.", gkCap4: "다시 열면 메뉴바에 캐릭터가 나타나요." },
+      gkCap3b: "‘보안’ 영역에서 ‘그래도 열기’를 눌러요.", gkCap3c: "암호를 입력하고 ‘확인’을 눌러요.", gkCap4: "다시 열면 상단바에 캐릭터가 나타나요." },
     en: { file: "File", edit: "Edit", view: "View", go: "Go", input: "A", clock: "10:24 AM", title0: "Refactor payments module", title1: "Fix login bug", title2: "Tidy up docs",
       tourLabel: "Example of a mouse clicking a session card in the panel and the matching terminal or app window coming to the front",
       tourT1: "I'll tidy up the payments module.", tourT2: "12 tests passed", tourT3: "Apply this change?",
