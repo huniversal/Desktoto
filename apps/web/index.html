@@ -326,20 +326,31 @@
     background: #000; border-radius: 0 0 calc(12px * var(--k)) calc(12px * var(--k));
     transition: left 0.45s cubic-bezier(0.3, 0.9, 0.3, 1), width 0.45s cubic-bezier(0.3, 0.9, 0.3, 1), height 0.45s cubic-bezier(0.3, 0.9, 0.3, 1), border-radius 0.45s; }
   .nb.open { left: calc(50% - var(--nb-open-w) / 2); width: var(--nb-open-w); height: calc(var(--nb-h) + var(--nb-panel-h, 180px)); border-radius: 0 0 calc(22px * var(--k)) calc(22px * var(--k)); }
-  .nb::before, .nb::after { content: ""; position: absolute; top: 0; width: var(--nb-flare); height: var(--nb-flare); }
-  .nb::before { right: 100%; background: radial-gradient(circle at 0 100%, transparent calc(var(--nb-flare) - 0.5px), #000 var(--nb-flare)); }
-  .nb::after { left: 100%; background: radial-gradient(circle at 100% 100%, transparent calc(var(--nb-flare) - 0.5px), #000 var(--nb-flare)); }
+  /* 노치 위쪽 양끝 오목 곡선. 카메라가 3배 넘게 확대해도 가장자리가 번지지 않게 벡터(SVG) 마스크로 깎고,
+     몸과 맞닿는 쪽은 1px 겹쳐서 경계 픽셀이 반투명해져 뒤가 비치는 줄이 생기지 않게 한다. */
+  .nb { --flare-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M0 0H1A1 1 0 0 0 0 1Z'/%3E%3C/svg%3E"); --flare-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M1 0H0A1 1 0 0 1 1 1Z'/%3E%3C/svg%3E"); }
+  .nb::before, .nb::after { content: ""; position: absolute; top: 0; width: calc(var(--nb-flare) + 1px); height: var(--nb-flare); background: #000; }
+  .nb::before { right: calc(100% - 1px);
+    -webkit-mask: var(--flare-left) left top / var(--nb-flare) 100% no-repeat, linear-gradient(#000, #000) right top / 1px 100% no-repeat;
+    mask: var(--flare-left) left top / var(--nb-flare) 100% no-repeat, linear-gradient(#000, #000) right top / 1px 100% no-repeat; }
+  /* .nb-flare-color는 .nb-color의 왼쪽 흐림 마스크를 이어받지 않도록 두 클래스를 함께 써서 우선한다. */
+  .nb::after, .nb-color.nb-flare-color {
+    -webkit-mask: var(--flare-right) right top / var(--nb-flare) 100% no-repeat, linear-gradient(#000, #000) left top / 1px 100% no-repeat;
+    mask: var(--flare-right) right top / var(--nb-flare) 100% no-repeat, linear-gradient(#000, #000) left top / 1px 100% no-repeat; }
+  .nb::after { left: calc(100% - 1px); }
   .nb-cam { position: absolute; z-index: 9; top: calc(16px * var(--k)); left: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #2b3550, #0a0a12 70%); pointer-events: none; }
   /* 곡선 조각(::after)은 자식보다 나중에 그려져서, 색과 눈을 그 위로 올린다. */
-  .nb-color { z-index: 1; position: absolute; top: 0; right: 0; height: var(--nb-h); width: calc(var(--nb-bot) + 14px); border-bottom-right-radius: calc(12px * var(--k)); opacity: 0;
+  /* 봇 몸 색과 오른쪽 위 곡선 색을 한 묶음(.nb-tint)에 넣고 투명도는 묶음에 한 번만 준다. 두 층이 겹치는 1px이 더 진해지지 않는다. */
+  .nb-tint { position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0; transition: opacity 0.12s ease-out; }
+  .nb.working:not(.open) .nb-tint { opacity: 0.85; transition: opacity 1.5s ease-in-out; }
+  .nb.bare .nb-tint { visibility: hidden; }
+  .nb-color { position: absolute; top: 0; right: 0; height: var(--nb-h); width: calc(var(--nb-bot) + 14px); border-bottom-right-radius: calc(12px * var(--k));
     background: conic-gradient(from var(--nb-turn) at 100% 50%, #298ff5, #385cf5, #6145e0, #944cf0, #bd4ddb, #6b70fa, #298ff5);
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px); mask-image: linear-gradient(90deg, transparent, #000 14px);
-    transition: opacity 0.12s ease-out; animation: nbTurn 6s linear infinite; }
-  /* 봇 오른쪽 위 오목 곡선 조각에도 같은 색을 얹는다. 회전 중심을 몸 쪽 색과 같은 점(봇 오른쪽 끝, 높이 가운데)에 맞춘다. */
-  .nb-flare-color { left: 100%; right: auto; width: var(--nb-flare); height: var(--nb-flare); border-radius: 0;
-    background: conic-gradient(from var(--nb-turn) at 0 calc(var(--nb-h) / 2), #298ff5, #385cf5, #6145e0, #944cf0, #bd4ddb, #6b70fa, #298ff5);
-    -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent calc(var(--nb-flare) - 0.5px), #000 var(--nb-flare)); mask-image: radial-gradient(circle at 100% 100%, transparent calc(var(--nb-flare) - 0.5px), #000 var(--nb-flare)); }
-  .nb.working:not(.open) .nb-color { opacity: 0.85; transition: opacity 1.5s ease-in-out; }
+    animation: nbTurn 6s linear infinite; }
+  /* 봇 오른쪽 위 오목 곡선 조각에도 같은 색을 얹는다(몸 쪽으로 1px 겹침). 회전 중심을 몸 쪽 색과 같은 점(봇 오른쪽 끝, 높이 가운데)에 맞춘다. */
+  .nb-flare-color { left: calc(100% - 1px); right: auto; width: calc(var(--nb-flare) + 1px); height: var(--nb-flare); border-radius: 0;
+    background: conic-gradient(from var(--nb-turn) at 1px calc(var(--nb-h) / 2), #298ff5, #385cf5, #6145e0, #944cf0, #bd4ddb, #6b70fa, #298ff5); }
   @keyframes nbTurn { to { --nb-turn: 360deg; } }
   .nb-eyes { z-index: 2; position: absolute; top: 0; right: 0; width: var(--nb-bot); height: var(--nb-h); display: flex; justify-content: center; align-items: center; gap: calc(var(--nb-h) * 0.117); transform: rotate(-12deg); }
   .nb-eyes i { width: calc(var(--nb-h) * 0.13); height: calc(var(--nb-h) * 0.21); border-radius: 99px; background: #fff;
@@ -383,7 +394,7 @@
   .toto.blink .em-eyes i { scale: 1 0.1; transition: scale 0.06s ease-in; }
   /* 봇이 떨어진 노치는 봇 자리만 빠지고, 양쪽 오목 곡선은 그대로 둔다. */
   .nb.bare { width: var(--nb-notch); transition: none; }
-  .nb.bare .nb-eyes, .nb.bare .nb-color { visibility: hidden; }
+  .nb.bare .nb-eyes { visibility: hidden; }
   .nb.hide { visibility: hidden; }
   /* 물방울 전환 캔버스. 앱(PlacementTransitionView.swift)처럼 노치 몸, 물방울, 만두, 위쪽 오목 곡선, 몸 색, 눈을 한 캔버스에 매 프레임 그린다.
      그리는 동안 진짜 노치 봇은 숨기고, 끝나면 캔버스 마지막 모습과 똑같은 노치 봇이나 메뉴바 토토로 바꾼다. */
@@ -398,7 +409,7 @@
   .toto .em-eyes { transform: translateY(0.08em) rotate(-12deg); }
   .hero-stage .toto { font-size: 34.2px; }
   /* 색을 이어받는 순간에는 서서히 켜지는 전환을 꺼서 색이 끊기지 않게 한다. */
-  .carry .toto-color, .carry .nb-color { transition: none !important; }
+  .carry .toto-color, .carry .nb-tint { transition: none !important; }
   /* 메뉴바 모드에서 토토를 누르면 열리는 패널. 앱의 메뉴바 패널처럼 유리 카드 두 장이다. */
   .mb-panel { position: absolute; right: 14px; top: 54px; z-index: 7; width: min(300px, calc(100% - 28px)); display: flex; flex-direction: column; gap: 8px;
     opacity: 0; transform: translateY(-6px) scale(0.97); transform-origin: top right; pointer-events: none; transition: opacity 0.22s, transform 0.22s; }
@@ -1009,7 +1020,7 @@
           '<div class="tour-chat"><div class="tour-me" data-st="tourMe"></div><div class="tour-ai" data-st="tourAi"></div><div class="tour-input" data-st="tourInput"></div></div>' +
         '</div></div>' +
         // 노치 봇. 누르면 노치가 펼쳐지며 앱(NotchPanelView.swift)처럼 사용량 카드와 세션 카드를 보여 준다.
-        '<div class="nb" aria-hidden="true"><span class="nb-color"></span><span class="nb-color nb-flare-color"></span>' +
+        '<div class="nb" aria-hidden="true"><span class="nb-tint"><span class="nb-color"></span><span class="nb-color nb-flare-color"></span></span>' +
           '<div class="nb-head"><span data-st="nbRun"></span><b>' + SESSIONS.length + '</b></div>' +
           '<div class="nb-panel">' +
             USAGE.map(function (group, g) {
