@@ -4,7 +4,7 @@
 
 - 이슈: #79 / https://github.com/huniversal/Desktoto/issues/79
 - 브랜치: feat/readme-update/#79
-- specRevision: 2
+- specRevision: 3
 - 대상 ai-run 원본: N/A (README 이미지 갱신 작업)
 
 ## 목적
@@ -35,8 +35,8 @@ README는 이미지로만 구성하는 기존 방침(#37)과 README 전용 구�
   - "메뉴바" 표기를 앱과 같이 "상단바"로 통일
   - 상태 이름과 설명을 랜딩 문구로 교체
   - 기능 슬라이드를 벤토 구성으로 바꾸고 표시 패널 설정 설명을 추가
-- 알림 슬라이드: "팬 작품" 문장을 빼고 랜딩 `footer.2`와 같은 상표 안내로 교체
-- 문제, 개인정보 슬라이드는 랜딩과 문구를 대조해 달라진 부분만 수정(개인정보의 새 버전 확인 문구는 유지)
+- 알림 슬라이드: "팬 작품" 문장을 빼고 랜딩 `footer.2`의 상표 안내로 교체(README 데모에는 다른 회사의 앱 아이콘이 없어서 "데모 화면의 앱 아이콘" 구절은 제외)
+- 문제, 개인정보 슬라이드는 랜딩과 문구를 대조해 달라진 부분만 수정(개인정보의 새 버전 확인 문구와 읽는 것 문구는 유지)
 - `docs/images/readme/*.png`: `docs/images/readme/build.sh`로 다시 캡처
 - `README.md`: 바뀐 이미지의 대체 텍스트를 이미지 속 문구와 일치하게 수정
 
@@ -58,6 +58,7 @@ README는 이미지로만 구성하는 기존 방침(#37)과 README 전용 구�
   - 토토 그리기: 랜딩 `apps/web/index.html`의 `addTotoPath`와 `createToto`(앱 `TotoShape.swift`, `TotoArt.swift`와 같은 만두 곡선, 옅은 테두리, 12도 기울어진 알약 눈, 상태별 몸 색)를 `source.html`의 캔버스 그리기로 옮긴다. 이미 앱과 맞춰 검증된 코드이고, 기존 `SpriteRenderer.swift` 기반 픽셀 스프라이트 코드를 걷어낼 수 있다. README는 정지 이미지이므로 시간에 따라 변하는 값(눈 깜빡임, 몸 색 회전)은 슬라이드마다 고정한 한 프레임으로 그린다.
   - 알림 문구: 랜딩이 #77의 07ade43에서 캐릭터를 Claude Code 마스코트 팬 작품이 아닌 Desktoto 자체 캐릭터 토토로 바꾸면서 "팬 작품" 문장을 뺐다. README도 같은 이유로 맞춘다.
   - 개인정보의 새 버전 확인 문구: 앱의 `UpdateCheck/ReleaseFetcher.swift`는 GitHub에 요청할 때 User-Agent `Desktoto`를 보내고, GitHub 연결에는 IP 주소가 전달된다. README의 "IP 주소와 User-Agent가 전달돼요"가 실제 동작과 맞으므로 유지한다. 랜딩의 "보내는 정보는 없고"는 이보다 느슨한 표현이라 이 작업에서는 맞추지 않는다.
+  - 개인정보의 읽는 것과 사용량 문구: 랜딩은 ae287ab(2026-11-04)에서 도구 이름과 경로를 빼고 간결하게 줄였을 뿐 사실이 바뀐 것이 아니다. README의 구체적인 문구(경로, Codex 사용량만 Codex 프로그램에 물어봄)는 `UsageMonitoring/CodexRateLimitReader.swift`가 Codex `app-server`에 사용량을 묻는 실제 동작과 맞으므로 유지한다.
   - 문구의 기준은 `apps/web/index.html`이다. 랜딩과 README가 다시 어긋나지 않게 같은 문구를 옮긴다. 위 개인정보 문구처럼 실제 동작과 다른 경우만 예외로 하고 이유를 남긴다.
   - 이미지 전용 구성과 README 전용 레이아웃(#37)은 유지한다. 랜딩 화면을 캡처해서 쓰지 않는다.
 - 예외 처리
@@ -83,6 +84,18 @@ README는 이미지로만 구성하는 기존 방침(#37)과 README 전용 구�
 
 문서와 이미지 작업이므로 앱 빌드 검증은 N/A이다. 이유는 PR에 적는다.
 
+## 검증 결과
+
+| 완료 조건 | 결과 |
+|---|---|
+| AC-1 | hero, install, states, features를 다시 만든 PNG로 직접 열어 확인. 만두 모양 토토(작업 중, 완료, 승인 대기, 민트 초록, 졸음), 상단바 표기, 랜딩과 같은 상태 이름과 설치 단계 문구, 벤토 구성과 표시할 패널 메뉴가 보임. 랜딩과의 문구 대조는 글자 단위 자동 비교가 아니라 `apps/web/index.html`의 문구를 읽고 옮겨 눈으로 확인 |
+| AC-2 | notice는 상표 안내로 교체해 확인. privacy와 problem은 다시 만든 PNG가 이전과 바이트까지 같아서 문구 변경 없음. privacy를 유지한 이유는 설계 결정에 남김 |
+| AC-3 | `README.md`의 hero, install, states, features, notice 대체 텍스트를 이미지 속 문구에 맞게 수정. problem과 privacy는 이미지가 같아서 그대로 둠 |
+| AC-4 | `sh docs/images/readme/build.sh`로 7장 생성. 7장 모두 너비 2400px, 높이가 `build.sh` 값의 2배임을 `sips`로 확인 |
+| AC-5 | README에 `<img>`와 배지 외의 본문 없음을 확인 |
+
+앱 빌드는 N/A(문서와 이미지 작업). GitHub에서 라이트와 다크 모드로 README를 렌더링한 모습은 push 전이라 확인하지 못했다.
+
 ## 미결정 사항
 
 - 랜딩 `privacy.update.body`의 "보내는 정보는 없고"가 실제 동작(IP 주소와 User-Agent 전달)보다 느슨하다. 이 작업 범위(README)는 아니므로 후속 작업으로 둔다. 구현을 막지 않는다.
@@ -93,3 +106,4 @@ README는 이미지로만 구성하는 기존 방침(#37)과 README 전용 구�
 |---|---|---|
 | 1 | 최초 설계 | 사용자와 합의한 작업 범위(랜딩 최신 반영) |
 | 2 | 토토는 랜딩의 캔버스 그리기 코드를 옮기고, 알림 슬라이드는 "팬 작품" 문장을 빼며, 개인정보의 새 버전 확인 문구는 유지 (AC-1, AC-2 영향) | 미결정 3건에 사용자가 추천안으로 합의 |
+| 3 | notice 문구에서 "데모 화면의 앱 아이콘" 구절 제외, privacy 읽는 것 문구 유지 이유 추가, 이미지 높이 변경(install 822, features 1545) (AC-2 영향) | 구현 중 README 데모에 다른 회사 앱 아이콘이 없고, 랜딩 privacy 문구는 사실 변경이 아닌 축약임을 확인 |
