@@ -192,14 +192,15 @@
     background: linear-gradient(90deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.6) 30%, rgba(0, 0, 0, 0.15) 55%, rgba(0, 0, 0, 0) 70%); }
   .hero-copy { position: absolute; inset: var(--nav-h) 0 0; z-index: 21; pointer-events: none; display: grid; align-content: center; gap: 20px; justify-items: start;
     padding-inline: max(16px, 6vw, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
-  .hero-copy > * { opacity: 0; transform: translateY(14px); transition: opacity 0.8s ease, transform 0.8s ease; }
+  /* 연출 중 숨은 문구와 버튼은 visibility로도 숨겨, 보이지 않는 버튼에 키보드 포커스나 클릭이 가지 않게 한다. 나타날 때는 바로 보이게 한다. */
+  .hero-copy > * { opacity: 0; visibility: hidden; transform: translateY(14px); transition: opacity 0.8s ease, transform 0.8s ease, visibility 0s linear 0.8s; }
   .hero-copy { color: #f5f5f7; }
   .hero-copy .lead { margin-top: 4px; color: rgba(245, 245, 247, 0.78); }
   .hero-copy .btn { background: #f5f5f7; color: #1d1d1f; }
   .hero-copy .btn:hover { background: #fff; }
   .hero-copy .cta { pointer-events: auto; }
   .hero.revealed .hero-scrim { opacity: 1; }
-  .hero.revealed .hero-copy > * { opacity: 1; transform: none; }
+  .hero.revealed .hero-copy > * { opacity: 1; visibility: visible; transform: none; transition: opacity 0.8s ease, transform 0.8s ease, visibility 0s; }
   .hero.revealed .hero-copy > :nth-child(2) { transition-delay: 0.15s; }
   .hero.revealed .hero-copy > :nth-child(3) { transition-delay: 0.3s; }
   .hero.revealed .hero-copy > :nth-child(4) { transition-delay: 0.45s; }
@@ -1481,7 +1482,6 @@
       };
       var getFrame = createTransitionMotion(toMenubar, g);
       var nextHost = toMenubar ? toto : bot;
-      drawTransitionFrame(view, getFrame(0));
       nbCanvas.classList.add("on");
       bot.classList.add("bare", "moving");
       toto.classList.remove("on");
@@ -1489,7 +1489,8 @@
         var startTime = performance.now();
         (function tick(now) {
           var progress = clamp01((now - startTime) / TRANSITION_DURATION), f = getFrame(progress);
-          drawTransitionFrame(view, f);
+          // 그리기가 실패하면(캔버스 기능이 없는 브라우저 등) 연출을 건너뛰고 바로 끝 모습으로 바꿔서, 이후 장면과 문구가 멈추지 않게 한다.
+          try { drawTransitionFrame(view, f); } catch (error) { progress = 1; }
           dropFocus = [f.x + originX, f.y];
           if (progress < 1) { requestAnimationFrame(tick); return; }
           // 캔버스 마지막 모습과 같은 진짜 캐릭터로 바꾼다. 진행 중이던 색은 서서히 켜지는 전환 없이 그대로 이어받는다.
@@ -2076,15 +2077,16 @@
       var cards = [].slice.call(gallery.querySelectorAll(".state"));
       var prev = document.querySelector(".state-prev"), next = document.querySelector(".state-next");
       function getStep() { return cards[1] ? cards[1].offsetLeft - cards[0].offsetLeft : gallery.clientWidth; }
-      function getIndex() { return Math.max(0, Math.min(cards.length - 1, Math.round(gallery.scrollLeft / getStep()))); }
-      function scrollToCard(i) { gallery.scrollTo({ left: i * getStep() }); }
+      function scrollToCard(i) { gallery.scrollTo({ left: Math.max(0, Math.min(cards.length - 1, i)) * getStep() }); }
+      // 지금 위치보다 엄격히 앞(뒤)의 카드 멈춤 자리로 간다. 끝에서 카드 사이에 멈춰 있어도 한 장씩 정확히 움직인다.
+      function getPosition() { return gallery.scrollLeft / getStep(); }
       function update() {
         var atEnd = gallery.scrollLeft + gallery.clientWidth >= gallery.scrollWidth - 2;
         prev.disabled = gallery.scrollLeft <= 2;
         next.disabled = atEnd;
       }
-      prev.addEventListener("click", function () { scrollToCard(getIndex() - 1); });
-      next.addEventListener("click", function () { scrollToCard(getIndex() + 1); });
+      prev.addEventListener("click", function () { scrollToCard(Math.ceil(getPosition() - 0.01) - 1); });
+      next.addEventListener("click", function () { scrollToCard(Math.floor(getPosition() + 0.01) + 1); });
       gallery.addEventListener("scroll", update, { passive: true });
       window.addEventListener("resize", update);
       update();
