@@ -13,9 +13,9 @@ capture() {
 }
 
 capture hero 956
-capture install 660
+capture install 822
 capture problem 376
 capture states 510
-capture features 1170
+capture features 1545
 capture privacy 680
 capture notice 250
