@@ -580,11 +580,6 @@
   body { overflow-x: clip; }
   .states { margin: 36px calc(-1 * var(--bleed)) 0; padding: 4px var(--bleed) 8px; display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--bleed); scroll-behavior: smooth; scrollbar-width: none; overscroll-behavior-x: contain; }
   .states::-webkit-scrollbar { display: none; }
-  /* 기능 섹션 카드(.fgrid .state)가 쓰는 기본 카드 */
-  .state { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 14px 14px 22px; display: grid; gap: 14px; align-content: start; }
-  .state h3 { padding-inline: 6px; }
-  .state p { padding-inline: 6px; color: var(--muted); font-size: 0.96rem; }
-  /* 아래는 상태 갤러리 카드에만 쓴다. */
   .states .state { flex: 0 0 clamp(272px, 30vw, 360px); height: clamp(420px, 40vw, 500px); scroll-snap-align: start; display: flex; flex-direction: column; padding: 30px 28px 0; border-radius: 28px; background: #1d1d1f; color: #f5f5f7; overflow: hidden; }
   .states .state { gap: 0; border: 0; }
   .states .state h3 { padding-inline: 0; font-size: 0.95rem; font-weight: 600; letter-spacing: -0.01em; color: #a1a1a6; }
@@ -600,9 +595,26 @@
 
 
   /* 기능: 상태 카드와 같은 카드에, 히어로 데모와 같은 배경과 유리 패널로 앱 화면을 작게 보여 준다. */
-  .fgrid { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
-  .fv { aspect-ratio: 1 / 0.9; border-radius: 12px; background: var(--wallpaper); display: grid; place-items: center; padding: 18px; overflow: hidden; }
-  .fv .tour-glass, .fv-stack { width: 100%; }
+  /* 기능 벤토 그리드: 크기가 다른 밝은 타일을 모자이크처럼 짠다. 세션 패널은 넓게(2칸), 꾸미기는 한 줄 전체, 나머지는 1칸이다.
+     타일 위쪽에 짧은 제목과 설명, 아래(넓은 타일은 오른쪽)에 앱 화면 그림을 둔다. 상태 섹션의 검정 가로 갤러리와 결이 다르게 밝고 고정된 배치다. */
+  .fgrid { margin-top: 36px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .ftile { display: flex; flex-direction: column; gap: 22px; padding: 28px; border-radius: 28px; background: var(--surface); overflow: hidden; }
+  .ftile h3 { font-size: 1.25rem; letter-spacing: -0.02em; }
+  /* 글은 마크업에서 그림 뒤에 있지만 화면에서는 위(넓은 타일은 왼쪽)에 둔다. */
+  .ftile .ftext { order: -1; }
+  .ftile .ftext p { margin-top: 8px; color: var(--muted); font-size: 0.95rem; line-height: 1.6; }
+  .ftile .fv { flex: 1; min-height: 260px; }
+  .ftile.wide { grid-column: span 2; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); align-items: center; gap: 28px; }
+  .ftile.full { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); align-items: center; gap: 28px; }
+  .ftile.wide h3, .ftile.full h3 { font-size: clamp(1.5rem, 2.4vw, 1.9rem); }
+  .ftile.wide .fv, .ftile.full .fv { min-height: 340px; }
+  @media (max-width: 860px) {
+    .fgrid { grid-template-columns: minmax(0, 1fr); }
+    .ftile.wide, .ftile.full { grid-column: auto; display: flex; }
+    .ftile.wide .fv, .ftile.full .fv { min-height: 280px; }
+  }
+  .fv { border-radius: 18px; background: var(--wallpaper); display: grid; place-items: center; padding: 22px; overflow: hidden; }
+  .fv .tour-glass, .fv-stack { width: 100%; max-width: 360px; }
   .fv-stack { display: grid; gap: 10px; }
   .fv-win { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border-radius: 12px; background: rgba(26, 26, 30, 0.94); color: #a9a9b0; font-size: 12px; }
   .fv-win i { width: 10px; height: 10px; border-radius: 50%; }
@@ -749,32 +761,42 @@
     <p class="eyebrow" data-i18n="features.eyebrow">기능</p>
     <h2 style="margin-top:14px" data-i18n="features.title">필요한 것만 보이게 했어요.</h2>
     <div class="fgrid">
-      <article class="state">
+      <article class="ftile wide">
         <div class="fv" aria-hidden="true"><div class="tour-glass tour-sessions"><div class="tour-row"><div class="head"><span data-st="title0"></span><span>37%</span></div><div class="tour-track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title1"></span><span>18%</span></div><div class="tour-track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title2"></span><span>8%</span></div><div class="tour-track"><i style="width:8%"></i></div><div class="more"><span>claude-haiku-5-5</span><span>75K / 1M</span></div></div></div></div>
-        <h3 data-i18n="f1.title">한 패널에 모든 세션</h3>
-        <p data-i18n="f1.body">제목, 컨텍스트 사용률, 막대만 보여요. 모델과 토큰 수는 마우스를 올렸을 때만 펼쳐져요. 승인이나 답변이 필요한 세션은 맨 위로 올라와요.</p>
+        <div class="ftext">
+          <h3 data-i18n="f1.title">한 패널에 모든 세션</h3>
+          <p data-i18n="f1.body">제목, 컨텍스트 사용률, 막대만 보여요. 모델과 토큰 수는 마우스를 올렸을 때만 펼쳐져요. 승인이나 답변이 필요한 세션은 맨 위로 올라와요.</p>
+        </div>
       </article>
-      <article class="state">
+      <article class="ftile">
         <div class="fv" aria-hidden="true"><div class="tour-glass tour-usage"><div class="sec"><h4>Claude</h4><div class="tour-use"><span data-st="tourH5"></span><div class="tour-track"><i style="width:42%"></i></div><b>42%</b><em data-st="tourR1"></em></div><div class="tour-use"><span data-st="tourWk"></span><div class="tour-track"><i style="width:18%"></i></div><b>18%</b><em data-st="tourR2"></em></div></div><div class="sec"><h4>Codex</h4><div class="tour-use"><span data-st="tourH5"></span><div class="tour-track"><i style="width:12%"></i></div><b>12%</b><em data-st="tourR3"></em></div><div class="tour-use"><span data-st="tourWk"></span><div class="tour-track"><i style="width:6%"></i></div><b>6%</b><em data-st="tourR4"></em></div></div></div></div>
-        <h3 data-i18n="f5.title">AI 사용량도 한눈에</h3>
-        <p data-i18n="f5.body"><span class="ln">Claude와 Codex의 5시간과 주간 한도를 패널 맨 위에 고정해서 보여줘요.</span><span class="ln">얼마나 썼는지와 초기화까지 남은 시간을 알 수 있고, 한도에 가까워지면 막대 색이 바뀌어요.</span></p>
+        <div class="ftext">
+          <h3 data-i18n="f5.title">AI 사용량도 한눈에</h3>
+          <p data-i18n="f5.body"><span class="ln">Claude와 Codex의 5시간과 주간 한도를 패널 맨 위에 고정해서 보여줘요.</span><span class="ln">얼마나 썼는지와 초기화까지 남은 시간을 알 수 있고, 한도에 가까워지면 막대 색이 바뀌어요.</span></p>
+        </div>
       </article>
-      <article class="state">
+      <article class="ftile">
         <div class="fv" aria-hidden="true"><div class="tour-glass tour-sessions"><div class="tour-row hover"><div class="head"><span data-st="title0"></span><span>37%</span></div><div class="tour-track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title1"></span><span>18%</span></div><div class="tour-track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div><div class="tour-row"><div class="head"><span data-st="title2"></span><span>8%</span></div><div class="tour-track"><i style="width:8%"></i></div><div class="more"><span>claude-haiku-5-5</span><span>75K / 1M</span></div></div></div></div>
-        <h3 data-i18n="f4.title">컨텍스트 사용률</h3>
-        <p data-i18n="f4.body">모델마다 다른 컨텍스트 창 크기를 반영해서 사용률을 계산해요.</p>
+        <div class="ftext">
+          <h3 data-i18n="f4.title">컨텍스트 사용률</h3>
+          <p data-i18n="f4.body">모델마다 다른 컨텍스트 창 크기를 반영해서 사용률을 계산해요.</p>
+        </div>
       </article>
-      <article class="state">
+      <article class="ftile">
         <div class="fv" aria-hidden="true"><div class="fv-stack"><div class="tour-glass tour-sessions"><div class="tour-row hover"><div class="head"><span data-st="title1"></span><span>18%</span></div><div class="tour-track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div></div><svg class="fv-arrow" width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v10M3.5 8.5L8 13l4.5-4.5"/></svg><div class="fv-win"><i></i><i></i><i></i><span>claude — payments</span></div></div></div>
-        <h3 data-i18n="f2.title">카드를 누르면 그 세션으로</h3>
-        <p data-i18n="f2.body">Claude 데스크탑 앱의 대화는 앱에서 열고, 터미널 세션은 iTerm2나 Terminal의 해당 탭을 앞으로 가져와요.</p>
+        <div class="ftext">
+          <h3 data-i18n="f2.title">카드를 누르면 그 세션으로</h3>
+          <p data-i18n="f2.body">Claude 데스크탑 앱의 대화는 앱에서 열고, 터미널 세션은 iTerm2나 Terminal의 해당 탭을 앞으로 가져와요.</p>
+        </div>
       </article>
-      <article class="state">
+      <article class="ftile">
         <div class="fv" aria-hidden="true"><div class="fv-stack"><div class="fv-noti"><b>Desktoto</b><span data-i18n="fv.noti1">작업이 끝났어요</span><small data-st="title0"></small></div><div class="fv-noti"><b>Desktoto</b><span data-i18n="fv.noti2">승인이 필요해요</span><small data-st="title1"></small></div></div></div>
-        <h3 data-i18n="f3.title">알림을 눌러도 이동해요</h3>
-        <p data-i18n="f3.body">macOS 알림으로 “작업이 끝났어요”, “승인이 필요해요”, “답변이 필요해요”를 알려요. 알림을 누르면 해당 세션으로 가요.</p>
+        <div class="ftext">
+          <h3 data-i18n="f3.title">알림을 눌러도 이동해요</h3>
+          <p data-i18n="f3.body">macOS 알림으로 “작업이 끝났어요”, “승인이 필요해요”, “답변이 필요해요”를 알려요. 알림을 누르면 해당 세션으로 가요.</p>
+        </div>
       </article>
-      <article class="state">
+      <article class="ftile full">
         <div class="fv" aria-hidden="true"><div class="fv-menu-wrap">
           <div class="fv-menu">
             <div class="mi checked" data-toggle><span></span><span data-i18n="fv.m1">로그인 시 자동 실행</span></div>
@@ -810,8 +832,10 @@
             <div class="mi" data-radio="glass"><span></span><span data-i18n="fv.g5">틴트</span></div>
           </div>
         </div></div>
-        <h3 data-i18n="f6.title">내 취향대로 꾸밀 수 있어요</h3>
-        <p data-i18n="f6.body">색상은 흰색과 컬러, 테마는 라이트와 다크와 시스템 설정에 맞춤 중에서 고를 수 있어요. Liquid Glass는 투명에서 틴트까지 5단계이고, 패널에는 사용량과 컨텍스트 중 보고 싶은 것만 띄울 수도 있어요.</p>
+        <div class="ftext">
+          <h3 data-i18n="f6.title">내 취향대로 꾸밀 수 있어요</h3>
+          <p data-i18n="f6.body">색상은 흰색과 컬러, 테마는 라이트와 다크와 시스템 설정에 맞춤 중에서 고를 수 있어요. Liquid Glass는 투명에서 틴트까지 5단계이고, 패널에는 사용량과 컨텍스트 중 보고 싶은 것만 띄울 수도 있어요.</p>
+        </div>
       </article>
     </div>
   </section>
