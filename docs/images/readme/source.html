@@ -40,10 +40,10 @@
   .slide:target { display: block; }
   #hero { height: 956px; border-radius: 32px 32px 0 0; }
   #notice { border-radius: 0 0 32px 32px; }
-  #install { height: 660px; }
+  #install { height: 822px; }
   #problem { height: 376px; }
   #states { height: 510px; }
-  #features { height: 1170px; }
+  #features { height: 1545px; }
   #privacy { height: 680px; }
   #notice { height: 250px; }
   .eyebrow { font-family: var(--font-pixel); font-size: 15px; letter-spacing: 0.14em; color: var(--muted); }
@@ -54,12 +54,12 @@
   .card p { margin: 8px 8px 0; font-size: 16px; color: var(--muted); line-height: 1.65; }
 
   /* 캐릭터 */
-  canvas.sp { display: block; image-rendering: pixelated; }
-  .strip { background: var(--strip); border-radius: 14px; height: 118px; display: grid; place-items: center; }
+  canvas.toto { display: block; }
+  .strip { background: #131316; border-radius: 14px; height: 118px; display: grid; place-items: center; }
 
   /* 히어로 */
   .brand { display: flex; align-items: center; gap: 12px; font-family: var(--font-pixel); font-size: 22px; letter-spacing: 0.06em; }
-  .brand .logo { background: var(--strip); border-radius: 10px; padding: 4px 6px 2px; }
+  .brand .logo { background: var(--strip); border-radius: 10px; padding: 4px; display: grid; }
   .hero-title { margin-top: 26px; font-size: 68px; font-weight: 700; letter-spacing: -0.045em; line-height: 1.1; }
   .hero-lead { margin-top: 20px; font-size: 21px; color: var(--muted); }
   .pills { margin-top: 24px; display: flex; gap: 10px; }
@@ -113,7 +113,7 @@
   .row .track i { background: rgba(255, 255, 255, 0.62); }
   .row .more { display: none; justify-content: space-between; margin-top: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-variant-numeric: tabular-nums; }
   .row.hover { background: linear-gradient(100deg, rgba(150, 160, 230, 0.28), rgba(230, 140, 190, 0.3)); }
-  .row.hover .more { display: flex; }
+  .row.hover .more, .row.open .more { display: flex; }
   .cursor { position: absolute; z-index: 9; width: 24px; height: 29px; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.45)); }
 
   /* 설치 */
@@ -128,6 +128,9 @@
   .steps li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; counter-increment: step; }
   .steps li::before { content: counter(step); font-family: var(--font-pixel); font-size: 17px; }
   .req { margin-top: auto; padding-top: 24px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .cols .why-card { grid-column: 1 / -1; padding: 22px 28px 24px; }
+  .why-card p { margin: 0; font-size: 15px; line-height: 1.7; color: var(--muted); }
+  .why-card b { color: var(--fg); font-weight: 700; }
 
   /* 문제와 상태 */
   .three { margin-top: 34px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
@@ -142,6 +145,13 @@
 
   /* 기능 */
   .fgrid { margin-top: 34px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .fgrid .wide, .fgrid .full { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 28px; align-items: center; padding: 28px; }
+  .fgrid .wide { grid-column: span 2; }
+  .fgrid .full { grid-column: 1 / -1; }
+  .fgrid .ftext { order: -1; }
+  .fgrid .ftext h3 { margin: 0; font-size: 28px; }
+  .fgrid .ftext p { margin: 12px 0 0; font-size: 17px; color: var(--muted); line-height: 1.65; }
+  .fgrid .wide .fv, .fgrid .full .fv { aspect-ratio: auto; min-height: 300px; height: 100%; }
   .fv { aspect-ratio: 1 / 0.86; border-radius: 14px; background: var(--wallpaper); display: grid; place-items: center; padding: 20px; overflow: hidden; }
   .fv .glass, .fv-stack { width: 100%; }
   .fv-stack { display: grid; gap: 10px; }
@@ -158,7 +168,7 @@
   .fv-noti small { font-size: 12px; opacity: 0.75; }
   .menu-wrap { position: relative; width: 178px; margin-right: 74px; }
   .menu, .sub-menu { padding: 5px; border-radius: 12px; color: #1d1d1f; font-size: 11.5px; line-height: 20px; background: rgba(246, 246, 248, 0.88); border: 0.5px solid rgba(0, 0, 0, 0.14); box-shadow: 0 12px 28px rgba(0, 20, 80, 0.32); }
-  .sub-menu { position: absolute; left: calc(100% - 10px); top: 114px; min-width: 84px; }
+  .sub-menu { position: absolute; left: calc(100% - 10px); top: 94px; min-width: 84px; }
   .mi { display: flex; align-items: center; height: 20px; padding: 0 8px 0 4px; border-radius: 6px; white-space: nowrap; }
   .mi.checked > :first-child::before { content: "\2713"; }
   .mi > :first-child { width: 14px; flex: none; text-align: center; font-size: 10px; }
@@ -180,13 +190,13 @@
 
 <!-- 1. 히어로 -->
 <section class="slide" id="hero">
-  <div class="brand"><span class="logo"><canvas class="sp" data-unit="1" data-mode="stand" data-track="30"></canvas></span>Desktoto</div>
-  <h1 class="hero-title">AI가 일하는 동안,<br>메뉴바에서 지켜보세요.</h1>
-  <p class="hero-lead">AI Agent(Claude Code, Codex) 세션의 진행 상태를 메뉴바의 작은 캐릭터로 보여줘요.</p>
+  <div class="brand"><span class="logo"><canvas class="toto" data-size="26" data-mode="run" data-turn="0.12"></canvas></span>Desktoto</div>
+  <h1 class="hero-title">AI가 일하는 동안,<br>지켜보세요.</h1>
+  <p class="hero-lead">AI Agent(Claude Code, Codex) 세션의 진행 상태를 상단바나 노치의 작은 캐릭터로 보여줘요.</p>
   <div class="pills"><span class="pill dark">macOS 26 이상</span><span class="pill">Apple Silicon</span><span class="pill">무료</span></div>
   <div class="tour">
     <svg class="tour-line" viewBox="0 0 1088 410" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M-80 220 L0 236 C190 270 420 392 580 388 C780 380 960 220 1088 70 C1150 0 1210 -70 1260 -130" fill="none" stroke="#fff" stroke-width="1.6" opacity="0.8"/></svg>
-    <div class="menubar"><div class="left"><b>Finder</b><span>파일</span><span>편집</span><span>보기</span><span>이동</span></div><div class="right"><canvas class="sp" data-unit="2" data-mode="run" data-phase="5" data-track="41"></canvas><span class="mpill">한</span><span>오전 10:24</span></div></div>
+    <div class="menubar"><div class="left"><b>Finder</b><span>파일</span><span>편집</span><span>보기</span><span>이동</span></div><div class="right"><canvas class="toto" data-size="28" data-mode="run" data-turn="0.2"></canvas><span class="mpill">한</span><span>오전 10:24</span></div></div>
     <div class="win term"><div class="bar"><span class="lights"><i></i><i></i><i></i></span><span>claude — payments</span></div><div class="tx"><div><span class="c-b">❯</span> claude</div><div><span class="c-g">●</span> 결제 모듈을 정리할게요.</div><div class="c-d">  Read(src/payments/charge.ts)</div><div class="c-d">  Edit(src/payments/refund.ts)</div><div><span class="c-g">✓</span> 테스트 12개 통과</div><div><span class="c-y">?</span> 이 변경을 적용할까요?</div></div></div>
     <div class="win app front"><div class="bar"><span class="lights"><i></i><i></i><i></i></span><span>로그인 버그 수정</span></div><div class="main"><div class="side"><p class="on">로그인 버그 수정</p><p>문서 정리</p><p>결제 모듈 리팩터링</p></div><div class="chat"><div class="me">로그인이 가끔 실패하는 이유를 찾아줘</div><div class="ai">토큰이 만료될 때 갱신 요청이 두 번 나가고 있어요. 한 번만 보내도록 고칠게요.</div><div class="inp">메시지를 입력하세요</div></div></div></div>
     <div class="panel">
@@ -220,13 +230,14 @@
       <h3>dmg로 설치</h3>
       <ol class="steps">
         <li><span>Desktoto.dmg를 받아 열고, Desktoto를 응용 프로그램 폴더로 끌어다 놓아요.</span></li>
-        <li><span>처음 열면 개발자를 확인할 수 없다는 경고가 떠요. 창을 닫아요.</span></li>
-        <li><span>시스템 설정, 개인정보 보호 및 보안 맨 아래에서 &ldquo;그래도 열기&rdquo;를 누르고 암호를 입력해요.</span></li>
-        <li><span>다시 열면 메뉴바에 캐릭터가 나타나요.</span></li>
+        <li><span>처음 열면 &lsquo;열지 않음&rsquo; 경고가 떠요. &lsquo;휴지통으로 이동&rsquo;이 아니라 &lsquo;완료&rsquo;를 눌러요.</span></li>
+        <li><span>시스템 설정, 개인정보 보호 및 보안의 &lsquo;보안&rsquo; 영역에서 &ldquo;그래도 열기&rdquo;를 누르고 암호를 입력해요. 이 버튼은 앱을 열려고 한 뒤 약 1시간 동안만 보여요.</span></li>
+        <li><span>다시 열면 상단바에 캐릭터가 나타나요.</span></li>
       </ol>
       <p class="sub" style="margin-top:18px; font-size:15px">터미널이 편하다면 이 명령으로 경고 없이 열 수도 있어요.</p>
       <div class="cmd small" style="margin-top:10px"><span class="pr">$</span><span>xattr -dr com.apple.quarantine /Applications/Desktoto.app</span></div>
     </div>
+    <div class="card why-card"><p><b>왜 이런 과정이 필요한가요?</b> Mac은 인터넷에서 받은 앱을 처음 열 때, Apple에 등록된 개발자가 만들었고 Apple의 검사(공증)를 거쳤는지 확인해요. Desktoto는 아직 이 공증을 받지 않아서, 앱에 문제가 있다는 뜻이 아니라 &ldquo;Apple이 확인하지 못했다&rdquo;는 경고가 떠요. 한 번 허용하면 예외로 저장되어 다음부터는 바로 열려요.</p></div>
   </div>
 </section>
 
@@ -246,11 +257,11 @@
   <p class="eyebrow">상태</p>
   <h2 class="title">캐릭터가 지금 상황을 알려 줘요.</h2>
   <div class="five">
-    <div class="card"><div class="strip"><canvas class="sp" data-unit="2" data-mode="run" data-phase="8" data-track="41"></canvas></div><h3>달리는 중</h3><p>작업이 진행 중이에요. 여러 세션 중 하나라도 돌고 있으면 계속 달려요.</p></div>
-    <div class="card"><div class="strip"><canvas class="sp" data-unit="2" data-mode="stand" data-fw="9" data-track="41"></canvas></div><h3>폭죽</h3><p>작업이 끝났어요. 캐릭터 뒤에서 작은 폭죽이 터지고 macOS 알림이 와요.</p></div>
-    <div class="card"><div class="strip"><canvas class="sp" data-unit="2" data-mode="stand" data-wait="1" data-track="41"></canvas></div><h3>물음표</h3><p>승인이나 답변이 필요해요. 사람을 기다리는 세션이 있으면 물음표가 떠요.</p></div>
-    <div class="card"><div class="strip"><canvas class="sp" data-unit="2" data-mode="stand" data-dot="1" data-track="41"></canvas></div><h3>보라색 점</h3><p>확인하지 않은 완료가 있어요. 패널을 열어서 확인하면 사라져요.</p></div>
-    <div class="card"><div class="strip"><canvas class="sp" data-unit="2" data-mode="sleep" data-sleep="2" data-track="41"></canvas></div><h3>졸음</h3><p>10분 동안 아무 활동이 없으면 눈을 감고 졸아요. 새 작업이 시작되면 바로 깨요.</p></div>
+    <div class="card"><div class="strip"><canvas class="toto" data-size="76" data-mode="run" data-turn="0.12"></canvas></div><h3>작업 중</h3><p>몸 색이 파랑과 보라로 돌아요.</p></div>
+    <div class="card"><div class="strip"><canvas class="toto" data-size="76" data-mode="done"></canvas></div><h3>완료</h3><p>색이 빠지고 macOS 알림이 와요.</p></div>
+    <div class="card"><div class="strip"><canvas class="toto" data-size="76" data-mode="wait" data-turn="0.3"></canvas></div><h3>승인 대기</h3><p>몸 색이 주황과 노랑으로 바뀌어요.</p></div>
+    <div class="card"><div class="strip"><canvas class="toto" data-size="76" data-mode="dot"></canvas></div><h3>민트 초록</h3><p>확인하지 않은 완료가 있어요.</p></div>
+    <div class="card"><div class="strip"><canvas class="toto" data-size="76" data-mode="sleep"></canvas></div><h3>졸음</h3><p>10분 동안 쉬면 몸이 납작해지며 눈을 감고 졸아요.</p></div>
   </div>
 </section>
 
@@ -259,16 +270,16 @@
   <p class="eyebrow">기능</p>
   <h2 class="title">필요한 것만 보이게 했어요.</h2>
   <div class="fgrid">
-    <div class="card">
-      <div class="fv"><div class="glass sessions"><div class="row"><div class="head"><span>결제 모듈 리팩터링</span><span>37%</span></div><div class="track"><i style="width:37%"></i></div></div><div class="row"><div class="head"><span>로그인 버그 수정</span><span>18%</span></div><div class="track"><i style="width:18%"></i></div></div><div class="row"><div class="head"><span>문서 정리</span><span>8%</span></div><div class="track"><i style="width:8%"></i></div></div></div></div>
-      <h3>한 패널에 모든 세션</h3><p>제목, 컨텍스트 사용률, 막대만 보여요. 모델과 토큰 수는 마우스를 올렸을 때만 펼쳐져요. 승인이나 답변이 필요한 세션은 맨 위로 올라와요.</p>
+    <div class="card wide">
+      <div class="fv"><div class="glass sessions"><div class="row hover"><div class="head"><span>결제 모듈 리팩터링</span><span>37%</span></div><div class="track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="row"><div class="head"><span>로그인 버그 수정</span><span>18%</span></div><div class="track"><i style="width:18%"></i></div></div><div class="row"><div class="head"><span>문서 정리</span><span>8%</span></div><div class="track"><i style="width:8%"></i></div></div></div></div>
+      <div class="ftext"><h3>한 패널에 모든 세션</h3><p>제목, 컨텍스트 사용률, 막대만 보여요. 모델과 토큰 수는 마우스를 올렸을 때만 펼쳐져요. 승인이나 답변이 필요한 세션은 맨 위로 올라와요.</p></div>
     </div>
     <div class="card">
       <div class="fv"><div class="glass usage"><div class="sec"><h4>Claude</h4><div class="use"><span>5시간</span><div class="track"><i style="width:42%"></i></div><b>42%</b><em>3시간 12분</em></div><div class="use"><span>주간</span><div class="track"><i style="width:18%"></i></div><b>18%</b><em>4일 2시간</em></div></div><div class="sec"><h4>Codex</h4><div class="use"><span>5시간</span><div class="track"><i style="width:12%"></i></div><b>12%</b><em>4시간 40분</em></div><div class="use"><span>주간</span><div class="track"><i style="width:6%"></i></div><b>6%</b><em>6일 1시간</em></div></div></div></div>
-      <h3>AI 사용량도 한눈에</h3><p>Claude와 Codex의 5시간과 주간 한도를 패널 맨 위에 고정해서 보여줘요. 얼마나 썼는지와 초기화까지 남은 시간을 알 수 있어요.</p>
+      <h3>AI 사용량도 한눈에</h3><p>Claude와 Codex의 5시간과 주간 한도를 패널 맨 위에 고정해서 보여줘요. 얼마나 썼는지와 초기화까지 남은 시간을 알 수 있고, 한도에 가까워지면 막대 색이 바뀌어요.</p>
     </div>
     <div class="card">
-      <div class="fv"><div class="glass sessions"><div class="row hover"><div class="head"><span>결제 모듈 리팩터링</span><span>37%</span></div><div class="track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="row"><div class="head"><span>로그인 버그 수정</span><span>18%</span></div><div class="track"><i style="width:18%"></i></div></div><div class="row"><div class="head"><span>문서 정리</span><span>8%</span></div><div class="track"><i style="width:8%"></i></div></div></div></div>
+      <div class="fv"><div class="glass sessions"><div class="row open"><div class="head"><span>결제 모듈 리팩터링</span><span>37%</span></div><div class="track"><i style="width:37%"></i></div><div class="more"><span>claude-sonnet-5-5</span><span>372K / 1M</span></div></div><div class="row open"><div class="head"><span>로그인 버그 수정</span><span>18%</span></div><div class="track"><i style="width:18%"></i></div><div class="more"><span>claude-opus-4-8</span><span>181K / 1M</span></div></div><div class="row open"><div class="head"><span>문서 정리</span><span>8%</span></div><div class="track"><i style="width:8%"></i></div><div class="more"><span>claude-haiku-5-5</span><span>75K / 1M</span></div></div></div></div>
       <h3>컨텍스트 사용률</h3><p>모델마다 다른 컨텍스트 창 크기를 반영해서 사용률을 계산해요.</p>
     </div>
     <div class="card">
@@ -279,7 +290,8 @@
       <div class="fv"><div class="fv-stack"><div class="fv-noti"><b>Desktoto</b><span>작업이 끝났어요</span><small>결제 모듈 리팩터링</small></div><div class="fv-noti"><b>Desktoto</b><span>승인이 필요해요</span><small>로그인 버그 수정</small></div></div></div>
       <h3>알림을 눌러도 이동해요</h3><p>macOS 알림으로 &ldquo;작업이 끝났어요&rdquo;, &ldquo;승인이 필요해요&rdquo;, &ldquo;답변이 필요해요&rdquo;를 알려요. 알림을 누르면 해당 세션으로 가요.</p>
     </div>
-    <div class="card">
+    <div class="card full">
+      <div class="ftext"><h3>내 취향대로 꾸밀 수 있어요</h3><p>색상은 흰색과 컬러, 테마는 라이트와 다크와 시스템 설정에 맞춤 중에서 고를 수 있어요. Liquid Glass는 투명에서 틴트까지 5단계이고, 패널에는 사용량과 컨텍스트 중 보고 싶은 것만 띄울 수도 있어요.</p></div>
       <div class="fv"><div class="menu-wrap">
         <div class="menu">
           <div class="mi checked"><span></span><span>로그인 시 자동 실행</span></div>
@@ -287,16 +299,15 @@
           <div class="mi checked"><span></span><span>Codex 연동</span></div>
           <div class="mi checked"><span></span><span>Claude 연동</span></div>
           <div class="msep"></div>
-          <div class="mi sub"><span></span><span>표시할 패널</span></div>
-          <div class="mi sub on"><span></span><span>색상</span></div>
+          <div class="mi sub on"><span></span><span>표시할 패널</span></div>
+          <div class="mi sub"><span></span><span>색상</span></div>
           <div class="mi sub"><span></span><span>테마</span></div>
           <div class="mi sub"><span></span><span>Liquid Glass</span></div>
           <div class="msep"></div>
           <div class="mi"><span></span><span>Desktoto 종료</span><span class="key">&#8984;Q</span></div>
         </div>
-        <div class="sub-menu"><div class="mi checked"><span></span><span>흰색</span></div><div class="mi"><span></span><span>컬러</span></div></div>
+        <div class="sub-menu"><div class="mi checked"><span></span><span>사용량</span></div><div class="mi checked"><span></span><span>컨텍스트</span></div></div>
       </div></div>
-      <h3>내 취향대로 꾸밀 수 있어요</h3><p>색상은 흰색과 컬러, 테마는 라이트와 다크와 시스템 설정에 맞춤 중에서 고를 수 있어요. Liquid Glass는 투명에서 틴트까지 5단계예요.</p>
     </div>
   </div>
 </section>
@@ -318,75 +329,70 @@
 <section class="slide" id="notice">
   <p>알아 두세요</p>
   <p>Desktoto는 수익을 목적으로 하지 않는 무료 프로젝트예요. 광고도, 결제도 없어요.</p>
-  <p>캐릭터는 Claude Code의 마스코트에서 영감을 받은 팬 작품이에요. Claude는 Anthropic의, Codex는 OpenAI의 상표이고, Desktoto는 두 회사의 공식 제품이 아니에요.</p>
+  <p>Claude는 Anthropic의, Codex는 OpenAI의 상표이고, Desktoto는 어느 회사의 공식 제품도 아니에요.</p>
 </section>
 
 <script>
-/* 캐릭터 그리기: 앱(SpriteRenderer.swift)과 같은 격자와 도형이다. 한 칸이 화면 픽셀 정수 배가 되도록 맞춘다. */
+/* 캐릭터 그리기: 랜딩 페이지(apps/web/index.html)의 상태 줄과 같은 코드이고, 앱의 TotoShape.swift, TotoArt.swift와 같은 모양이다.
+   만두 모양 몸, 옅은 테두리, 12도 기울어진 알약 눈이다. README는 정지 이미지라서 눈 깜빡임과 몸 색 회전은 한 프레임으로 고정한다.
+   data-mode: run(작업 중), wait(승인 대기), done(완료), dot(민트 초록), sleep(졸음), stand(기본). data-size: 몸 크기(px). data-turn: 몸 색 회전(0에서 1). */
 (function () {
-  var UNITS_WIDE = 41, CHAR_W = 24, TRACK = 36, TRAVEL = TRACK - CHAR_W;
-  var STAND_X = Math.floor((UNITS_WIDE - CHAR_W) / 2);
-  var RUN_FRAMES = 24, LEG_FRAMES = 3, FW_FRAMES = 24, MAX_BOB = 2;
-  var LEG_COLUMNS = [4, 7, 15, 18];
-  var Z_SMALL = ["1111", "0010", "0100", "1111"];
-  var Z_BIG = ["11111", "00010", "00100", "01000", "11111"];
-  var Z_STEPS = [[[0, 0, 11]], [[0, 0, 9]], [[0, 0, 9], [1, 2, 3]], [[0, 0, 9], [1, 2, 3]], [[1, 2, 2]], []];
-  var QUESTION = ["01110", "10001", "00001", "00110", "00100", "00000", "00100"];
-  var REACHES = [19, 15, 11];
-  var SPARK_COLORS = ["#ff9ec7", "#ffd973", "#9ed1ff", "#bda9ff", "#ffffff"];
+  var WORKING = ["#298ff5", "#385cf5", "#6145e0", "#944cf0", "#bd4ddb", "#6b70fa", "#298ff5"];
+  var WAITING = ["#ff8c26", "#ffad33", "#facc47", "#ff9e2e", "#f57a24", "#ffbd3d", "#ff8c26"];
+  var UNSEEN_DONE = ["#6be6b8", "#29ad87"];
+  var PAD = 2;
+
+  function addTotoPath(ctx, x, y, w, h) {
+    var p = function (fx, fy) { return [x + fx * w, y + fy * h]; };
+    var a = p(0.5, 0.94);
+    ctx.moveTo(a[0], a[1]);
+    [[[0.16, 0.95], [0.05, 0.88], [0.06, 0.7]], [[0.07, 0.36], [0.24, 0.07], [0.5, 0.07]], [[0.76, 0.07], [0.93, 0.36], [0.94, 0.7]], [[0.95, 0.88], [0.84, 0.95], [0.5, 0.94]]].forEach(function (c) {
+      var c1 = p(c[0][0], c[0][1]), c2 = p(c[1][0], c[1][1]), e = p(c[2][0], c[2][1]);
+      ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], e[0], e[1]);
+    });
+    ctx.closePath();
+  }
+
+  function drawEye(ctx, x, y, w, h) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(-12 * Math.PI / 180);
+    ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, Math.min(w, h) / 2); ctx.fill(); ctx.restore();
+  }
 
   function draw(canvas) {
-    var unit = +canvas.dataset.unit, wide = +canvas.dataset.track || UNITS_WIDE, dpr = 2;
-    var mode = canvas.dataset.mode, phase = +canvas.dataset.phase || 0;
-    var fwFrame = canvas.dataset.fw === undefined ? null : +canvas.dataset.fw;
-    canvas.width = wide * unit * dpr; canvas.height = 20 * unit * dpr;
-    canvas.style.width = wide * unit + "px"; canvas.style.height = 20 * unit + "px";
-    var ctx = canvas.getContext("2d"), scale = unit * dpr;
-    var fill = function (x, y, w, h, color, alpha) {
-      var l = Math.round(x * scale), t = Math.round(y * scale), r = Math.round((x + w) * scale), b = Math.round((y + h) * scale);
-      if (r <= l || b <= t) return;
-      ctx.globalAlpha = alpha === undefined ? 1 : alpha; ctx.fillStyle = color; ctx.fillRect(l, t, r - l, b - t); ctx.globalAlpha = 1;
-    };
-    var running = mode === "run", sleeping = mode === "sleep";
-    var legStep = phase / LEG_FRAMES, isLegA = Math.floor(legStep) % 2 === 0;
-    var ox = running ? phase / RUN_FRAMES * TRAVEL : STAND_X;
-    var oy = running ? MAX_BOB * (0.5 + 0.5 * Math.cos(Math.PI * legStep)) : (sleeping ? MAX_BOB + 1 : MAX_BOB);
+    var d = +canvas.dataset.size, mode = canvas.dataset.mode || "stand", turn = +canvas.dataset.turn || 0, dpr = 3;
+    var size = d + PAD * 2, cx = size / 2, cy = size / 2, r = d / 2, unit = d / 18;
+    canvas.width = size * dpr; canvas.height = size * dpr; canvas.style.width = size + "px"; canvas.style.height = size + "px";
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var isAsleep = mode === "sleep";
+    // 앱의 sleepySquash: 잠들면 폭 1.1배, 높이 0.74배로 바닥에 붙은 채 위가 내려앉는다.
+    var squashW = isAsleep ? 1.1 : 1, squashH = isAsleep ? 0.74 : 1;
+    var body = { x: cx - r * squashW, y: cy + r - r * 2 * squashH, w: r * 2 * squashW, h: r * 2 * squashH };
 
-    if (fwFrame !== null) {
-      var p = fwFrame / (FW_FRAMES - 1), eased = 1 - Math.pow(1 - p, 2), alpha = Math.max(0, 1 - Math.pow(p, 2.4));
-      var size = p < 0.45 ? 3 : (p < 0.8 ? 2 : 1), cx = wide / 2;
-      for (var i = 0; i < 14; i++) {
-        var angle = 2 * Math.PI * i / 14 + 0.3, radius = 8 + (REACHES[i % 3] - 8) * eased;
-        fill(cx + Math.cos(angle) * radius - size / 2, 9 + Math.sin(angle) * radius * 0.5 + 4 * p * p - size / 2, size, size, SPARK_COLORS[i % 5], alpha);
-      }
+    ctx.save();
+    ctx.beginPath(); addTotoPath(ctx, body.x, body.y, body.w, body.h);
+    ctx.fillStyle = "#000"; ctx.fill(); ctx.clip();
+    if (mode === "dot") {
+      var mint = ctx.createLinearGradient(body.x, body.y, body.x + body.w, body.y + body.h);
+      mint.addColorStop(0, UNSEEN_DONE[0]); mint.addColorStop(1, UNSEEN_DONE[1]);
+      ctx.fillStyle = mint; ctx.fillRect(body.x, body.y, body.w, body.h);
     }
-    if (running) {
-      [[2, 7, 3], [6, 4, 4], [10, 7, 3]].forEach(function (line) {
-        var end = ox - line[2], start = Math.max(0, end - line[1]);
-        if (end > start) fill(start, oy + line[0], end - start, 2, "#cccccc", 0.9);
-      });
+    if ((mode === "run" || mode === "wait") && ctx.createConicGradient) {
+      var colors = mode === "wait" ? WAITING : WORKING;
+      var g = ctx.createConicGradient(turn * Math.PI * 2, cx + r * 1.6, cy);
+      colors.forEach(function (c, i) { g.addColorStop(i / (colors.length - 1), c); });
+      ctx.globalAlpha = 0.85; ctx.fillStyle = g; ctx.fillRect(0, 0, size, size); ctx.globalAlpha = 1;
     }
-    var legs = sleeping ? [3, 3, 3, 3] : !running ? [4, 4, 4, 4] : (isLegA ? [5, 3, 5, 3] : [3, 5, 3, 5]);
-    var arms = !running ? [0, 0] : (isLegA ? [-1, 1] : [1, -1]);
-    LEG_COLUMNS.forEach(function (col, idx) { fill(ox + col, oy + 12, 2, legs[idx], "#ffffff"); });
-    fill(ox, oy + 6 + arms[0], 3, 3, "#ffffff");
-    fill(ox + 21, oy + 6 + arms[1], 3, 3, "#ffffff");
-    fill(ox + 3, oy, 18, 12, "#ffffff");
-    fill(ox + 6, oy + (sleeping ? 5 : 3), 2, sleeping ? 1 : 3, "#0d0d0d");
-    fill(ox + 16, oy + (sleeping ? 5 : 3), 2, sleeping ? 1 : 3, "#0d0d0d");
-
-    var bx = ox + CHAR_W + 1;
-    if (canvas.dataset.wait) {
-      QUESTION.forEach(function (line, r) { for (var c = 0; c < line.length; c++) if (line.charAt(c) === "1") fill(bx + c, r, 1, 1, "#ffcc59"); });
-    } else if (canvas.dataset.dot) {
-      fill(bx, 0, 4, 4, "#ad85ff");
-    } else if (sleeping) {
-      Z_STEPS[+canvas.dataset.sleep || 2].forEach(function (z) {
-        (z[0] ? Z_BIG : Z_SMALL).forEach(function (line, r) { for (var c = 0; c < line.length; c++) if (line.charAt(c) === "1") fill(bx + z[1] + c, z[2] + r, 1, 1, "#ffffff", 0.85); });
-      });
-    }
+    ctx.restore();
+    ctx.beginPath(); addTotoPath(ctx, body.x, body.y, body.w, body.h);
+    ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 0.35 * unit; ctx.stroke();
+    // 앱처럼 눈은 2.4 x 3.8칸, 두 눈 가운데 사이 4.2칸이고, 몸 가운데보다 몸 높이의 8%만큼 아래에 둔다. 잠들면 가는 선으로 감는다.
+    ctx.fillStyle = "#fff";
+    var w = 2.4 * unit * (isAsleep ? 1.3 : 1), h = 3.8 * unit * (isAsleep ? 0.18 : 1);
+    var ey = body.y + body.h / 2 + 0.08 * body.h + (isAsleep ? 0.8 * unit : 0);
+    drawEye(ctx, cx - 2.1 * unit, ey, w, h); drawEye(ctx, cx + 2.1 * unit, ey, w, h);
   }
-  document.querySelectorAll("canvas.sp").forEach(draw);
+  document.querySelectorAll("canvas.toto").forEach(draw);
 })();
 </script>
 </body>
