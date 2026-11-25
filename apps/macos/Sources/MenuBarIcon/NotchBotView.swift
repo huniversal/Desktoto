@@ -232,8 +232,9 @@ public struct NotchBotView<Content: View, Header: View>: View {
     }
 
     private var eyes: some View {
-        let eyeWidth = height * 0.12
-        let eyeHeight = height * 0.24
+        // 세로로 긴 알약보다 둥근 쪽에 가까운 눈(폭:높이 약 1:1.6)
+        let eyeWidth = height * 0.13
+        let eyeHeight = height * 0.21
         let travelX = botWidth * 0.12
         let travelY = height * 0.1
         let gazeX = model.gazeX
@@ -311,7 +312,8 @@ public struct NotchBotView<Content: View, Header: View>: View {
 }
 
 /// 노치 봇 뷰의 고정 값. 제네릭 뷰에는 정적 저장 속성을 둘 수 없어서 따로 둔다.
-private enum NotchBotStyle {
+/// 노치 봇 뷰의 고정 값. 물방울 전환(PlacementTransitionView)도 같은 몸 색을 쓴다.
+enum NotchBotStyle {
     static let collapsedRadius: CGFloat = 12
     static let expandedRadius: CGFloat = 22
     /// 작업 중 봇 몸 색. 하늘빛 파랑에서 남색, 보라, 자줏빛 보라까지 블루 퍼플 계열 안에서 폭넓게 오간다.

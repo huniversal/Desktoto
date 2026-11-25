@@ -16,8 +16,8 @@ private let gradientColors: [NSColor] = [
     NSColor(srgbRed: 0.74, green: 0.30, blue: 0.86, alpha: 1)
 ]
 // 눈 크기와 간격(그림 폭 대비). 작은 크기에서도 뭉개지지 않게 노치 봇 눈보다 조금 굵다.
-private let eyeWidthRatio: CGFloat = 0.14
-private let eyeHeightRatio: CGFloat = 0.31
+private let eyeWidthRatio: CGFloat = 0.15
+private let eyeHeightRatio: CGFloat = 0.24
 private let eyeDistanceRatio: CGFloat = 0.21
 private let eyeTiltDegrees: CGFloat = -12
 

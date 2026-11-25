@@ -39,7 +39,6 @@ final class MenuBarIconController {
     private var behaviorTimer: Timer?
     private var displayedExpression = EyeExpression.open
     /// 미니게임 중에는 실제 캐릭터를 빈 이미지로 바꾸고, 같은 모양의 캐릭터가 오버레이에서 달린다.
-    private var isGameMode = false
     private var lastMousePoint: NSPoint?
     private var lastMouseTime: TimeInterval = 0
     private var mouseSpeed: Double = 0
@@ -64,15 +63,11 @@ final class MenuBarIconController {
     private static func pointHeight(for character: IconCharacter) -> CGFloat {
         switch character {
         case .claude: IconImageSet.defaultPointHeight
-        // 토토는 픽셀 격자가 없는 원이라 기본 높이보다 조금 크게 그려도 흐려지지 않는다. 메뉴바보다 커지지는 않게 한다.
-        case .toto: min(totoPointHeight, maxMenuBarHeight())
+        // 토토는 픽셀 격자가 없는 도형이라 크게 그려도 흐려지지 않는다. 메뉴바 높이를 다 써서 최대한 크게 그린다.
+        case .toto: maxMenuBarHeight()
         case .chiikawa, .hachiware, .usagi: maxMenuBarHeight()
         }
     }
-
-    /// 토토 원 지름(pt). 원은 캔버스 높이 20칸 중 18칸을 차지해서, 이미지 높이는 지름의 20/18배다.
-    private static let totoDiameter: CGFloat = 28
-    private static let totoPointHeight = totoDiameter * 20 / 18
 
     /// 그림 캐릭터 위와 아래에 비워 두는 여백(pt)
     private static let verticalMargin: CGFloat = 1
@@ -116,14 +111,14 @@ final class MenuBarIconController {
         )
         // 캐릭터가 바뀌면 이미지 높이도 달라지므로 이미지 묶음을 새로 만들고, 돌고 있는 타이머는 새 캐릭터의 주기로 다시 만든다.
         if appearance.character != images.appearance.character {
+            // 남은 폭죽은 이전 캐릭터의 전체 폭으로 그려져서, 폭이 좁은 캐릭터(토토)의 아이콘을 넓힌다. 바꾸는 순간 끝낸다.
+            animation.stopFirework()
             images = Self.createImageSet(appearance: appearance)
             if animationTimer != nil { startAnimation() }
             stopIdleAnimation()
         } else {
             images.update(appearance: appearance)
         }
-        guard !isGameMode else { return }
-
         // 그림 캐릭터는 쉬는 동작을 하지 않고 대기 클립만 돌린다.
         // 토토는 쉬는 장면 없이 눈을 감고 잔다.
         let rest: IconRest? = if images.hasIdleAnimation { nil } else if state.character == .toto, state.rest != nil { .sleeping } else { state.rest }
@@ -176,24 +171,6 @@ final class MenuBarIconController {
 
     /// 눌러서 끄는 동안에는 mouseMoved가 오지 않으므로 드래그도 같은 움직임으로 본다.
     private static let pointerMovementEvents: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
-
-    /// 게임이 시작되면 메뉴바 캐릭터를 같은 폭의 빈 이미지로 바꿔 자리를 지키고, 끝나면 지금 상태대로 되돌린다.
-    func setGameMode(_ isOn: Bool) {
-        guard isOn != isGameMode else { return }
-        isGameMode = isOn
-        if isOn {
-            animationTimer?.invalidate()
-            animationTimer = nil
-            stopSleepAnimation()
-            stopFishingAnimation()
-            stopRestAnimation()
-            stopGazing()
-            stopIdleAnimation()
-            button?.image = NSImage(size: images.image(for: .standing).size)
-        } else {
-            apply(state)
-        }
-    }
 
     private static func createBehavior() -> IdleBehavior {
         IdleBehavior(now: ProcessInfo.processInfo.systemUptime, blinkDelay: Double.random(in: IdleBehavior.blinkDelayRange))

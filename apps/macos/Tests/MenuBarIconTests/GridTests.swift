@@ -61,3 +61,18 @@ import Testing
     #expect(wrapFrameIndex(25, count: 24) == 1)
     #expect(wrapFrameIndex(-1, count: 24) == 23)
 }
+
+@Test func totoUsesNarrowVisibleRangeCenteredOnCircle() {
+    let range = CharacterGrid.visibleRange(for: .toto)
+    #expect(range.width == 20)
+    // 원(지름 18칸)의 가운데가 잘라 낸 범위의 가운데와 같다.
+    #expect(range.minX + range.width / 2 == CharacterGrid.standingOriginX + CharacterGrid.characterWidth / 2)
+    #expect(CharacterGrid.visibleRange(for: .claude).width == CharacterGrid.canvasWidth)
+}
+
+@Test func totoDrawsNoBadgeAndShowsUnseenDoneWithBodyColor() {
+    // 토토는 완료 점이나 물음표를 그리지 않는다. 확인하지 않은 완료는 몸 색(TotoArt)으로 보여 준다.
+    let appearance = IconAppearance(hasUnseenDone: true, isWaiting: true, character: .toto)
+    #expect(IconScene.pieces(frame: .standing, appearance: appearance).isEmpty)
+    #expect(IconScene.pieces(frame: .sleeping(frame: 0), appearance: appearance).isEmpty)
+}

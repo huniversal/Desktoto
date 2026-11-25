@@ -6,6 +6,7 @@ import Domain
 import Feedback
 import Foundation
 import MenuBarIcon
+import OSLog
 import Preferences
 import SessionMonitoring
 import SessionPanel
@@ -43,7 +44,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let loginItem = LoginItem()
     private let fileSystem: any FileSystem
     private let menuBuilder = SettingsMenuBuilder()
-    private let gameHost = GameHost()
     private let panelController: PanelController
     private let iconController: MenuBarIconController
     // NSSound는 재생이 끝나기 전에 해제되면 멈추므로 들고 있는다. 완료와 승인 대기가 동시에 나도 서로 끊지 않게 따로 둔다.
@@ -54,6 +54,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var unseenFinishedIDs: Set<String> = []
     private var runningCount = 0
     private let notchBotController = NotchBotWindowController()
+    private let placementTransition = PlacementTransitionController()
+    /// 표시 위치를 바꿀 때마다 1씩 늘린다. 늦게 끝난 이전 요청의 전환 마무리나 아이콘 위치 기다림은 이 값이 다르면 무시한다.
+    private var placementRequest = 0
     private var isWaiting = false
     private var rest: IconRest?
 
@@ -240,14 +243,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 isFeedbackAvailable: feedbackWindowController != nil
             )
             let menu = menuBuilder.makeMenu(entries: SettingsMenu.makeEntries(settings: settings, environment: environment))
-            // 미니게임(실험): 설정 메뉴 맨 위에 시작 항목을 둔다.
-            let gameItem = NSMenuItem(title: "셔틀콕 게임", action: #selector(handleGameMenuClick), keyEquivalent: "")
-            gameItem.target = self
-            menu.insertItem(gameItem, at: 0)
-            menu.insertItem(.separator(), at: 1)
             // 노치 봇 모드에서는 메뉴바 아이콘이 숨어 있으니 봇 바로 아래에 메뉴를 띄운다.
             if isNotchBotActive, let botFrame = notchBotController.botFrame {
-                menu.popUp(positioning: nil, at: NSPoint(x: botFrame.minX, y: botFrame.minY), in: nil)
+                // 메뉴가 메뉴바 줄에 조금이라도 걸치면 macOS가 메뉴를 잘라 첫 항목을 숨기고 스크롤 화살표를 단다.
+                // 봇 아래 끝은 노치에 맞춰 1~2pt 달라질 수 있어서, 메뉴바를 뺀 화면 영역의 맨 위보다 조금 아래에 띄운다.
+                let screenTop = NSScreen.screens.first(where: { $0.frame.contains(botFrame.origin) })?.visibleFrame.maxY ?? botFrame.minY
+                let menuTop = min(botFrame.minY, screenTop) - 4
+                menu.popUp(positioning: nil, at: NSPoint(x: botFrame.minX, y: menuTop), in: nil)
             } else {
                 statusItem.menu = menu
                 statusItem.button?.performClick(nil)
@@ -286,9 +288,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             settings.colorMode = colorMode
             applyIconState()
         case .selectPlacement(let placement):
+            let wasNotch = isNotchBotActive
             settings.iconPlacement = placement
             closePanel()
-            applyPlacement()
+            changePlacement(wasNotch: wasNotch)
         case .selectCharacter(let character):
             settings.iconCharacter = character
             applyIconState()
@@ -326,19 +329,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - 패널
-
-    @objc private func handleGameMenuClick() {
-        closePanel()
-        startGame(RallyScene())
-    }
-
-    /// 게임을 시작한다. 시작되면 메뉴바의 실제 캐릭터는 숨기고, 끝나면 되돌린다.
-    private func startGame(_ scene: any GameScene) {
-        gameHost.onFinish = { [weak self] in self?.iconController.setGameMode(false) }
-        if gameHost.start(scene: scene, buttonWindow: statusItem.button?.window, colorMode: settings.colorMode) {
-            iconController.setGameMode(true)
-        }
-    }
 
     @objc private func handleStatusItemClick() {
         handleCharacterClick(isRightClick: NSApp.currentEvent?.type == .rightMouseUp)
@@ -611,8 +601,105 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 메뉴바 캐릭터와 노치 봇 중 하나만 보이게 한다.
     private func applyPlacement() {
         let isNotch = isNotchBotActive
+        // 노치로 옮겨 갈 때 숨겨 둔 아이콘 그림을, 메뉴바 아이콘을 다시 보일 때 되살린다.
+        if !isNotch { statusItem.button?.alphaValue = 1 }
         statusItem.isVisible = !isNotch
         notchBotController.setVisible(isNotch)
+    }
+
+    private static let placementLog = Logger(subsystem: "com.huniverse.desktoto", category: "placement")
+
+    /// 노치와 메뉴바 사이를 바꿀 때 물방울 전환을 재생한 뒤 실제로 바꾼다.
+    /// 움직임 줄이기 설정이 켜져 있거나, 위치가 그대로거나, 노치 좌표를 못 얻으면 바로 바꾼다.
+    private func changePlacement(wasNotch: Bool) {
+        let isNotch = isNotchBotActive
+        let log = Self.placementLog
+        placementRequest += 1
+        let request = placementRequest
+        // 진행 중인 전환이 있으면 화면에서 걷어 낸다. 그 마무리는 요청 번호가 달라서 끝 화면을 보이게 하지 않는다.
+        placementTransition.finishNow()
+        guard wasNotch != isNotch else {
+            log.notice("전환 생략: 표시 위치가 그대로다 (notch=\(isNotch))")
+            applyPlacement()
+            return
+        }
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
+            log.notice("전환 생략: 움직임 줄이기 설정")
+            applyPlacement()
+            return
+        }
+        guard let notch = notchBotController.notchGeometry else {
+            log.notice("전환 생략: 노치 좌표 없음")
+            applyPlacement()
+            return
+        }
+        if isNotch {
+            // 메뉴바 → 노치: 메뉴바 아이콘 자리에서 출발한다. 출발하는 순간 아이콘 그림을 숨기고, 끝나면 노치 봇으로 바꾼다.
+            guard let iconFrame = statusItem.button?.window?.frame else {
+                log.notice("전환 생략(메뉴바→노치): 메뉴바 아이콘 창 없음")
+                applyPlacement()
+                return
+            }
+            log.notice("전환 재생(메뉴바→노치): icon=\(NSStringFromRect(iconFrame), privacy: .public) notchMaxX=\(notch.maxX)")
+            statusItem.button?.alphaValue = 0
+            placementTransition.play(toNotch: true, notch: notch, iconFrame: iconFrame, tint: transitionTint) { [weak self] in
+                // 더 새로운 요청에 밀려난 전환은 끝 화면을 보이게 하지 않는다. 새 전환의 마무리가 맡는다.
+                guard let self, request == self.placementRequest else { return }
+                // 메뉴바 아이콘은 꺼질 때 macOS가 잠깐 흐려지며 사라지게 한다. 그동안 투명도를 되돌리면 토토가 다시 보이므로,
+                // 투명도는 그대로 두고 다음에 메뉴바 아이콘을 보일 때 applyPlacement가 되돌린다.
+                self.applyPlacement()
+            }
+        } else {
+            // 노치 → 메뉴바: 노치 봇을 바로 숨기고(물방울이 대신 그린다), 메뉴바 아이콘은 그림 없이 자리만 먼저 잡아 도착 좌표를 얻는다.
+            notchBotController.setVisible(false)
+            statusItem.button?.alphaValue = 0
+            statusItem.isVisible = true
+            // 새로 켠 메뉴바 아이콘은 macOS가 자리를 잡는 데 잠깐 걸린다. 그 전에 읽으면 예전 자리나 화면 밖 좌표가 나와
+            // 물방울이 엉뚱한 곳으로 날아가므로, 좌표가 메뉴바 줄 안에 들어올 때까지 기다린 뒤 재생한다.
+            waitForIconFrame(notch: notch, attemptsLeft: Self.iconFrameAttempts) { [weak self] iconFrame in
+                // 기다리는 사이 다시 표시 위치를 바꿨으면 이 기다림은 버린다.
+                guard let self, request == self.placementRequest else { return }
+                guard let iconFrame else {
+                    log.notice("전환 생략(노치→메뉴바): 메뉴바 아이콘 자리를 못 얻음 (마지막 좌표 \(NSStringFromRect(self.statusItem.button?.window?.frame ?? .zero), privacy: .public))")
+                    self.applyPlacement()
+                    return
+                }
+                log.notice("전환 재생(노치→메뉴바): icon=\(NSStringFromRect(iconFrame), privacy: .public) notchMaxX=\(notch.maxX)")
+                self.placementTransition.play(toNotch: false, notch: notch, iconFrame: iconFrame, tint: self.transitionTint) { [weak self] in
+                    guard let self, request == self.placementRequest else { return }
+                    self.statusItem.button?.alphaValue = 1
+                    self.applyPlacement()
+                }
+            }
+        }
+    }
+
+    /// 전환하는 동안 물방울이 띨 몸 색. 노치 봇과 토토처럼 승인 대기가 작업 중보다 먼저 보인다.
+    private var transitionTint: PlacementTransitionView.Tint {
+        if isWaiting { return .waiting }
+        return runningCount > 0 ? .working : .none
+    }
+
+    /// 메뉴바 아이콘 좌표를 기다리는 횟수와 간격. 최대 약 0.5초다.
+    private static let iconFrameAttempts = 16
+    private static let iconFrameInterval: TimeInterval = 0.03
+
+    /// 메뉴바 아이콘이 노치 오른쪽 메뉴바 줄 안에 자리 잡으면 그 좌표를, 끝내 못 잡으면 nil을 넘긴다.
+    private func waitForIconFrame(notch: PlacementTransitionController.NotchGeometry, attemptsLeft: Int, completion: @escaping (NSRect?) -> Void) {
+        if let frame = statusItem.button?.window?.frame, frame.width > 0,
+           frame.minX >= notch.maxX, frame.maxY >= notch.top - 2, frame.minY >= notch.top - notch.height - 4 {
+            completion(frame)
+            return
+        }
+        guard attemptsLeft > 0 else {
+            completion(nil)
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.iconFrameInterval) { [weak self] in
+            MainActor.assumeIsolated {
+                self?.waitForIconFrame(notch: notch, attemptsLeft: attemptsLeft - 1, completion: completion)
+            }
+        }
     }
 
     /// 유리 패널을 띄울 기준 영역. 메뉴바 아이콘이다.

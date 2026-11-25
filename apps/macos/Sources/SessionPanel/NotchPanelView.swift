@@ -55,7 +55,8 @@ private enum NotchPanelStyle {
     static let smallFont = Font.system(size: 10)
     static let rowSpacing: CGFloat = 5
     static let usageLabelWidth: CGFloat = 24
-    static let percentWidth: CGFloat = 30
+    /// "100%"까지 한 줄에 들어가는 폭
+    static let percentWidth: CGFloat = 34
     static let usageCardWidth: CGFloat = 118
     /// 세션 카드에 한 번에 보여 줄 줄 수. 넘치면 카드 안에서 스크롤한다.
     static let visibleSessionCount = 2
@@ -111,6 +112,9 @@ private struct NotchUsageCard: View {
             Text(PanelText.percent(window.usedRatio))
                 .font(NotchPanelStyle.bodyFont.weight(.medium))
                 .monospacedDigit()
+                // 100%가 되어도 줄이 바뀌지 않게 한 줄로 고정한다.
+                .lineLimit(1)
+                .fixedSize()
                 .frame(width: NotchPanelStyle.percentWidth, alignment: .trailing)
         }
     }

@@ -68,6 +68,8 @@ enum IconScene {
 
     /// 그림 캐릭터의 배지. 치이카와는 달릴 때 오른쪽으로 이동해서 배지도 따라가고, 나머지는 서 있는 자리에 둔다.
     private static func pictureBadgePieces(frame: IconFrame, appearance: IconAppearance) -> [IconPiece] {
+        // 토토는 표시를 따로 그리지 않는다. 승인 대기, 확인하지 않은 완료 모두 몸 색으로 보여 준다(TotoArt).
+        if appearance.character == .toto { return [] }
         switch frame {
         case .running(let phase) where appearance.character == .chiikawa:
             return badgePieces(appearance.badge, characterOriginX: RunningFrame(phase: phase).originX)
