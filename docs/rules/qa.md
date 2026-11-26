@@ -30,6 +30,9 @@ GitHub Releases 페이지에는 "Pre-release"로 보인다.
    git log --oneline v이전버전..origin/develop
    ```
 
+   이 변경으로 추가되거나 바뀌거나 없어진 앱 동작이 [QA 시나리오](../qa/scenarios.md)에 반영되어 있는지 확인한다.
+   기능 PR에서 함께 고치는 것이 원칙이고, 빠진 것이 있으면 rc 태그 전에 시나리오를 고쳐 develop에 머지한다.
+
 2. **rc 태그**: develop의 릴리스 후보 커밋에 rc 태그를 단다. 같은 버전의 첫 후보는 `rc.1`이다.
 
    ```bash
