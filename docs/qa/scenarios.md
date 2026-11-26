@@ -31,9 +31,9 @@
 
 | ID | 절차 | 기대 결과 | smoke | 근거 |
 |---|---|---|---|---|
-| ICON-01 | 토토로 두고 Claude Code 세션에 작업을 시킨다 | 작업하는 동안 토토의 몸 색이 파랑과 보라로 돈다 | | `apps/web/index.html` 상태 섹션 |
-| ICON-02 | 토토로 두고 세션이 권한 승인을 기다리게 한다 | 몸 색이 주황과 노랑으로 바뀐다 | | `apps/web/index.html` 상태 섹션 |
-| ICON-03 | 작업이 끝날 때까지 패널을 열지 않는다 | 색이 빠지고 확인하지 않은 완료를 뜻하는 민트 초록 점이 생긴다. 패널을 열면 점이 사라진다 | ✅ | `apps/web/index.html` 상태 섹션, `docs/tasks/11/verification.md` |
+| ICON-01 | 토토로 두고 Claude Code 세션에 작업을 시킨다 | 작업하는 동안 토토의 몸 색이 파랑과 보라로 돈다 | | `apps/macos/Sources/MenuBarIcon/TotoArt.swift`, `apps/web/index.html` 상태 섹션 |
+| ICON-02 | 토토로 두고 세션이 권한 승인을 기다리게 한다 | 몸 색이 주황과 노랑으로 바뀐다 | | `apps/macos/Sources/MenuBarIcon/TotoArt.swift`, `apps/web/index.html` 상태 섹션 |
+| ICON-03 | 토토로 두고 작업이 끝날 때까지 패널을 열지 않는다 | 작업 중 색이 빠지고, 확인하지 않은 완료를 뜻하는 민트 초록 몸 색으로 바뀐다. 패널을 열면 민트 초록이 사라진다 (Claude 캐릭터는 아이콘에 점이 생기고 패널을 열면 사라진다) | ✅ | `apps/macos/Sources/MenuBarIcon/TotoArt.swift`, `docs/tasks/11/verification.md` 실제 이벤트 확인 |
 | ICON-04 | 작업이 없는 상태에서 120초 동안 캐릭터를 누르지 않는다 | 토토는 졸고, Claude 캐릭터는 여러 쉬는 동작 중 하나를 한다. 캐릭터를 누르면 바로 깬다 | | `apps/macos/Sources/Desktoto/SleepPolicy.swift`, `apps/macos/Sources/Desktoto/MenuBarIconController.swift`, `docs/tasks/61/spec.md` AC-6, AC-9 |
 | ICON-05 | 우클릭 메뉴의 `캐릭터`에서 토토, Claude, 치이카와, 하치와레, 우사기를 차례로 고르고 앱을 다시 켠다 | 고를 때마다 상단바 캐릭터가 바뀌고, 다시 켜도 마지막에 고른 캐릭터가 유지된다 | | `apps/macos/Sources/Preferences/SettingsMenu.swift`, `docs/tasks/65/spec.md` AC-1 |
 | ICON-06 | Claude 캐릭터로 두고 작업이 없을 때 마우스를 캐릭터 주변에서 움직인다 | 눈이 마우스 방향을 따라가고, 캐릭터 바로 근처에서는 정면을 본다 | | `docs/tasks/61/spec.md` AC-1 |
