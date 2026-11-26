@@ -1,0 +1,123 @@
+# 작업 명세: [Docs] 릴리스 QA 프로세스 구축
+
+## 연결 정보
+
+- 이슈: #82 / https://github.com/huniversal/Desktoto/issues/82
+- 브랜치: feat/qa-process/#82
+- specRevision: 5
+- 대상 ai-run 원본: N/A (프로세스 문서 작업)
+
+## 목적
+
+지금은 이슈 하나를 검증하는 구조(명세의 AC와 검증 표, PR의 실행 결과)만 있다.
+릴리스 전에 제품 전체를 보는 회귀 확인, 결함 기록과 재확인, 출시 판단 기준이 없어서
+이슈마다 통과한 변경이 합쳐졌을 때 다른 기능이 깨져도 사용자에게 그대로 나갈 수 있다.
+릴리스 직전에 실제 릴리스 산출물로 제품 전체를 확인하는 QA 절차와, 그 절차에 쓸 시나리오, 결함 템플릿을 만든다.
+
+## 작업 범위
+
+### 포함
+
+- `docs/rules/qa.md` (새 파일): 릴리스 QA 절차, 결함 심각도, 종료 기준, 릴리스 종류별 QA 범위, Notion 사본 기록 규칙
+- Notion `QA 데이터베이스`: 속성(`선택`, `진행 상태`) 추가와 `릴리스 QA`, `QA 시나리오` 사본 페이지 작성
+- `docs/qa/scenarios.md` (새 파일): 현재 앱 기능 기준의 핵심 시나리오 체크리스트 (형식과 실제 시나리오 내용 모두)
+- `.github/ISSUE_TEMPLATE/bug_report.md` (새 파일): 결함 이슈 템플릿
+- `docs/ci.md`: 릴리스 절차를 "develop에 rc 태그 → QA → main 머지 → 정식 태그"로 갱신
+- `AGENTS.md`: 필독 문서에 QA 규칙 링크 추가
+- `.agents/skills/release-qa/SKILL.md` (새 파일)와 `.claude/commands/release-qa.md` (심볼릭 링크): 릴리스 QA 스킬과 `/release-qa` 명령
+- `AGENTS.md` 스킬 라우팅과 `CLAUDE.md` 슬래시 명령 목록에 `release-qa` 추가
+- `.github/pull_request_template.md`: 앱 동작을 바꾼 PR에서 QA 시나리오를 갱신했는지 확인하는 체크 항목 추가
+
+### 제외
+
+- 앱 코드, CI 워크플로(`.github/workflows/*`), 릴리스 스크립트 변경
+- 릴리스별 QA 이슈 전용 템플릿 (QA 이슈 본문은 `docs/qa/scenarios.md`에서 복사)
+- 실제 rc 태그 발행과 첫 QA 실행 (다음 릴리스에서 이 문서로 진행)
+- 자동화된 UI 테스트, 테스트 관리 도구 도입
+- `docs/rules/workflow.md`의 이슈 단위 검증 규칙 변경
+- 릴리스 버전 변경 (문서와 템플릿만 바꾸므로 develop 머지로 끝남)
+
+## 설계 결정
+
+- 파일 구조와 로직의 책임
+  - `docs/rules/qa.md`는 규칙(언제, 무엇을, 어떤 기준으로)만 둔다. 다른 규칙 문서(`workflow.md`, `git-convention.md`)와 같은 위치다.
+  - `docs/qa/scenarios.md`는 기능이 바뀔 때마다 갱신되는 체크리스트라 규칙과 분리한다.
+  - 릴리스별 실행 결과는 문서로 커밋하지 않고 GitHub 이슈에 남긴다. 릴리스마다 브랜치와 PR을 만들지 않기 위함이다.
+- 상태와 데이터 흐름: N/A (문서 작업)
+- 선택한 방식과 이유
+  - QA 시점: 릴리스 직전. 이슈 단위 검증은 기존 흐름이 맡고, 릴리스 QA는 이슈들이 합쳐진 뒤의 회귀 확인에 집중한다.
+  - QA 대상: develop의 릴리스 후보 커밋에 `vX.Y.Z-rc.N` 태그를 달아 `release.yml`이 만든 dmg와 zip. 로컬 빌드로는 ad-hoc 서명, Gatekeeper 경고, `Info.plist`에 들어가는 webhook 주소, dmg 구성을 확인할 수 없다.
+    - `release.yml`은 태그 형식만 검사하고 브랜치를 확인하지 않아 main 머지 전 커밋에서도 산출물을 만든다.
+    - 프리릴리스는 앱 업데이트 확인(`apps/macos/Sources/UpdateCheck/ReleaseFetcher.swift`의 `releases/latest`), 랜딩 페이지의 `releases/latest/download/Desktoto.dmg`, Homebrew `update-tap`(`release.yml`의 prerelease 조건)에서 모두 제외되어 사용자에게 나가지 않는다.
+  - 정식 태그: QA 통과 후 develop → main PR을 머지하고 main에 단다. 태그 전에 `git diff vX.Y.Z-rc.N main`으로 QA한 코드와 차이가 없는지 확인한다.
+  - 결함 수정: 일반 작업 흐름(이슈, 브랜치, PR)으로 develop에 반영하고 rc 번호를 올린다. 실패했던 시나리오의 재테스트와 수정 주변의 회귀 확인을 한다.
+  - 심각도 4단계
+
+    | 심각도 | 기준 |
+    |---|---|
+    | 치명 | 앱이 실행되지 않음, 크래시, 사용자 파일이나 설정 손상 |
+    | 높음 | 핵심 기능이 동작하지 않고 우회 방법이 없음 |
+    | 중간 | 기능 오류가 있지만 우회 방법이 있음 |
+    | 낮음 | 외관, 문구 |
+
+  - 종료 기준: 치명과 높음 결함이 0건이고 해당 범위의 시나리오가 전부 Pass. 중간 이하 결함은 다음 버전 이슈로 남기고 출시할 수 있다. 통과율 같은 비율 기준은 시나리오 수가 적어 쓰지 않는다.
+  - 릴리스 종류별 범위: minor와 major는 전체 시나리오, patch는 변경 기능과 그 주변 시나리오, 그리고 smoke 표시 시나리오.
+  - 시나리오 형식: 영역별 표로 ID, 절차, 기대 결과, 범위(smoke 여부), 근거 문서를 둔다. 기대 결과는 Pass와 Fail을 가를 수 있는 상태 문장("~된다", "~가 보인다")으로 쓴다.
+  - 시나리오 영역: 설치와 첫 실행, 상단바 캐릭터, 노치 봇, 세션 감지와 상태, 세션 패널, 사용량과 컨텍스트, 터미널 이동, Claude Code 연동, 알림과 소리, 설정과 로그인 항목, 새 버전 알림, 피드백.
+  - 시나리오 근거: 현재 앱 동작이 기준이다. `docs/reverse/`는 원본 동작이라 이후 기능 이슈(#24, #52, #53, #56, #61, #65, #70, #75)에서 바뀐 부분이 있으므로, 해당 명세(`docs/tasks/번호/spec.md`)와 `docs/tasks/11/verification.md`의 체크리스트를 함께 보고 필요하면 소스 코드로 확인한다.
+  - 릴리스별 QA 이슈: 제목은 `[Deploy] vX.Y.Z 릴리스 QA`, 라벨은 저장소의 `🚀 Deploy`(배포를 위한 작업)다. Git 컨벤션의 이슈 제목 Type에 `QA`가 없어서 이슈 #82 본문의 `[QA] vX.Y.Z` 대신 이 형식을 쓴다.
+  - 결함 템플릿: 환경(macOS 버전, 앱 버전 또는 rc 태그, 설치 방법), 재현 절차, 기대 결과, 실제 결과, 첨부(스크린샷, 녹화, 로그), 심각도, 관련 QA 이슈 칸을 둔다. 제목은 `[Fix] `, 라벨은 Git 컨벤션의 버그 수정 라벨 `🐛 FIX`를 기본값으로 한다.
+  - QA 기록의 개인정보: QA는 실제 Mac의 실제 세션으로 하지만, 이슈와 첨부에 세션 내용, 프롬프트, 토큰, 개인 경로를 남기지 않는다(`docs/rules/coding-convention.md`의 비밀 값 원칙).
+  - 릴리스 QA 스킬: 이 환경에는 "QA" 요청에 걸리는 전역 `qa` 스킬(탐색식 테스트 후 그 자리에서 수정)이 있어 우리 절차와 충돌할 수 있다. 프로젝트 스킬 `release-qa`를 두고 description에 "릴리스 QA", "릴리즈 QA", "rc QA"를 트리거로 적으며, `AGENTS.md`에 릴리스, 릴리즈, rc가 들어간 QA 요청은 `release-qa`로, 그냥 "QA"만 있으면 어떤 QA인지 먼저 묻는다고 적는다. 스킬 본문은 `docs/rules/qa.md`를 따르라는 안내와 결함을 고치지 않는 등 지킬 것만 두고 절차를 다시 정의하지 않는다. 자연어 매칭은 모델 판단이라 확실하게 하려면 `/release-qa`로 부른다.
+  - 시나리오 갱신 시점: 앱 동작을 추가, 변경, 제거한 기능 PR에서 `docs/qa/scenarios.md`를 함께 고친다. 기능 작업 중에는 `qa.md`를 읽지 않으므로 PR 템플릿의 체크 항목으로 알린다. 놓친 것은 릴리스 QA 1단계에서 확인해 rc 태그 전에 고친다. `workflow.md`는 모든 작업에서 읽히는 문서라 바꾸지 않는다.
+  - Notion 사본: QA 문서는 Notion의 Desktoto > QA팀 페이지에 있는 `QA 데이터베이스`에도 둔다. 원본은 저장소와 GitHub 이슈이고 Notion은 보기 위한 사본이다. 속성은 개발팀 데이터베이스와 같은 구조로 `선택`(QA 프로세스, QA 시나리오, 릴리스 QA)과 `진행 상태`(완료, 미완료)다. 결함 이슈는 수정 PR과 연결되어야 하므로 GitHub에만 둔다. 공개 저장소라 문서에는 Notion URL을 적지 않고 이름으로 가리킨다.
+  - 권한: rc 태그와 정식 태그 push, main 머지는 각각 사용자 승인 후 진행한다(`AGENTS.md` 작업 정책 8).
+- 예외 처리
+  - 환경 제약으로 실행하지 못한 시나리오는 Pass로 표시하지 않고 미검증과 이유를 기록한다. 미검증 항목이 있으면 출시 여부는 사용자가 판단한다.
+  - 정식 태그 전 `git diff`에서 차이가 나오면 그 차이를 포함한 새 rc로 다시 QA한다.
+
+## 완료 조건
+
+- AC-1: `docs/rules/qa.md`에 릴리스 범위 확인, rc 태그, QA 이슈 작성, 산출물 설치, 시나리오 실행, 결함 등록, 수정 후 재테스트와 회귀, 종료 판단, main 머지와 정식 태그까지의 절차가 순서대로 있고, 태그와 diff 확인 명령이 적혀 있다.
+- AC-2: `docs/rules/qa.md`에 심각도 4단계 정의, 종료 기준, 릴리스 종류별 QA 범위, 미검증 처리, QA 기록의 개인정보 원칙이 있다.
+- AC-3: `docs/qa/scenarios.md`가 설계 결정의 12개 영역을 모두 다루고, 각 시나리오에 고유 ID, 절차, 상태 문장으로 된 기대 결과, smoke 여부, 근거가 있다. smoke 시나리오는 10개 이하이고 설치와 첫 실행을 포함한다.
+- AC-4: 각 시나리오의 기대 결과가 근거로 적은 명세, 문서 또는 소스 코드의 현재 동작과 일치한다.
+- AC-5: `.github/ISSUE_TEMPLATE/bug_report.md`가 기존 `issue_template.md`와 같은 front matter 형식(name, about, title, labels, assignees)을 쓰고, 설계 결정의 칸을 모두 가진다.
+- AC-6: `docs/ci.md`의 릴리스 절차가 develop에 rc 태그 → QA → main 머지 → diff 확인 → 정식 태그 순서로 바뀌고, `release.yml`의 실제 동작(태그 형식 검사, 프리릴리스 처리)과 어긋나지 않는다.
+- AC-7: `AGENTS.md` 필독 문서에 릴리스 QA 항목과 `docs/rules/qa.md` 링크가 있다.
+- AC-8: 새로 쓰거나 고친 문서의 상대 링크가 모두 실제 파일을 가리키고, 가운데점(U+00B7)이 없다.
+- AC-9: `docs/rules/qa.md`에 Notion 사본을 언제 만들고 갱신하는지와 속성 값이 있고, Notion `QA 데이터베이스`에 `릴리스 QA`, `QA 시나리오` 페이지가 저장소 문서와 같은 내용으로 있다.
+- AC-10: `docs/rules/qa.md` 1단계에 시나리오 반영 확인이 있고, `.github/pull_request_template.md`에 QA 시나리오 갱신 체크 항목과 Notion 사본 갱신 안내가 있다.
+- AC-11: `.agents/skills/release-qa/SKILL.md`가 기존 스킬과 같은 front matter(name, description) 형식이고, `.claude/commands/release-qa.md`가 그 파일을 가리키는 심볼릭 링크이며, `AGENTS.md` 스킬 라우팅과 `CLAUDE.md` 슬래시 명령 목록에 있다.
+
+## 검증 방법
+
+| 완료 조건 | 확인 방법 | 기대 결과 |
+|---|---|---|
+| AC-1 | `docs/rules/qa.md`를 읽고 절차 단계를 설계 결정과 대조 | 단계 누락 없음, 명령이 실제 태그 형식(`release.yml`)과 일치 |
+| AC-2 | `docs/rules/qa.md`의 해당 절 확인 | 다섯 항목 모두 있음 |
+| AC-3 | `docs/qa/scenarios.md`의 영역 목록, 열 구성, smoke 개수 확인 | 12개 영역, 빈 칸 없음, smoke 10개 이하 |
+| AC-4 | 시나리오마다 근거 문서나 소스의 해당 부분을 열어 기대 결과와 대조 | 불일치 0건, 근거를 찾지 못한 시나리오는 넣지 않음 |
+| AC-5 | `bug_report.md`와 `issue_template.md`의 front matter 비교, 칸 목록 확인 | 형식 일치, 칸 누락 없음. GitHub 선택 화면 노출은 develop 머지 후 확인 |
+| AC-6 | `docs/ci.md` 릴리스 절과 `.github/workflows/release.yml` 대조 | 절차와 워크플로 동작이 어긋나지 않음 |
+| AC-7 | `AGENTS.md` 필독 문서 확인 | 링크 존재 |
+| AC-8 | 변경 파일의 상대 링크 대상 존재 확인, U+00B7 문자 검색 | 깨진 링크 0, 가운데점 0 |
+| AC-9 | `qa.md`의 Notion 기록 절 확인, Notion 페이지를 열어 저장소 문서와 대조 | 규칙과 속성 값이 있고, 두 페이지의 내용이 저장소와 같음 |
+| AC-10 | `qa.md` 1단계와 PR 템플릿 확인 | 확인 항목과 체크 항목이 있음 |
+| AC-11 | 스킬 front matter 비교, `ls -l .claude/commands/release-qa.md`, 새 세션의 스킬 목록에 `release-qa`가 보이는지 확인 | 형식 일치, 링크 대상 일치, 스킬 목록에 표시 |
+
+앱 빌드 검증은 N/A다. 앱 코드와 워크플로를 바꾸지 않는다.
+
+## 미결정 사항
+
+- 없음
+
+## 주요 설계 변경
+
+| specRevision | 변경한 결정 | 이유 |
+|---|---|---|
+| 1 | 최초 설계 | 사용자와 합의한 작업 범위(QA 시점은 develop rc 태그, 시나리오 내용은 이번 이슈에서 작성, QA 이슈는 `[Deploy]` 제목과 `🚀 Deploy` 라벨) |
+| 2 | 시나리오 영역에서 미니게임 제외(13개에서 12개) | 셔틀콕 미니게임(#62)이 ee43c6c에서 제거되어 현재 앱에 없다. 영향받는 AC: AC-3 |
+| 3 | QA 문서의 Notion 사본 추가(포함 범위, 설계 결정, AC-9 추가) | 사용자가 Notion QA팀 페이지에서 QA 문서를 바로 보기를 원함(2026-11-26 합의) |
+| 4 | 기능 PR에서 QA 시나리오를 갱신하도록 PR 템플릿 체크 항목과 QA 1단계 확인 추가(포함 범위, 설계 결정, AC-10 추가) | 새 기능이 시나리오에 빠지지 않도록 사용자와 합의(2026-11-26) |
+| 5 | 프로젝트 스킬 `release-qa`와 `/release-qa` 명령 추가(포함 범위, 설계 결정, AC-11 추가) | 전역 `qa` 스킬과 겹쳐 릴리스 QA 요청이 다른 절차로 갈 수 있어 사용자와 합의(2026-11-26) |

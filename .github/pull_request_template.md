@@ -11,6 +11,16 @@
 
 -
 
+## 🧪 QA 시나리오
+
+<!--
+(앱 동작과 관계없는 변경이면 섹션 삭제)
+앱 동작을 추가하거나 바꾸거나 없앴다면 docs/qa/scenarios.md도 같이 고쳐 주세요.
+develop에 머지한 뒤에는 Notion의 QA 시나리오 사본도 갱신합니다(docs/rules/qa.md의 Notion 기록).
+-->
+
+- [ ] `docs/qa/scenarios.md`에 바뀐 동작을 반영했다
+
 ## 👀 To Reviewer
 
 <!--

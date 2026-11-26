@@ -20,6 +20,7 @@ Desktoto는 macOS 메뉴바 앱이다. 바이브 코딩으로 만든 프로토�
 - 브랜치, 커밋, PR, 라벨: [Git 컨벤션](docs/rules/git-convention.md)
 - 작업 시작, 명세, 검증, 게시: [작업 흐름](docs/rules/workflow.md)
 - macOS 구현과 검증: [macOS 개발 기준](docs/rules/macos-development.md)
+- 릴리스 QA 진행(요청받은 경우만, 일반 작업의 검증에는 읽지 않음): [릴리스 QA](docs/rules/qa.md)
 
 ## 스킬 라우팅
 
@@ -28,8 +29,12 @@ Desktoto는 macOS 메뉴바 앱이다. 바이브 코딩으로 만든 프로토�
 | GitHub 이슈 생성 | [create-issue](.agents/skills/create-issue/SKILL.md) | "이슈 만들어줘" |
 | 구현 설계와 명세 | [logic-design](.agents/skills/logic-design/SKILL.md) | "설계해줘", "명세 써줘" |
 | PR 준비와 생성 | [create-pr](.agents/skills/create-pr/SKILL.md) | "PR 올려줘" |
+| 릴리스 전 QA | [release-qa](.agents/skills/release-qa/SKILL.md) | "릴리스 QA 진행하자", "릴리즈 QA", "rc QA" |
 
 스킬은 작업 방법을 제공할 뿐 실행 권한을 늘리지 않는다.
+
+릴리스, 릴리즈, rc가 들어간 QA 요청은 전역 `qa` 스킬이 아니라 `release-qa`로 처리한다.
+그런 말 없이 "QA"만 요청하면 릴리스 QA인지 방금 바꾼 기능의 확인인지 먼저 묻는다.
 
 ## 표준 작업 순서
 

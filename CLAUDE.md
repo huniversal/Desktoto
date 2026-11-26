@@ -9,9 +9,9 @@
 ### 슬래시 명령
 
 `.claude/commands/*.md`는 `.agents/skills/*/SKILL.md`로 연결된 심볼릭 링크다.
-사용 가능: `/create-issue`, `/create-pr`, `/logic-design`.
+사용 가능: `/create-issue`, `/create-pr`, `/logic-design`, `/release-qa`.
 
 ### 스킬 자동 매칭
 
 자연어 요청이 스킬의 `description`과 맞으면 해당 스킬을 사용한다.
-예: "이슈 만들어줘" → `create-issue`, "PR 올려줘" → `create-pr`, "설계해줘" → `logic-design`.
+예: "이슈 만들어줘" → `create-issue`, "PR 올려줘" → `create-pr`, "설계해줘" → `logic-design`, "릴리즈 QA 진행하자" → `release-qa`.

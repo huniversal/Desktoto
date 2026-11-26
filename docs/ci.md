@@ -95,7 +95,23 @@ sh scripts/install-app.sh
 `v1.2.3` 또는 `v1.2.3-rc.1` 형식의 태그를 push하면 실행한다. 다른 형식의 태그는 실패한다.
 `-rc.1` 같은 접미사가 있으면 프리릴리스로 올린다.
 
-1. `main`에서 태그를 만든다: `git tag v1.0.0 && git push origin v1.0.0`
+1. 정식 태그 전에 [릴리스 QA](rules/qa.md)를 한다. develop의 릴리스 후보 커밋에 rc 태그를 달아 산출물을 만들고, 그 산출물로 QA한다.
+   워크플로는 태그 형식만 검사하고 브랜치를 확인하지 않으므로 main에 머지하기 전 커밋에서도 실행된다.
+   프리릴리스는 앱의 새 버전 알림(`releases/latest`), 랜딩 페이지 다운로드, Homebrew 갱신에서 모두 제외된다.
+
+   ```bash
+   git tag v1.0.0-rc.1 origin/develop
+   git push origin v1.0.0-rc.1
+   ```
+
+   QA를 통과하면 develop → main PR을 머지하고, main이 마지막 rc와 같은 코드인지 확인한 뒤 `main`에서 정식 태그를 만든다.
+
+   ```bash
+   git diff --stat v1.0.0-rc.1 origin/main
+   git tag v1.0.0 origin/main
+   git push origin v1.0.0
+   ```
+
 2. 워크플로가 `swift test`, 앱 패키징, zip 생성, SHA-256 체크섬 생성을 하고 GitHub Release에 올린다.
 3. 릴리스 노트는 자동 생성한 변경 내역 뒤에 [update-guide.md](../.github/release-notes/update-guide.md)를 붙여 만든다.
    Homebrew와 dmg 유저의 업데이트 방법이 매 릴리스 노트에 들어간다. 단계 설명은 움직이는 GIF(`docs/images/release/update-brew.gif`, `update-dmg.gif`)이고,
