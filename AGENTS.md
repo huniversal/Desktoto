@@ -20,7 +20,7 @@ Desktoto는 macOS 메뉴바 앱이다. 바이브 코딩으로 만든 프로토�
 - 브랜치, 커밋, PR, 라벨: [Git 컨벤션](docs/rules/git-convention.md)
 - 작업 시작, 명세, 검증, 게시: [작업 흐름](docs/rules/workflow.md)
 - macOS 구현과 검증: [macOS 개발 기준](docs/rules/macos-development.md)
-- 릴리스 전 QA와 결함 관리: [릴리스 QA](docs/rules/qa.md), [QA 시나리오](docs/qa/scenarios.md)
+- 릴리스 QA 진행(요청받은 경우만, 일반 작업의 검증에는 읽지 않음): [릴리스 QA](docs/rules/qa.md)
 
 ## 스킬 라우팅
 
